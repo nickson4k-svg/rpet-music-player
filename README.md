@@ -109,6 +109,4 @@ rpet-music-player/
 
 ---
 
-## Contact & Support
 
-For issues, feature requests, or contributions, please open an issue on the [GitHub repository](https://github.com/nickson4k-svg/rpet-music-player/issues).
