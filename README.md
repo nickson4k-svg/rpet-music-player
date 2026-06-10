@@ -1,45 +1,62 @@
-# 🎵 Rpet Music Player
+<div align="center">
+  <!-- Замініть посилання нижче на реальний скріншот вашого плеєра -->
+  <img src="https://via.placeholder.com/800x350/111827/ffffff?text=Rpet+Music+Player+(Add+Screenshot+Here)" alt="Rpet Music Player Banner" width="100%" style="border-radius: 12px;"/>
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg?style=for-the-badge)](https://rpet-music-player.vercel.app/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
-[![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)]()
-[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)]()
+  <h1>Rpet Music Player</h1>
+  
+  <p>
+    <strong>A sleek, web-based music player seamlessly blending local audio playback with external API integration.</strong>
+  </p>
 
-> A sleek, web-based music player that seamlessly blends local audio playback with external API integration. Experience global state management, deep browser API utilization, and reliable offline data storage—all in one place.
+  [![Live Demo](https://img.shields.io/badge/Live_Demo-Deploy_Here-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://rpet-music-player.vercel.app/)
+  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)]()
+  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
+  [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)]()
+  [![Zustand](https://img.shields.io/badge/Zustand-443E38?style=for-the-badge&logo=react&logoColor=white)]()
+</div>
+
+<br />
+
+## Table of Contents
+- [Core Features](#core-features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Contact & Support](#contact--support)
 
 ---
 
-## ✨ Core Features
+## Core Features
 
-* **🗂️ Local Library:** Drag and drop support for MP3 files with automatic ID3 tag extraction.
-* **🔍 Music Search:** Apple Music/iTunes API integration for quick track search and streaming.
-* **💾 Offline Storage:** IndexedDB integration ensures your user library persists across sessions.
-* **📊 Audio Visualization:** Real-time frequency visualization powered by the Web Audio API and Canvas.
-* **🎨 Dynamic UI:** Automated, immersive color scheme generation based on the current track's album art.
-* **🎤 Lyrics Synchronization:** Real-time lyrics tracking perfectly synchronized with audio timestamps.
+* **Local Library:** Drag and drop support for MP3 files with robust, automatic ID3 tag extraction.
+* **Music Search:** Apple Music & iTunes API integration for instant track discovery and streaming.
+* **Offline Storage:** IndexedDB integration ensures your custom library securely persists across browser sessions.
+* **Audio Visualization:** Real-time frequency visualization powered by the Web Audio API and HTML5 Canvas.
+* **Dynamic UI:** Intelligent, automated color scheme generation that adapts to the current track's album art.
+* **Lyrics Synchronization:** Real-time, smooth lyrics tracking synchronized with precise audio timestamps.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Category | Technologies |
 | :--- | :--- |
-| **Frontend** | React, TypeScript, Vite |
+| **Frontend Framework** | React, Vite |
+| **Language** | TypeScript |
 | **Styling** | Tailwind CSS |
 | **State Management** | Zustand |
-| **Storage** | IndexedDB |
+| **Data Storage** | IndexedDB |
 | **Audio Processing** | Web Audio API |
 
 ---
 
-## 🚀 Development Setup
+## Getting Started
 
-This project is bootstrapped with **Vite** and **React**. Follow the steps below to get it running locally.
+This project is bootstrapped with **Vite**. Follow these instructions to set up the project locally.
 
 ### Prerequisites
 
-* **Node.js**: v18 or higher recommended
+* **Node.js**: v18.0.0 or higher
 * **Package Manager**: npm or yarn
 
 ### Installation
