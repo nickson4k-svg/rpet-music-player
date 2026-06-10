@@ -1,6 +1,5 @@
 <div align="center">
-  <!-- Замініть посилання нижче на реальний скріншот вашого плеєра -->
-  <img src="https://via.placeholder.com/800x350/111827/ffffff?text=Rpet+Music+Player+(Add+Screenshot+Here)" alt="Rpet Music Player Banner" width="100%" style="border-radius: 12px;"/>
+
 
   <h1>Rpet Music Player</h1>
   
