@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { audioContextState } from '../../utils/audioContext';
 import { usePlayerStore } from '../../stores/playerStore';
-import { FastAverageColor } from 'fast-average-color';
 
 export const Visualizer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,41 +59,6 @@ export const Visualizer: React.FC = () => {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
-  useEffect(() => {
-    if (!isFullscreen) {
-      document.body.style.backgroundColor = '';
-      return;
-    }
-
-    const currentTrack = tracks.find(t => t.id === currentTrackId);
-    let url: string | null = null;
-    if (currentTrack?.coverUrl) {
-      url = currentTrack.coverUrl;
-    } else if (currentTrack?.coverBlob) {
-      url = URL.createObjectURL(currentTrack.coverBlob);
-    }
-
-    if (url) {
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.src = url;
-      img.onload = async () => {
-        try {
-          const fac = new FastAverageColor();
-          const color = await fac.getColorAsync(img);
-          document.body.style.backgroundColor = color.hex;
-        } catch (e) {
-          console.error('Failed to extract color', e);
-        }
-      };
-      if (currentTrack?.coverBlob) {
-        return () => URL.revokeObjectURL(url as string);
-      }
-    } else {
-      document.body.style.backgroundColor = '';
-    }
-  }, [currentTrackId, tracks, isFullscreen]);
 
   if (isFullscreen) {
     return (

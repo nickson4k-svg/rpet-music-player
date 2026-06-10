@@ -68,12 +68,17 @@ export const AudioEngine: React.FC = () => {
     if (!audio) return;
 
     let rafId: number;
-    const updateTime = () => {
-      setCurrentTime(audio.currentTime);
+    let lastUpdate = 0;
+    const updateTime = (timestamp: number) => {
+      if (timestamp - lastUpdate > 100) {
+        setCurrentTime(audio.currentTime);
+        lastUpdate = timestamp;
+      }
       rafId = requestAnimationFrame(updateTime);
     };
 
     const onPlay = () => {
+        lastUpdate = performance.now();
         rafId = requestAnimationFrame(updateTime);
     };
     

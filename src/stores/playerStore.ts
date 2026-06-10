@@ -122,6 +122,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!queue.length) return;
 
     if (currentTime > 3) {
+      const audio = document.getElementById('main-audio-element') as HTMLAudioElement;
+      if (audio) audio.currentTime = 0;
       set({ currentTime: 0 });
       return;
     }
