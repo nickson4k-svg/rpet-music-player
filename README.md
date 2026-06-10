@@ -1,7 +1,7 @@
 <div align="center">
 
 
-  <h1>Rpet Music Player</h1>
+  <h1>Music Player</h1>
   
   <p>
     <strong>A sleek, web-based music player seamlessly blending local audio playback with external API integration.</strong>
