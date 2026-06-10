@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(222.2, 84%, 4.9%);
+  --color-foreground: hsl(210, 40%, 98%);
+  --color-primary: hsl(217.2, 91.2%, 59.8%);
+  --color-primary-foreground: hsl(210, 40%, 98%);
+  --color-secondary: hsl(217.2, 32.6%, 17.5%);
+  --color-accent: hsl(210, 40%, 96%);
+}
+
+@layer base {
+  :root {
+    --theme-color-rgb: 15, 23, 42;
+  }
+
+  * {
+    border-color: var(--color-secondary);
+  }
+  
+  body {
+    background-color: var(--color-background);
+    background-image: linear-gradient(to bottom, rgba(var(--theme-color-rgb), 0.3) 0%, hsl(222.2, 84%, 4.9%) 100%);
+    background-attachment: fixed;
+    color: var(--color-foreground);
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    transition: background-image 1s ease-in-out;
+  }
+}

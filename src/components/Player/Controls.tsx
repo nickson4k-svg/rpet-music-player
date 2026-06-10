@@ -1,0 +1,69 @@
+import React from 'react';
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from 'lucide-react';
+import { usePlayerStore } from '../../stores/playerStore';
+
+export const Controls: React.FC = () => {
+  const isPlaying = usePlayerStore(state => state.isPlaying);
+  const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
+  const playNext = usePlayerStore(state => state.playNext);
+  const playPrevious = usePlayerStore(state => state.playPrevious);
+  const repeatMode = usePlayerStore(state => state.repeatMode);
+  const setRepeatMode = usePlayerStore(state => state.setRepeatMode);
+  const shuffle = usePlayerStore(state => state.shuffle);
+  const toggleShuffle = usePlayerStore(state => state.toggleShuffle);
+  const hasTrack = usePlayerStore(state => state.currentTrackId !== null);
+
+  const handleRepeatClick = () => {
+    if (repeatMode === 'off') setRepeatMode('all');
+    else if (repeatMode === 'all') setRepeatMode('one');
+    else setRepeatMode('off');
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      <button
+        onClick={toggleShuffle}
+        disabled={!hasTrack}
+        className={`p-2 rounded-full transition-colors ${shuffle ? 'text-primary' : 'text-gray-400 hover:text-white'} disabled:opacity-50`}
+      >
+        <Shuffle className="w-5 h-5" />
+      </button>
+
+      <button
+        onClick={playPrevious}
+        disabled={!hasTrack}
+        className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+      >
+        <SkipBack className="w-6 h-6 fill-current" />
+      </button>
+
+      <button
+        onClick={togglePlayPause}
+        disabled={!hasTrack}
+        className="p-3 bg-primary text-primary-foreground rounded-full hover:scale-105 transition-transform disabled:opacity-50 text-white"
+      >
+        {isPlaying ? (
+          <Pause className="w-6 h-6 fill-current" />
+        ) : (
+          <Play className="w-6 h-6 fill-current ml-0.5" />
+        )}
+      </button>
+
+      <button
+        onClick={playNext}
+        disabled={!hasTrack}
+        className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+      >
+        <SkipForward className="w-6 h-6 fill-current" />
+      </button>
+
+      <button
+        onClick={handleRepeatClick}
+        disabled={!hasTrack}
+        className={`p-2 rounded-full transition-colors ${repeatMode !== 'off' ? 'text-primary' : 'text-gray-400 hover:text-white'} disabled:opacity-50`}
+      >
+        {repeatMode === 'one' ? <Repeat1 className="w-5 h-5" /> : <Repeat className="w-5 h-5" />}
+      </button>
+    </div>
+  );
+};
