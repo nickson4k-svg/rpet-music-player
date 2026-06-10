@@ -28,12 +28,18 @@
 
 ## Core Features
 
-* **Local Library:** Drag and drop support for MP3 files with robust, automatic ID3 tag extraction.
-* **Music Search:** Apple Music & iTunes API integration for instant track discovery and streaming.
-* **Offline Storage:** IndexedDB integration ensures your custom library securely persists across browser sessions.
-* **Audio Visualization:** Real-time frequency visualization powered by the Web Audio API and HTML5 Canvas.
-* **Dynamic UI:** Intelligent, automated color scheme generation that adapts to the current track's album art.
-* **Lyrics Synchronization:** Real-time, smooth lyrics tracking synchronized with precise audio timestamps.
+* **Local Library Management**
+  Drag and drop support for MP3 files with robust, automatic ID3 tag extraction for metadata and album artwork.
+* **Apple Music Integration**
+  Instant track discovery and streaming via the iTunes Search API, allowing global hits to be added directly to your library.
+* **Synchronized Lyrics**
+  Real-time, smooth lyrics tracking synchronized with precise audio timestamps via LRCLIB integration.
+* **Dynamic Color Theming**
+  Intelligent, automated color scheme generation that extracts dominant colors from album art to tint the entire application interface.
+* **Audio Visualization & Equalizer**
+  Real-time frequency visualization powered by the Web Audio API, complete with a 3-band equalizer (Bass, Mid, Treble) for custom acoustic shaping.
+* **Offline Storage**
+  IndexedDB integration ensures your custom library, playlists, and favorites securely persist across browser sessions without requiring a backend.
 
 ---
 
@@ -41,12 +47,14 @@
 
 | Category | Technologies |
 | :--- | :--- |
-| **Frontend Framework** | React, Vite |
+| **Frontend Framework** | React 18, Vite |
 | **Language** | TypeScript |
-| **Styling** | Tailwind CSS |
+| **Styling** | Tailwind CSS v4, Lucide React |
 | **State Management** | Zustand |
-| **Data Storage** | IndexedDB |
+| **Data Storage** | IndexedDB (`idb-keyval`) |
 | **Audio Processing** | Web Audio API |
+| **Metadata Parsing** | `jsmediatags` |
+| **Color Extraction** | `fast-average-color` |
 
 ---
 
@@ -61,7 +69,47 @@ This project is bootstrapped with **Vite**. Follow these instructions to set up 
 
 ### Installation
 
-**1. Clone the repository:**
-```bash
-git clone [https://github.com/nickson4k-svg/rpet-music-player.git](https://github.com/nickson4k-svg/rpet-music-player.git)
-cd rpet-music-player
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/nickson4k-svg/rpet-music-player.git
+   cd rpet-music-player
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+---
+
+## Project Structure
+
+```text
+rpet-music-player/
+├── src/
+│   ├── components/
+│   │   ├── Layout/       # Main application layout wrappers
+│   │   ├── Player/       # Audio engine, visualizer, equalizer, and controls
+│   │   ├── Sidebar/      # Navigation and playlist management
+│   │   └── TrackList/    # Library view and MP3 uploaders
+│   ├── stores/           # Zustand state management (playerStore)
+│   ├── utils/            # API clients, IDB wrappers, and Web Audio context
+│   └── types/            # TypeScript interfaces
+└── public/               # Static assets
+```
+
+---
+
+## Contact & Support
+
+For issues, feature requests, or contributions, please open an issue on the [GitHub repository](https://github.com/nickson4k-svg/rpet-music-player/issues).
