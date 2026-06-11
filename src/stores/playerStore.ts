@@ -17,6 +17,9 @@ interface PlayerState {
   repeatMode: 'off' | 'all' | 'one';
   shuffle: boolean;
   playbackRate: number;
+  crossfadeEnabled: boolean;
+  crossfadeDuration: number;
+  normalizationEnabled: boolean;
   
   // Actions
   setTracks: (tracks: Track[]) => void;
@@ -44,6 +47,8 @@ interface PlayerState {
   loadJamendoTracks: () => Promise<void>; // keeping name for Sidebar compatibility, but fetches top from iTunes
   searchJamendo: (query: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
+  toggleCrossfade: () => void;
+  toggleNormalization: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -60,6 +65,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   repeatMode: 'off',
   shuffle: false,
   playbackRate: 1,
+  crossfadeEnabled: false,
+  crossfadeDuration: 4,
+  normalizationEnabled: false,
 
   setTracks: (tracks) => set({ tracks }),
   setPlaylists: (playlists) => set({ playlists }),
@@ -266,5 +274,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set(state => ({
       tracks: state.tracks.map(t => t.id === id ? updatedTrack : t)
     }));
-  }
+  },
+  
+  toggleCrossfade: () => set(state => ({ crossfadeEnabled: !state.crossfadeEnabled })),
+  toggleNormalization: () => set(state => ({ normalizationEnabled: !state.normalizationEnabled })),
 }));

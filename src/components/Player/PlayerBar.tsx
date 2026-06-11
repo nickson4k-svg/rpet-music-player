@@ -8,6 +8,7 @@ import { Visualizer } from './Visualizer';
 import { Equalizer } from './Equalizer';
 import { Lyrics } from './Lyrics';
 import { SpeedControl } from './SpeedControl';
+import { SleepTimer } from './SleepTimer';
 import { PictureInPicture2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { MiniPlayerWindow } from './MiniPlayer';
@@ -110,7 +111,7 @@ export const PlayerBar: React.FC = () => {
           </div>
         </div>
 
-        <div className="hidden sm:flex w-1/4 min-w-[200px] items-center justify-end gap-4">
+        <div className="hidden sm:flex w-auto flex-1 min-w-[280px] items-center justify-end gap-1.5 md:gap-3">
           {'documentPictureInPicture' in window && (
             <button 
               onClick={togglePiP} 
@@ -121,6 +122,7 @@ export const PlayerBar: React.FC = () => {
             </button>
           )}
           <SpeedControl />
+          <SleepTimer />
           <Lyrics />
           <Equalizer />
           <Visualizer />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X } from 'lucide-react';
+import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X, Settings } from 'lucide-react';
+import { SettingsModal } from '../SettingsModal';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -17,6 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const searchJamendo = usePlayerStore(state => state.searchJamendo);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +56,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           <Music className="w-5 h-5" />
           Rpet
         </h2>
-        {onClose && (
-          <button onClick={onClose} className="md:hidden p-1 text-gray-400 hover:text-white">
-            <X className="w-5 h-5" />
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsSettingsOpen(true)} 
+            className="p-1 text-gray-400 hover:text-white transition-colors"
+            title="Налаштування"
+          >
+            <Settings className="w-5 h-5" />
           </button>
-        )}
+          {onClose && (
+            <button onClick={onClose} className="md:hidden p-1 text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -155,6 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           </div>
         </div>
       </div>
+      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
     </aside>
   );
 };

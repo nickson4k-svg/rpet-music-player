@@ -1,7 +1,11 @@
 export const audioContextState = {
   context: null as AudioContext | null,
   analyser: null as AnalyserNode | null,
-  source: null as MediaElementAudioSourceNode | null,
+  sourceA: null as MediaElementAudioSourceNode | null,
+  sourceB: null as MediaElementAudioSourceNode | null,
+  gainA: null as GainNode | null,
+  gainB: null as GainNode | null,
+  compressor: null as DynamicsCompressorNode | null,
   bassNode: null as BiquadFilterNode | null,
   midNode: null as BiquadFilterNode | null,
   trebleNode: null as BiquadFilterNode | null,
@@ -21,7 +25,7 @@ function createReverbBuffer(ctx: AudioContext, duration: number, decay: number) 
   return buffer;
 }
 
-export const initAudioContext = (audioElement: HTMLAudioElement) => {
+export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElement) => {
   if (!audioContextState.context) {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     const ctx = new AudioContextClass();
@@ -45,8 +49,18 @@ export const initAudioContext = (audioElement: HTMLAudioElement) => {
     treble.frequency.value = 4000;
     treble.gain.value = 0;
 
-    const source = ctx.createMediaElementSource(audioElement);
+    // Decks setup
+    const sourceA = ctx.createMediaElementSource(audioA);
+    const sourceB = ctx.createMediaElementSource(audioB);
+    const gainA = ctx.createGain();
+    const gainB = ctx.createGain();
     
+    gainA.gain.value = 1;
+    gainB.gain.value = 1;
+
+    sourceA.connect(gainA);
+    sourceB.connect(gainB);
+
     // Spatial Audio (Reverb)
     const reverb = ctx.createConvolver();
     reverb.buffer = createReverbBuffer(ctx, 2.5, 3.0);
@@ -56,8 +70,22 @@ export const initAudioContext = (audioElement: HTMLAudioElement) => {
     const dryGain = ctx.createGain();
     dryGain.gain.value = 1;
 
+    // Automatic Gain Control (ReplayGain proxy)
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -24;
+    compressor.knee.value = 30;
+    compressor.ratio.value = 12;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    
+    // By default compressor acts as passthrough until normalization is enabled, 
+    // but actually we can just leave it connected and toggle it dynamically later.
+    // For now, let's connect it in the chain but we'll bypass it if normalization is off.
+    
     // Connect nodes in sequence
-    source.connect(bass);
+    gainA.connect(bass);
+    gainB.connect(bass);
+    
     bass.connect(mid);
     mid.connect(treble);
     
@@ -66,14 +94,19 @@ export const initAudioContext = (audioElement: HTMLAudioElement) => {
     treble.connect(reverb);
     reverb.connect(reverbGain);
 
-    dryGain.connect(analyser);
-    reverbGain.connect(analyser);
+    dryGain.connect(compressor);
+    reverbGain.connect(compressor);
     
+    compressor.connect(analyser);
     analyser.connect(ctx.destination);
 
     audioContextState.context = ctx;
     audioContextState.analyser = analyser;
-    audioContextState.source = source;
+    audioContextState.sourceA = sourceA;
+    audioContextState.sourceB = sourceB;
+    audioContextState.gainA = gainA;
+    audioContextState.gainB = gainB;
+    audioContextState.compressor = compressor;
     audioContextState.bassNode = bass;
     audioContextState.midNode = mid;
     audioContextState.trebleNode = treble;
@@ -81,4 +114,16 @@ export const initAudioContext = (audioElement: HTMLAudioElement) => {
     audioContextState.dryGainNode = dryGain;
   }
   return audioContextState;
+};
+
+export const updateNormalization = (enabled: boolean) => {
+  if (audioContextState.compressor) {
+    if (enabled) {
+      audioContextState.compressor.threshold.value = -30;
+      audioContextState.compressor.ratio.value = 12;
+    } else {
+      audioContextState.compressor.threshold.value = 0;
+      audioContextState.compressor.ratio.value = 1;
+    }
+  }
 };

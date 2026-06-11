@@ -7,6 +7,13 @@ export const ThemeManager: React.FC = () => {
   const tracks = usePlayerStore(state => state.tracks);
 
   useEffect(() => {
+    const savedColor = localStorage.getItem('rpet-theme-color');
+    if (savedColor) {
+      document.documentElement.style.setProperty('--color-primary', savedColor);
+    }
+  }, []);
+
+  useEffect(() => {
     const currentTrack = tracks.find(t => t.id === currentTrackId);
     let url: string | null = null;
     if (currentTrack?.coverUrl) {
