@@ -149,21 +149,21 @@ export const PlayerBar: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex flex-wrap gap-4 items-center justify-center p-2">
+          <div className="flex flex-wrap gap-2 sm:gap-4 items-center justify-center p-4 bg-secondary/20 rounded-2xl">
             {'documentPictureInPicture' in window && (
               <button 
                 onClick={togglePiP} 
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg w-20 transition-colors ${pipWindow ? 'bg-primary/20 text-primary' : 'bg-secondary text-gray-300'}`}
+                className={`p-2 transition-colors rounded-full hover:bg-secondary ${pipWindow ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+                title="Mini Player (PiP)"
               >
-                <PictureInPicture2 className="w-6 h-6" />
-                <span className="text-[10px]">PiP</span>
+                <PictureInPicture2 className="w-5 h-5" />
               </button>
             )}
-            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><SpeedControl /></div>
-            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><SleepTimer /></div>
-            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><Lyrics /></div>
-            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><Equalizer /></div>
-            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><Visualizer /></div>
+            <SpeedControl />
+            <SleepTimer />
+            <Lyrics />
+            <Equalizer />
+            <Visualizer />
           </div>
           <div className="mt-4 bg-secondary p-4 rounded-xl">
             <VolumeControl />
