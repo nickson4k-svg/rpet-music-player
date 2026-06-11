@@ -9,7 +9,7 @@ import { Equalizer } from './Equalizer';
 import { Lyrics } from './Lyrics';
 import { SpeedControl } from './SpeedControl';
 import { SleepTimer } from './SleepTimer';
-import { PictureInPicture2 } from 'lucide-react';
+import { PictureInPicture2, MoreVertical, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { MiniPlayerWindow } from './MiniPlayer';
 
@@ -20,6 +20,7 @@ export const PlayerBar: React.FC = () => {
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const togglePiP = async () => {
     if (pipWindow) {
@@ -105,7 +106,18 @@ export const PlayerBar: React.FC = () => {
         </div>
 
         <div className="flex-none sm:flex-[2] w-full max-w-2xl flex flex-col items-center justify-center gap-2 px-1 sm:px-4">
-          <Controls />
+          <div className="flex items-center w-full justify-between sm:justify-center">
+            <div className="w-8 sm:hidden"></div> {/* Spacer for centering */}
+            <Controls />
+            <div className="sm:hidden w-8 flex justify-end">
+              <button 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
           <div className="hidden sm:flex w-full">
             <ProgressBar />
           </div>
@@ -129,6 +141,38 @@ export const PlayerBar: React.FC = () => {
           <VolumeControl />
         </div>
       </div>
+
+      {/* Mobile Actions Menu */}
+      {isMobileMenuOpen && (
+        <div className="sm:hidden fixed inset-x-0 bottom-[72px] bg-background/95 backdrop-blur-xl border-t border-secondary p-4 rounded-t-2xl z-40 shadow-2xl animate-slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold px-2">Додаткові функції</h3>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-secondary/50 rounded-full">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-4 items-center justify-center p-2">
+            {'documentPictureInPicture' in window && (
+              <button 
+                onClick={togglePiP} 
+                className={`flex flex-col items-center gap-1 p-3 rounded-lg w-20 transition-colors ${pipWindow ? 'bg-primary/20 text-primary' : 'bg-secondary text-gray-300'}`}
+              >
+                <PictureInPicture2 className="w-6 h-6" />
+                <span className="text-[10px]">PiP</span>
+              </button>
+            )}
+            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><SpeedControl /></div>
+            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><SleepTimer /></div>
+            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><Lyrics /></div>
+            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><Equalizer /></div>
+            <div className="flex flex-col items-center gap-1 p-1 bg-secondary rounded-lg w-20"><Visualizer /></div>
+          </div>
+          <div className="mt-4 bg-secondary p-4 rounded-xl">
+            <VolumeControl />
+          </div>
+        </div>
+      )}
+
       {pipWindow && createPortal(
         <MiniPlayerWindow pipWindow={pipWindow} closePip={() => setPipWindow(null)} />, 
         pipWindow.document.body
