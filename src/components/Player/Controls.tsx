@@ -20,11 +20,11 @@ export const Controls: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center gap-1 sm:gap-4">
+    <div className="flex items-center justify-center gap-2 sm:gap-4 flex-nowrap shrink-0">
       <button
         onClick={toggleShuffle}
         disabled={!hasTrack}
-        className={`hidden sm:block p-2 rounded-full transition-colors ${shuffle ? 'text-primary' : 'text-gray-400 hover:text-white'} disabled:opacity-50`}
+        className={`hidden sm:flex items-center justify-center p-2 rounded-full transition-colors shrink-0 ${shuffle ? 'text-primary' : 'text-gray-400 hover:text-white'} disabled:opacity-50`}
       >
         <Shuffle className="w-5 h-5" />
       </button>
@@ -32,7 +32,7 @@ export const Controls: React.FC = () => {
       <button
         onClick={playPrevious}
         disabled={!hasTrack}
-        className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+        className="p-1.5 sm:p-2 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-50 shrink-0"
       >
         <SkipBack className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
       </button>
@@ -40,7 +40,7 @@ export const Controls: React.FC = () => {
       <button
         onClick={togglePlayPause}
         disabled={!hasTrack}
-        className="p-2 sm:p-3 bg-primary text-primary-foreground rounded-full hover:scale-105 transition-transform disabled:opacity-50 text-white"
+        className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-primary text-primary-foreground rounded-full hover:scale-105 transition-transform disabled:opacity-50 text-white shrink-0 relative overflow-hidden"
       >
         {isPlaying ? (
           <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
@@ -52,7 +52,7 @@ export const Controls: React.FC = () => {
       <button
         onClick={playNext}
         disabled={!hasTrack}
-        className="p-1.5 sm:p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+        className="p-1.5 sm:p-2 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-50 shrink-0"
       >
         <SkipForward className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
       </button>
@@ -60,7 +60,7 @@ export const Controls: React.FC = () => {
       <button
         onClick={handleRepeatClick}
         disabled={!hasTrack}
-        className={`hidden sm:block p-2 rounded-full transition-colors ${repeatMode !== 'off' ? 'text-primary' : 'text-gray-400 hover:text-white'} disabled:opacity-50`}
+        className={`hidden sm:flex items-center justify-center p-2 rounded-full transition-colors shrink-0 ${repeatMode !== 'off' ? 'text-primary' : 'text-gray-400 hover:text-white'} disabled:opacity-50`}
       >
         {repeatMode === 'one' ? <Repeat1 className="w-5 h-5" /> : <Repeat className="w-5 h-5" />}
       </button>

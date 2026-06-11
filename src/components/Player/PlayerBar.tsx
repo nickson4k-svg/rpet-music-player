@@ -83,7 +83,7 @@ export const PlayerBar: React.FC = () => {
           <ProgressBar mobile />
         </div>
         
-        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 sm:min-w-[200px]">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 sm:min-w-[150px]">
           {currentTrack ? (
             <>
               <div className="w-10 h-10 sm:w-14 sm:h-14 bg-secondary rounded shadow-lg overflow-hidden flex-shrink-0">
@@ -105,14 +105,14 @@ export const PlayerBar: React.FC = () => {
           )}
         </div>
 
-        <div className="flex-none sm:flex-[2] flex flex-col items-center justify-center px-1 sm:px-4">
+        <div className="flex-none sm:flex-[2] flex flex-col items-center justify-center px-1 sm:px-4 shrink-0 max-w-full overflow-hidden">
           <Controls />
           <div className="hidden sm:flex w-full max-w-2xl">
             <ProgressBar />
           </div>
         </div>
 
-        <div className="flex-none sm:flex-1 flex sm:min-w-[200px] items-center justify-end gap-1.5 md:gap-3">
+        <div className="flex-none sm:flex-1 flex sm:min-w-[150px] items-center justify-end gap-1.5 md:gap-3">
           <div className="hidden sm:flex items-center gap-1.5 md:gap-3">
             {'documentPictureInPicture' in window && (
               <button 
