@@ -9,6 +9,7 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { ThemeManager } from '../ThemeManager';
 import { Menu } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
+import { AudioReactiveBackground } from './AudioReactiveBackground';
 
 export const MainLayout: React.FC = () => {
   const setTracks = usePlayerStore(state => state.setTracks);
@@ -53,14 +54,7 @@ export const MainLayout: React.FC = () => {
       <ThemeManager />
       
       {/* Animated Mesh Gradient Background (Ambient Canvas) */}
-      <div className="absolute inset-0 z-[-1] overflow-hidden pointer-events-none bg-background transition-colors duration-[2s]">
-        <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] opacity-30 mix-blend-screen rounded-full blur-[100px] animate-blob" 
-             style={bgStyle} />
-        <div className="absolute top-1/4 right-1/4 w-[40vw] h-[40vw] opacity-20 mix-blend-screen rounded-full blur-[80px] animate-blob animation-delay-2000"
-             style={bgStyle} />
-        <div className="absolute bottom-1/4 left-1/3 w-[60vw] h-[60vw] opacity-20 mix-blend-screen rounded-full blur-[120px] animate-blob animation-delay-4000"
-             style={bgStyle} />
-      </div>
+      <AudioReactiveBackground dominantColor={dominantColor} defaultBg={defaultBg} />
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile Sidebar Overlay */}
