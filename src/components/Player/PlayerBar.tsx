@@ -103,42 +103,38 @@ export const PlayerBar: React.FC = () => {
           ) : (
             <div className="text-xs sm:text-sm text-gray-500">No track selected</div>
           )}
-        </div>
-
-        <div className="flex-none sm:flex-[2] w-full max-w-2xl flex flex-col items-center justify-center gap-2 px-1 sm:px-4">
-          <div className="flex items-center w-full justify-between sm:justify-center">
-            <div className="w-8 sm:hidden"></div> {/* Spacer for centering */}
-            <Controls />
-            <div className="sm:hidden w-8 flex justify-end">
-              <button 
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
-              >
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          <div className="hidden sm:flex w-full">
+        <div className="flex-none sm:flex-[2] flex flex-col items-center justify-center gap-2 px-1 sm:px-4">
+          <Controls />
+          <div className="hidden sm:flex w-full max-w-2xl">
             <ProgressBar />
           </div>
         </div>
 
-        <div className="hidden sm:flex flex-1 min-w-[200px] items-center justify-end gap-1.5 md:gap-3">
-          {'documentPictureInPicture' in window && (
-            <button 
-              onClick={togglePiP} 
-              className={`hover:text-white transition-colors p-2 ${pipWindow ? 'text-primary' : 'text-gray-400'}`}
-              title="Mini Player (PiP)"
-            >
-              <PictureInPicture2 className="w-5 h-5" />
-            </button>
-          )}
-          <SpeedControl />
-          <SleepTimer />
-          <Lyrics />
-          <Equalizer />
-          <Visualizer />
-          <VolumeControl />
+        <div className="flex flex-1 min-w-0 sm:min-w-[200px] items-center justify-end gap-1.5 md:gap-3">
+          <div className="hidden sm:flex items-center gap-1.5 md:gap-3">
+            {'documentPictureInPicture' in window && (
+              <button 
+                onClick={togglePiP} 
+                className={`hover:text-white transition-colors p-2 ${pipWindow ? 'text-primary' : 'text-gray-400'}`}
+                title="Mini Player (PiP)"
+              >
+                <PictureInPicture2 className="w-5 h-5" />
+              </button>
+            )}
+            <SpeedControl />
+            <SleepTimer />
+            <Lyrics />
+            <Equalizer />
+            <Visualizer />
+            <VolumeControl />
+          </div>
+          
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={`sm:hidden p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+          >
+            <MoreVertical className="w-6 h-6" />
+          </button>
         </div>
       </div>
 
