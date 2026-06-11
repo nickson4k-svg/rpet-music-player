@@ -142,7 +142,7 @@ export const PlayerBar: React.FC = () => {
 
       {/* Mobile Actions Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-0 bottom-[72px] sm:bottom-24 bg-background/95 backdrop-blur-xl border-t border-secondary p-4 rounded-t-2xl z-40 shadow-2xl animate-slide-up">
+        <div className="xl:hidden fixed inset-x-0 bottom-[72px] sm:bottom-24 bg-background/95 backdrop-blur-xl border-t border-secondary p-4 rounded-t-2xl z-[60] shadow-2xl animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold px-2">Додаткові функції</h3>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-secondary/50 rounded-full">
