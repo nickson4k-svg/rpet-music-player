@@ -113,7 +113,7 @@ export const PlayerBar: React.FC = () => {
         </div>
 
         <div className="flex-none sm:flex-1 flex sm:min-w-[150px] items-center justify-end gap-1.5 md:gap-3">
-          <div className="hidden sm:flex items-center gap-1.5 md:gap-3">
+          <div className="hidden lg:flex items-center gap-1.5 md:gap-3">
             {'documentPictureInPicture' in window && (
               <button 
                 onClick={togglePiP} 
@@ -133,7 +133,7 @@ export const PlayerBar: React.FC = () => {
           
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`sm:hidden p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+            className={`lg:hidden p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
           >
             <MoreVertical className="w-6 h-6" />
           </button>
@@ -142,7 +142,7 @@ export const PlayerBar: React.FC = () => {
 
       {/* Mobile Actions Menu */}
       {isMobileMenuOpen && (
-        <div className="sm:hidden fixed inset-x-0 bottom-[72px] bg-background/95 backdrop-blur-xl border-t border-secondary p-4 rounded-t-2xl z-40 shadow-2xl animate-slide-up">
+        <div className="lg:hidden fixed inset-x-0 bottom-[72px] sm:bottom-24 bg-background/95 backdrop-blur-xl border-t border-secondary p-4 rounded-t-2xl z-40 shadow-2xl animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold px-2">Додаткові функції</h3>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-secondary/50 rounded-full">
