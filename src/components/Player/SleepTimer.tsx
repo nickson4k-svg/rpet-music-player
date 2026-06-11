@@ -7,8 +7,6 @@ export const SleepTimer: React.FC = () => {
   const [minutesLeft, setMinutesLeft] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
-  const isPlaying = usePlayerStore(state => state.isPlaying);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
