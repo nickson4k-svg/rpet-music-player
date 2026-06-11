@@ -11,6 +11,10 @@ interface TrackItemProps {
   onPlay: (id: string) => void;
   onTogglePlayPause: () => void;
   onDelete: (id: string) => void;
+  innerRef?: (element: HTMLElement | null) => void;
+  draggableProps?: any;
+  dragHandleProps?: any;
+  isDragging?: boolean;
 }
 
 export const TrackItem: React.FC<TrackItemProps> = React.memo(({
@@ -20,6 +24,10 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
   onPlay,
   onTogglePlayPause,
   onDelete,
+  innerRef,
+  draggableProps,
+  dragHandleProps,
+  isDragging,
 }) => {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const toggleFavorite = usePlayerStore(state => state.toggleFavorite);
@@ -38,15 +46,13 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
 
   return (
     <div
+      ref={innerRef}
+      {...draggableProps}
+      {...dragHandleProps}
       className={`group flex items-center gap-2 sm:gap-4 p-2 sm:p-3 transition-colors hover:bg-secondary/50 ${
         isCurrentTrack ? 'bg-secondary' : ''
-      }`}
+      } ${isDragging ? 'bg-secondary/80 shadow-2xl z-50' : ''}`}
       onDoubleClick={() => onPlay(track.id)}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('trackId', track.id);
-        e.dataTransfer.effectAllowed = 'copy';
-      }}
     >
       <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-secondary rounded overflow-hidden">
         {coverUrl ? (

@@ -9,6 +9,7 @@ export const AudioEngine: React.FC = () => {
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const volume = usePlayerStore(state => state.volume);
+  const playbackRate = usePlayerStore(state => state.playbackRate);
   
   const playNext = usePlayerStore(state => state.playNext);
   const playPrevious = usePlayerStore(state => state.playPrevious);
@@ -25,6 +26,16 @@ export const AudioEngine: React.FC = () => {
       const url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
       audio.src = url;
       audio.load();
+      audio.playbackRate = playbackRate;
+      
+      const onLoadedMetadataTrack = () => {
+        if (track.lastPlaybackPosition && track.duration > 300 && track.lastPlaybackPosition < track.duration - 10) {
+          audio.currentTime = track.lastPlaybackPosition;
+        }
+        audio.removeEventListener('loadedmetadata', onLoadedMetadataTrack);
+      };
+      audio.addEventListener('loadedmetadata', onLoadedMetadataTrack);
+
       if (isPlaying) {
         initAudioContext(audio);
         if (audioContextState.context?.state === 'suspended') {
@@ -33,6 +44,7 @@ export const AudioEngine: React.FC = () => {
         audio.play().catch(console.error);
       }
       return () => {
+        audio.removeEventListener('loadedmetadata', onLoadedMetadataTrack);
         if (!track.audioUrl && url) {
           URL.revokeObjectURL(url);
         }
@@ -64,15 +76,31 @@ export const AudioEngine: React.FC = () => {
   }, [volume]);
 
   useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate]);
+
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     let rafId: number;
     let lastUpdate = 0;
+    let lastSave = 0;
     const updateTime = (timestamp: number) => {
       if (timestamp - lastUpdate > 100) {
         setCurrentTime(audio.currentTime);
         lastUpdate = timestamp;
+      }
+      if (timestamp - lastSave > 10000) { // save position every 10 seconds
+        const currentTrack = usePlayerStore.getState().tracks.find(t => t.id === usePlayerStore.getState().currentTrackId);
+        if (currentTrack && currentTrack.duration > 300) {
+            import('../../utils/idbStorage').then(({ addTrack }) => {
+                addTrack({ ...currentTrack, lastPlaybackPosition: audio.currentTime });
+            });
+        }
+        lastSave = timestamp;
       }
       rafId = requestAnimationFrame(updateTime);
     };

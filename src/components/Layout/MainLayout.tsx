@@ -27,8 +27,19 @@ export const MainLayout: React.FC = () => {
   }, [setTracks, setPlaylists]);
 
   return (
-    <div className="h-[100dvh] bg-transparent flex flex-col pb-[72px] sm:pb-24 overflow-hidden">
+    <div className="h-[100dvh] bg-transparent flex flex-col pb-[72px] sm:pb-24 overflow-hidden relative z-0">
       <ThemeManager />
+      
+      {/* Animated Mesh Gradient Background */}
+      <div className="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] opacity-30 mix-blend-screen rounded-full blur-[100px] animate-blob" 
+             style={{ backgroundColor: `rgb(var(--theme-color-rgb))` }} />
+        <div className="absolute top-1/4 right-1/4 w-[40vw] h-[40vw] opacity-20 mix-blend-screen rounded-full blur-[80px] animate-blob animation-delay-2000"
+             style={{ backgroundColor: `rgb(var(--theme-color-rgb))` }} />
+        <div className="absolute bottom-1/4 left-1/3 w-[60vw] h-[60vw] opacity-20 mix-blend-screen rounded-full blur-[120px] animate-blob animation-delay-4000"
+             style={{ backgroundColor: `rgb(var(--theme-color-rgb))` }} />
+      </div>
+
       <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (

@@ -7,6 +7,7 @@ import { AudioEngine } from './AudioEngine';
 import { Visualizer } from './Visualizer';
 import { Equalizer } from './Equalizer';
 import { Lyrics } from './Lyrics';
+import { SpeedControl } from './SpeedControl';
 import { PictureInPicture2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { MiniPlayerWindow } from './MiniPlayer';
@@ -119,6 +120,7 @@ export const PlayerBar: React.FC = () => {
               <PictureInPicture2 className="w-5 h-5" />
             </button>
           )}
+          <SpeedControl />
           <Lyrics />
           <Equalizer />
           <Visualizer />

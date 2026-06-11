@@ -16,6 +16,7 @@ interface PlayerState {
   currentTime: number;
   repeatMode: 'off' | 'all' | 'one';
   shuffle: boolean;
+  playbackRate: number;
   
   // Actions
   setTracks: (tracks: Track[]) => void;
@@ -24,6 +25,7 @@ interface PlayerState {
   playQueue: (queue: string[], startIndex: number) => void;
   togglePlayPause: () => void;
   setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   playNext: () => void;
@@ -38,6 +40,7 @@ interface PlayerState {
   deletePlaylist: (id: string) => void;
   addTrackToPlaylist: (playlistId: string, trackId: string) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
+  reorderPlaylistTracks: (playlistId: string, startIndex: number, endIndex: number) => void;
   loadJamendoTracks: () => Promise<void>; // keeping name for Sidebar compatibility, but fetches top from iTunes
   searchJamendo: (query: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
@@ -56,6 +59,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentTime: 0,
   repeatMode: 'off',
   shuffle: false,
+  playbackRate: 1,
 
   setTracks: (tracks) => set({ tracks }),
   setPlaylists: (playlists) => set({ playlists }),
@@ -89,6 +93,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
   
   setVolume: (volume) => set({ volume }),
+  setPlaybackRate: (rate) => set({ playbackRate: rate }),
   setCurrentTime: (currentTime) => set({ currentTime }),
   setDuration: (duration) => set({ duration }),
   
@@ -205,6 +210,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const updated = { ...playlist, trackIds: playlist.trackIds.filter(id => id !== trackId) };
     await updatePlaylistIdb(updated);
     
+    set(state => ({
+      playlists: state.playlists.map(p => p.id === playlistId ? updated : p)
+    }));
+  },
+
+  reorderPlaylistTracks: async (playlistId, startIndex, endIndex) => {
+    const { playlists } = get();
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist) return;
+
+    const result = Array.from(playlist.trackIds);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+
+    const updated = { ...playlist, trackIds: result };
+    await updatePlaylistIdb(updated);
+
     set(state => ({
       playlists: state.playlists.map(p => p.id === playlistId ? updated : p)
     }));
