@@ -38,8 +38,8 @@ export const Visualizer: React.FC = () => {
       if (theme === 'bars') {
         let x = 0;
         for (let i = 0; i < bufferLength; i++) {
-          let barHeight = dataArray[i] / 2;
-          if (isFullscreen) barHeight = dataArray[i];
+          let barHeight = (dataArray[i] / 255) * canvas.height;
+          if (!isFullscreen) barHeight *= 0.8; // keep it slightly smaller than the box
           
           ctx.fillStyle = `hsl(217.2, 91.2%, 59.8%)`;
           ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
@@ -67,8 +67,7 @@ export const Visualizer: React.FC = () => {
         ctx.strokeStyle = `hsl(217.2, 91.2%, 59.8%)`;
         for (let i = 0; i < bufferLength; i++) {
           const rads = Math.PI * 2 / bufferLength;
-          let barHeight = dataArray[i] / 2;
-          if (isFullscreen) barHeight = dataArray[i];
+          let barHeight = (dataArray[i] / 255) * (isFullscreen ? 150 : 15);
           
           const x1 = centerX + Math.cos(rads * i) * radius;
           const y1 = centerY + Math.sin(rads * i) * radius;
