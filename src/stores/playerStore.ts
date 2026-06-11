@@ -181,7 +181,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
   
   playPrevious: () => {
-    const { queue, queueIndex, currentTime } = get();
+    const { queue, queueIndex, currentTime, tracks } = get();
     if (!queue.length) return;
 
     if (currentTime > 3) {

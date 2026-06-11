@@ -115,7 +115,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ onClose }) => {
                         dataKey="value"
                         stroke="none"
                       >
-                        {stats.topArtists.map((entry, index) => (
+                        {stats.topArtists.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -147,7 +147,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ onClose }) => {
                         contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '0.5rem' }}
                       />
                       <Bar dataKey="plays" fill="#3b82f6" radius={[0, 4, 4, 0]}>
-                        {stats.topTracks.map((entry, index) => (
+                        {stats.topTracks.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Bar>
