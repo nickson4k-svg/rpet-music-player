@@ -92,11 +92,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setCurrentTime: (currentTime) => set({ currentTime }),
   setDuration: (duration) => set({ duration }),
   
-  playNext: () => {
-    const { queue, queueIndex, repeatMode, shuffle } = get();
+  playNext: async () => {
+    const { queue, queueIndex, repeatMode, shuffle, currentTrackId, tracks } = get();
     if (!queue.length) return;
 
     if (repeatMode === 'one') {
+      const audio = document.getElementById('main-audio-element') as HTMLAudioElement;
+      if (audio) audio.currentTime = 0;
       set({ currentTime: 0 });
       return;
     }
@@ -109,6 +111,29 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       if (repeatMode === 'all') {
         nextIndex = 0;
       } else {
+        const currentTrack = tracks.find(t => t.id === currentTrackId);
+        if (currentTrack && currentTrack.artist) {
+          try {
+            const itunesTracks = await searchItunesTracks(currentTrack.artist);
+            const existingIds = new Set(tracks.map(t => t.id));
+            const newTracks = itunesTracks.filter(t => !existingIds.has(t.id)).slice(0, 10);
+            
+            if (newTracks.length > 0) {
+              const newQueue = [...queue, ...newTracks.map(t => t.id)];
+              set({ 
+                tracks: [...tracks, ...newTracks], 
+                queue: newQueue, 
+                queueIndex: nextIndex,
+                currentTrackId: newTracks[0].id,
+                isPlaying: true,
+                currentTime: 0
+              });
+              return;
+            }
+          } catch (e) {
+            console.error('Autoplay failed:', e);
+          }
+        }
         set({ isPlaying: false });
         return;
       }

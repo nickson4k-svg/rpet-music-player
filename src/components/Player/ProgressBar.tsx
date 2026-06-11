@@ -3,7 +3,11 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { seekAudio } from './AudioEngine';
 import { formatTime } from '../../utils/audioHelpers';
 
-export const ProgressBar: React.FC = () => {
+interface ProgressBarProps {
+  mobile?: boolean;
+}
+
+export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
   const duration = usePlayerStore(state => state.duration);
   const currentTime = usePlayerStore(state => state.currentTime);
   const hasTrack = usePlayerStore(state => state.currentTrackId !== null);
@@ -60,6 +64,25 @@ export const ProgressBar: React.FC = () => {
       };
     }
   }, [isDragging, duration]);
+
+  if (mobile) {
+    return (
+      <div 
+        ref={progressBarRef}
+        className="relative w-full h-1 bg-secondary/50 cursor-pointer group"
+        onPointerDown={handlePointerDown}
+      >
+        <div 
+          className="absolute top-0 left-0 h-full bg-primary"
+          style={{ width: `${progressPercent}%` }}
+        />
+        <div 
+          className="absolute top-1/2 -mt-1 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+          style={{ left: `${progressPercent}%`, marginLeft: '-4px' }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 w-full max-w-2xl">

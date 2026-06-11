@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart } from 'lucide-react';
+import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X } from 'lucide-react';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const playlists = usePlayerStore(state => state.playlists);
   const currentPlaylistId = usePlayerStore(state => state.currentPlaylistId);
   const setCurrentPlaylistId = usePlayerStore(state => state.setCurrentPlaylistId);
@@ -20,6 +24,7 @@ export const Sidebar: React.FC = () => {
       searchJamendo(searchQuery.trim());
       setSearchQuery('');
       setCurrentPlaylistId(null); // Switch to all tracks view to see results
+      onClose?.();
     }
   };
 
@@ -43,19 +48,24 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-64 border-r border-secondary bg-background/50 flex flex-col h-full overflow-hidden">
-      <div className="p-4 border-b border-secondary">
+    <aside className="w-64 border-r border-secondary bg-background/95 md:bg-background/50 backdrop-blur-md flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none">
+      <div className="p-4 border-b border-secondary flex items-center justify-between">
         <h2 className="text-xl font-bold text-primary flex items-center gap-2">
           <Music className="w-5 h-5" />
           Rpet
         </h2>
+        {onClose && (
+          <button onClick={onClose} className="md:hidden p-1 text-gray-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* All Tracks & Favorites */}
         <div className="space-y-1">
           <button
-            onClick={() => setCurrentPlaylistId(null)}
+            onClick={() => { setCurrentPlaylistId(null); onClose?.(); }}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
               currentPlaylistId === null ? 'bg-primary/20 text-primary' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
             }`}
@@ -65,7 +75,7 @@ export const Sidebar: React.FC = () => {
           </button>
           
           <button
-            onClick={() => setCurrentPlaylistId('favorites')}
+            onClick={() => { setCurrentPlaylistId('favorites'); onClose?.(); }}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
               currentPlaylistId === 'favorites' ? 'bg-red-500/20 text-red-500' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
             }`}
@@ -75,7 +85,7 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>  
           <button
-            onClick={() => loadJamendoTracks()}
+            onClick={() => { loadJamendoTracks(); onClose?.(); }}
             className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-pink-400 hover:text-pink-300 hover:bg-secondary/50"
           >
             <Globe className="w-4 h-4" />
@@ -121,8 +131,8 @@ export const Sidebar: React.FC = () => {
                 }`}
               >
                 <button
-                  onClick={() => setCurrentPlaylistId(pl.id)}
-                  className="flex-1 text-left truncate"
+                  onClick={() => { setCurrentPlaylistId(pl.id); onClose?.(); }}
+                  className="flex-1 text-left truncate py-1"
                 >
                   {pl.name}
                 </button>
