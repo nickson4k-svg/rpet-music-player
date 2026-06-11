@@ -33,9 +33,9 @@ export const PlayerBar: React.FC = () => {
           height: 480,
         });
         
-        [...document.styleSheets].forEach((styleSheet) => {
+        Array.from(document.styleSheets).forEach((styleSheet) => {
           try {
-            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+            const cssRules = Array.from(styleSheet.cssRules).map((rule) => rule.cssText).join('');
             const style = document.createElement('style');
             style.textContent = cssRules;
             pip.document.head.appendChild(style);

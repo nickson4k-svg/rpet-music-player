@@ -7,8 +7,6 @@ export const Visualizer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isPlaying = usePlayerStore(state => state.isPlaying);
-  const currentTrackId = usePlayerStore(state => state.currentTrackId);
-  const tracks = usePlayerStore(state => state.tracks);
 
   useEffect(() => {
     const canvas = canvasRef.current;
