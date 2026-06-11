@@ -87,7 +87,7 @@ export const Visualizer: React.FC = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isPlaying, isFullscreen]);
+  }, [isPlaying, isFullscreen, theme]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
