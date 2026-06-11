@@ -77,12 +77,29 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const queue = tracks.map(t => t.id);
     const queueIndex = queue.indexOf(id);
     set({ currentTrackId: id, isPlaying: true, queue, queueIndex: Math.max(0, queueIndex) });
+    
+    // Increment playCount
+    const track = tracks.find(t => t.id === id);
+    if (track) {
+      const updated = { ...track, playCount: (track.playCount || 0) + 1 };
+      addTrackIdb(updated);
+      set({ tracks: tracks.map(t => t.id === id ? updated : t) });
+    }
   },
 
   playQueue: (queue, startIndex) => {
     if (queue.length === 0) return;
     const id = queue[startIndex];
     set({ queue, queueIndex: startIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
+    
+    // Increment playCount
+    const { tracks } = get();
+    const track = tracks.find(t => t.id === id);
+    if (track) {
+      const updated = { ...track, playCount: (track.playCount || 0) + 1 };
+      addTrackIdb(updated);
+      set({ tracks: tracks.map(t => t.id === id ? updated : t) });
+    }
   },
   
   togglePlayPause: () => set((state) => ({ isPlaying: !state.isPlaying })),
@@ -153,6 +170,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     set({ currentTrackId: queue[nextIndex], isPlaying: true, currentTime: 0, queueIndex: nextIndex });
+    
+    // Increment playCount
+    const track = tracks.find(t => t.id === queue[nextIndex]);
+    if (track) {
+      const updated = { ...track, playCount: (track.playCount || 0) + 1 };
+      addTrackIdb(updated);
+      set({ tracks: tracks.map(t => t.id === queue[nextIndex] ? updated : t) });
+    }
   },
   
   playPrevious: () => {
@@ -170,6 +195,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (prevIndex < 0) prevIndex = queue.length - 1;
 
     set({ currentTrackId: queue[prevIndex], isPlaying: true, currentTime: 0, queueIndex: prevIndex });
+    
+    // Increment playCount
+    const track = tracks.find(t => t.id === queue[prevIndex]);
+    if (track) {
+      const updated = { ...track, playCount: (track.playCount || 0) + 1 };
+      addTrackIdb(updated);
+      set({ tracks: tracks.map(t => t.id === queue[prevIndex] ? updated : t) });
+    }
   },
 
   setRepeatMode: (repeatMode) => set({ repeatMode }),

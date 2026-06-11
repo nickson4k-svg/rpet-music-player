@@ -183,13 +183,28 @@ export const AudioEngine: React.FC = () => {
         }
       }
 
-      // Save position every 10 seconds
+      // Save position and update stats every 10 seconds
       if (timestamp - lastSave > 10000) { 
+        const state = usePlayerStore.getState();
         const currentTrack = state.tracks.find(t => t.id === state.currentTrackId);
-        if (currentTrack && currentTrack.duration > 300) {
+        
+        if (currentTrack && state.isPlaying && !activeAudio.paused) {
+          const updatedTrack = { 
+            ...currentTrack, 
+            timeListened: (currentTrack.timeListened || 0) + 10 
+          };
+          
+          if (currentTrack.duration > 300) {
+            updatedTrack.lastPlaybackPosition = activeAudio.currentTime;
+          }
+          
           import('../../utils/idbStorage').then(({ addTrack }) => {
-            addTrack({ ...currentTrack, lastPlaybackPosition: activeAudio.currentTime });
+            addTrack(updatedTrack);
           });
+          
+          usePlayerStore.getState().setTracks(
+            state.tracks.map(t => t.id === currentTrack.id ? updatedTrack : t)
+          );
         }
         lastSave = timestamp;
       }

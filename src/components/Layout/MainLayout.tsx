@@ -8,6 +8,7 @@ import { usePlayerStore } from '../../stores/playerStore';
 
 import { ThemeManager } from '../ThemeManager';
 import { Menu } from 'lucide-react';
+import { useDominantColor } from '../../hooks/useDominantColor';
 
 export const MainLayout: React.FC = () => {
   const setTracks = usePlayerStore(state => state.setTracks);
@@ -26,18 +27,39 @@ export const MainLayout: React.FC = () => {
     loadData();
   }, [setTracks, setPlaylists]);
 
+  const currentTrackId = usePlayerStore(state => state.currentTrackId);
+  const tracks = usePlayerStore(state => state.tracks);
+  const currentTrack = tracks.find(t => t.id === currentTrackId);
+  
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (currentTrack?.coverUrl) {
+      setCoverUrl(currentTrack.coverUrl);
+    } else if (currentTrack?.coverBlob) {
+      const url = URL.createObjectURL(currentTrack.coverBlob);
+      setCoverUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setCoverUrl(null);
+    }
+  }, [currentTrack]);
+
+  const dominantColor = useDominantColor(coverUrl);
+  const defaultBg = `rgb(var(--theme-color-rgb))`;
+  const bgStyle = { backgroundColor: dominantColor || defaultBg, transition: 'background-color 2s ease' };
+
   return (
     <div className="h-[100dvh] bg-transparent flex flex-col pb-[72px] sm:pb-24 overflow-hidden relative z-0">
       <ThemeManager />
       
-      {/* Animated Mesh Gradient Background */}
-      <div className="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">
+      {/* Animated Mesh Gradient Background (Ambient Canvas) */}
+      <div className="absolute inset-0 z-[-1] overflow-hidden pointer-events-none bg-background transition-colors duration-[2s]">
         <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] opacity-30 mix-blend-screen rounded-full blur-[100px] animate-blob" 
-             style={{ backgroundColor: `rgb(var(--theme-color-rgb))` }} />
+             style={bgStyle} />
         <div className="absolute top-1/4 right-1/4 w-[40vw] h-[40vw] opacity-20 mix-blend-screen rounded-full blur-[80px] animate-blob animation-delay-2000"
-             style={{ backgroundColor: `rgb(var(--theme-color-rgb))` }} />
+             style={bgStyle} />
         <div className="absolute bottom-1/4 left-1/3 w-[60vw] h-[60vw] opacity-20 mix-blend-screen rounded-full blur-[120px] animate-blob animation-delay-4000"
-             style={{ backgroundColor: `rgb(var(--theme-color-rgb))` }} />
+             style={bgStyle} />
       </div>
 
       <div className="flex-1 flex overflow-hidden relative">

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X, Settings } from 'lucide-react';
+import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X, Settings, BarChart2 } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
+import { StatsModal } from '../StatsModal';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -19,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           Rpet
         </h2>
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsStatsOpen(true)} 
+            className="p-1 text-blue-400 hover:text-blue-300 transition-colors"
+            title="Статистика"
+          >
+            <BarChart2 className="w-5 h-5" />
+          </button>
           <button 
             onClick={() => setIsSettingsOpen(true)} 
             className="p-1 text-gray-400 hover:text-white transition-colors"
@@ -167,6 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
       </div>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      {isStatsOpen && <StatsModal onClose={() => setIsStatsOpen(false)} />}
     </aside>
   );
 };

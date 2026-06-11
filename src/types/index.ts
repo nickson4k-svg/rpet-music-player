@@ -13,6 +13,7 @@ export interface Track {
   playCount: number;
   isFavorite?: boolean;
   lastPlaybackPosition?: number;
+  timeListened?: number;
 }
 
 export interface Playlist {
