@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
 import { searchItunesTracks } from '../utils/itunesApi';
+import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 
 interface PlayerState {
   tracks: Track[];
@@ -49,6 +50,7 @@ interface PlayerState {
   toggleFavorite: (id: string) => Promise<void>;
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
+  autoTagTrack: (id: string) => Promise<boolean>;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -311,4 +313,37 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   
   toggleCrossfade: () => set(state => ({ crossfadeEnabled: !state.crossfadeEnabled })),
   toggleNormalization: () => set(state => ({ normalizationEnabled: !state.normalizationEnabled })),
+
+  autoTagTrack: async (id: string) => {
+    const { tracks } = get();
+    const track = tracks.find(t => t.id === id);
+    if (!track) return false;
+
+    // Use name and artist if available, or just name
+    const query = track.artist && track.artist !== 'Unknown Artist' 
+      ? `"${track.name}" AND artist:"${track.artist}"`
+      : `"${track.name}"`;
+
+    const metadata = await fetchMusicBrainzMetadata(query);
+    
+    if (metadata) {
+      const updatedTrack = {
+        ...track,
+        name: metadata.title,
+        artist: metadata.artist,
+        album: metadata.album,
+        year: metadata.year || track.year,
+        genre: metadata.genre || track.genre,
+        coverUrl: metadata.coverUrl || track.coverUrl
+      };
+
+      // Save to IDB
+      await addTrackIdb(updatedTrack);
+
+      // Update state
+      set({ tracks: tracks.map(t => t.id === id ? updatedTrack : t) });
+      return true;
+    }
+    return false;
+  },
 }));

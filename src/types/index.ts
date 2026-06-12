@@ -3,6 +3,8 @@ export interface Track {
   name: string;
   artist: string;
   album: string;
+  year?: string;
+  genre?: string;
   duration: number;
   coverBlob?: Blob | null;
   coverUrl?: string;

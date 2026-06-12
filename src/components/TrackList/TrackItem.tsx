@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, Trash2, Heart } from 'lucide-react';
+import { Play, Pause, Trash2, Heart, Wand2, Loader2 } from 'lucide-react';
 import type { Track } from '../../types';
 import { formatTime } from '../../utils/audioHelpers';
 import { usePlayerStore } from '../../stores/playerStore';
@@ -31,6 +31,16 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
 }) => {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const toggleFavorite = usePlayerStore(state => state.toggleFavorite);
+  const autoTagTrack = usePlayerStore(state => state.autoTagTrack);
+  const [isTagging, setIsTagging] = useState(false);
+
+  const handleAutoTag = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isTagging) return;
+    setIsTagging(true);
+    await autoTagTrack(track.id);
+    setIsTagging(false);
+  };
 
   useEffect(() => {
     if (track.coverUrl) {
@@ -101,6 +111,21 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
       </div>
 
       <div className="flex items-center">
+        <button
+          onClick={handleAutoTag}
+          disabled={isTagging}
+          className={`p-1.5 sm:p-2 transition-all rounded-full hover:bg-blue-500/10 sm:ml-2 text-gray-500 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-500 ${
+            isTagging ? 'opacity-100' : ''
+          }`}
+          title="Auto-tag with MusicBrainz"
+        >
+          {isTagging ? (
+            <Loader2 className="w-4 h-4 sm:w-4 sm:h-4 animate-spin text-blue-500" />
+          ) : (
+            <Wand2 className="w-4 h-4 sm:w-4 sm:h-4" />
+          )}
+        </button>
+
         <button
           onClick={(e) => {
             e.stopPropagation();
