@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
 
-  const { isInstallable, handleInstall } = useInstallPrompt();
+  const { handleInstall } = useInstallPrompt();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,15 +62,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           Rpet
         </h2>
         <div className="flex items-center gap-2">
-          {isInstallable && (
-            <button 
-              onClick={handleInstall} 
-              className="p-1 text-green-400 hover:text-green-300 transition-colors"
-              title="Встановити додаток (Офлайн доступ)"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-          )}
+          <button 
+            onClick={handleInstall} 
+            className="p-1 text-green-400 hover:text-green-300 transition-colors"
+            title="Встановити додаток (Офлайн доступ)"
+          >
+            <Download className="w-5 h-5" />
+          </button>
           <button 
             onClick={() => setIsStatsOpen(true)} 
             className="p-1 text-blue-400 hover:text-blue-300 transition-colors"

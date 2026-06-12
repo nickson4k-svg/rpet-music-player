@@ -34,7 +34,10 @@ export const useInstallPrompt = () => {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      alert('Браузер не надав автоматичного доступу до встановлення. \n\nЩоб встановити вручну:\n• На ПК (Chrome/Edge): натисніть іконку встановлення в адресному рядку.\n• На iPhone (Safari): натисніть "Поділитися" ➔ "На екран Додому".\n• На Android: меню браузера ➔ "Встановити додаток".\n\n(Або можливо, додаток вже встановлено!)');
+      return;
+    }
     
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -45,5 +48,5 @@ export const useInstallPrompt = () => {
     }
   };
 
-  return { isInstallable: !!deferredPrompt, handleInstall };
+  return { handleInstall };
 };
