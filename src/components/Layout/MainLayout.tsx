@@ -10,7 +10,6 @@ import { ThemeManager } from '../ThemeManager';
 import { Menu } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useMediaSession } from '../../hooks/useMediaSession';
-import { InstallPrompt } from '../InstallPrompt';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
 
 export const MainLayout: React.FC = () => {
@@ -91,7 +90,6 @@ export const MainLayout: React.FC = () => {
           </div>
         </main>
       </div>
-      <InstallPrompt />
       <PlayerBar />
     </div>
   );
