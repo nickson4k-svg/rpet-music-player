@@ -9,8 +9,16 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+declare global {
+  interface Window {
+    deferredPWAInstallPrompt?: BeforeInstallPromptEvent;
+  }
+}
+
 export const useInstallPrompt = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(
+    window.deferredPWAInstallPrompt || null
+  );
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -33,6 +41,7 @@ export const useInstallPrompt = () => {
     
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
+      window.deferredPWAInstallPrompt = undefined;
     }
   };
 
