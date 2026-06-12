@@ -53,7 +53,7 @@ export const InstallPrompt: React.FC = () => {
   if (!showPrompt || !deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-24 sm:bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm bg-secondary/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+    <div className="fixed bottom-24 sm:bottom-32 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm bg-secondary/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-bottom-10 fade-in duration-300">
       <button 
         onClick={handleDismiss}
         className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white transition-colors"
