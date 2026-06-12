@@ -47,7 +47,6 @@ export const MainLayout: React.FC = () => {
 
   const dominantColor = useDominantColor(coverUrl);
   const defaultBg = `rgb(var(--theme-color-rgb))`;
-  const bgStyle = { backgroundColor: dominantColor || defaultBg, transition: 'background-color 2s ease' };
 
   return (
     <div className="h-[100dvh] bg-transparent flex flex-col pb-[72px] sm:pb-24 overflow-hidden relative z-0">
