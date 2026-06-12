@@ -9,9 +9,13 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { ThemeManager } from '../ThemeManager';
 import { Menu } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
+import { useMediaSession } from '../../hooks/useMediaSession';
+import { InstallPrompt } from '../InstallPrompt';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
 
 export const MainLayout: React.FC = () => {
+  useMediaSession();
+  
   const setTracks = usePlayerStore(state => state.setTracks);
   const setPlaylists = usePlayerStore(state => state.setPlaylists);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -87,6 +91,7 @@ export const MainLayout: React.FC = () => {
           </div>
         </main>
       </div>
+      <InstallPrompt />
       <PlayerBar />
     </div>
   );
