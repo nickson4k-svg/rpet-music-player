@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { initAudioContext, audioContextState, updateNormalization } from '../../utils/audioContext';
 import { useP2PStore } from '../../stores/p2pStore';
+import { getPipedStreamUrl } from '../../utils/pipedApi';
 
 export const AudioEngine: React.FC = () => {
   const audioARef = useRef<HTMLAudioElement>(null);
@@ -54,71 +55,85 @@ export const AudioEngine: React.FC = () => {
       return;
     }
 
-    const url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
-    
-    const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
-    const inactiveAudio = activeDeckRef.current === 'A' ? audioBRef.current : audioARef.current;
-    const activeGain = activeDeckRef.current === 'A' ? audioContextState.gainA : audioContextState.gainB;
-    const inactiveGain = activeDeckRef.current === 'A' ? audioContextState.gainB : audioContextState.gainA;
-
-    // Check if we are already playing this track (e.g. just a play/pause toggle, not a track change)
-    if (activeAudio.src === url || activeAudio.src === window.location.origin + '/' + url) {
-      return; 
-    }
-
-    // Load new track into inactive deck
-    inactiveAudio.src = url;
-    inactiveAudio.load();
-    inactiveAudio.playbackRate = playbackRate;
-
-    // Restore position if podcast
-    const onLoadedMetadataTrack = () => {
-      if (track.lastPlaybackPosition && track.duration > 300 && track.lastPlaybackPosition < track.duration - 10) {
-        inactiveAudio.currentTime = track.lastPlaybackPosition;
-      }
-      inactiveAudio.removeEventListener('loadedmetadata', onLoadedMetadataTrack);
-    };
-    inactiveAudio.addEventListener('loadedmetadata', onLoadedMetadataTrack);
-
-    if (isPlaying) {
-      inactiveAudio.play().catch(console.error);
-
-      if (crossfadeEnabled && activeAudio.src && !activeAudio.paused && audioContextState.context) {
-        // Perform Crossfade
-        const ctx = audioContextState.context;
-        const currTime = ctx.currentTime;
-        
-        if (activeGain && inactiveGain) {
-          activeGain.gain.cancelScheduledValues(currTime);
-          activeGain.gain.setValueAtTime(activeGain.gain.value, currTime);
-          activeGain.gain.linearRampToValueAtTime(0, currTime + crossfadeDuration);
-
-          inactiveGain.gain.cancelScheduledValues(currTime);
-          inactiveGain.gain.setValueAtTime(0, currTime);
-          inactiveGain.gain.linearRampToValueAtTime(1, currTime + crossfadeDuration);
+    const setupAudio = async () => {
+      let url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
+      
+      if (url.startsWith('piped:')) {
+        const videoId = url.replace('piped:', '');
+        const realUrl = await getPipedStreamUrl(videoId);
+        if (realUrl) {
+          url = realUrl;
+        } else {
+          console.error('Failed to resolve Piped stream for', videoId);
+          return;
         }
-
-        if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-        fadeTimeoutRef.current = window.setTimeout(() => {
-          activeAudio.pause();
-          activeAudio.src = ''; // Clear memory
-        }, crossfadeDuration * 1000);
-      } else {
-        // Hard cut
-        activeAudio.pause();
-        if (activeGain) activeGain.gain.value = 0;
-        if (inactiveGain) inactiveGain.gain.value = 1;
       }
-    }
 
-    // Swap active deck
-    activeDeckRef.current = activeDeckRef.current === 'A' ? 'B' : 'A';
+      const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
+      const inactiveAudio = activeDeckRef.current === 'A' ? audioBRef.current : audioARef.current;
+      const activeGain = activeDeckRef.current === 'A' ? audioContextState.gainA : audioContextState.gainB;
+      const inactiveGain = activeDeckRef.current === 'A' ? audioContextState.gainB : audioContextState.gainA;
+
+      if (!activeAudio || !inactiveAudio) return;
+
+      // Check if we are already playing this track
+      if (activeAudio.src === url || activeAudio.src === window.location.origin + '/' + url) {
+        return; 
+      }
+
+      // Load new track into inactive deck
+      inactiveAudio.src = url;
+      inactiveAudio.load();
+      inactiveAudio.playbackRate = playbackRate;
+
+      // Restore position if podcast
+      const onLoadedMetadataTrack = () => {
+        if (track.lastPlaybackPosition && track.duration > 300 && track.lastPlaybackPosition < track.duration - 10) {
+          inactiveAudio.currentTime = track.lastPlaybackPosition;
+        }
+        inactiveAudio.removeEventListener('loadedmetadata', onLoadedMetadataTrack);
+      };
+      inactiveAudio.addEventListener('loadedmetadata', onLoadedMetadataTrack);
+
+      if (isPlaying) {
+        inactiveAudio.play().catch(console.error);
+
+        if (crossfadeEnabled && activeAudio.src && !activeAudio.paused && audioContextState.context) {
+          // Perform Crossfade
+          const ctx = audioContextState.context;
+          const currTime = ctx.currentTime;
+          
+          if (activeGain && inactiveGain) {
+            activeGain.gain.cancelScheduledValues(currTime);
+            activeGain.gain.setValueAtTime(activeGain.gain.value, currTime);
+            activeGain.gain.linearRampToValueAtTime(0, currTime + crossfadeDuration);
+
+            inactiveGain.gain.cancelScheduledValues(currTime);
+            inactiveGain.gain.setValueAtTime(0, currTime);
+            inactiveGain.gain.linearRampToValueAtTime(1, currTime + crossfadeDuration);
+          }
+
+          if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+          fadeTimeoutRef.current = window.setTimeout(() => {
+            activeAudio.pause();
+            activeAudio.src = ''; // Clear memory
+          }, crossfadeDuration * 1000);
+        } else {
+          // Hard cut
+          activeAudio.pause();
+          if (activeGain) activeGain.gain.value = 0;
+          if (inactiveGain) inactiveGain.gain.value = 1;
+        }
+      }
+
+      // Swap active deck
+      activeDeckRef.current = activeDeckRef.current === 'A' ? 'B' : 'A';
+    };
+
+    setupAudio();
 
     return () => {
-      inactiveAudio.removeEventListener('loadedmetadata', onLoadedMetadataTrack);
-      if (!track.audioUrl && url) {
-        // Cleanup blob URL if necessary (careful not to revoke if still crossfading, but we keep it simple here)
-      }
+      // Basic cleanup logic could go here
     };
   }, [currentTrackId, tracks]);
 

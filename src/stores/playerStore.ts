@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
-import { searchItunesTracks } from '../utils/itunesApi';
+import { searchPipedTracks } from '../utils/pipedApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 import { useP2PStore } from './p2pStore';
 
@@ -173,9 +173,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         const currentTrack = tracks.find(t => t.id === currentTrackId);
         if (currentTrack && currentTrack.artist) {
           try {
-            const itunesTracks = await searchItunesTracks(currentTrack.artist);
+            const pipedTracks = await searchPipedTracks(currentTrack.artist);
             const existingIds = new Set(tracks.map(t => t.id));
-            const newTracks = itunesTracks.filter(t => !existingIds.has(t.id)).slice(0, 10);
+            const newTracks = pipedTracks.filter(t => !existingIds.has(t.id)).slice(0, 10);
             
             if (newTracks.length > 0) {
               const newQueue = [...queue, ...newTracks.map(t => t.id)];
@@ -317,23 +317,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   loadJamendoTracks: async () => {
-    // "Топ" - просто популярний запит в iTunes
-    const itunesTracks = await searchItunesTracks('top hits 2024');
-    if (itunesTracks.length > 0) {
+    // "Топ" - популярний запит в YouTube Music
+    const pipedTracks = await searchPipedTracks('top hits 2024');
+    if (pipedTracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));
-        const newTracks = itunesTracks.filter(t => !existingIds.has(t.id));
+        const newTracks = pipedTracks.filter(t => !existingIds.has(t.id));
         return { tracks: [...state.tracks, ...newTracks] };
       });
     }
   },
 
   searchJamendo: async (query: string) => {
-    const itunesTracks = await searchItunesTracks(query);
-    if (itunesTracks.length > 0) {
+    const pipedTracks = await searchPipedTracks(query);
+    if (pipedTracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));
-        const newTracks = itunesTracks.filter(t => !existingIds.has(t.id));
+        const newTracks = pipedTracks.filter(t => !existingIds.has(t.id));
         return { tracks: [...newTracks, ...state.tracks] }; // Put new tracks at the top
       });
     }
