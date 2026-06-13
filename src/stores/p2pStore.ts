@@ -39,84 +39,111 @@ export const useP2PStore = create<P2PState>((set, get) => ({
   hostRoom: async () => {
     return new Promise((resolve, reject) => {
       set({ status: 'connecting', error: null });
-      const peer = new Peer();
+      
+      const timeoutId = setTimeout(() => {
+        set({ status: 'disconnected', error: 'Connection timed out. Please try again.' });
+        reject(new Error('Connection timed out'));
+      }, 10000);
 
-      peer.on('open', (id) => {
-        set({ peer, peerId: id, isHost: true, status: 'connected' });
-        resolve(id);
-      });
+      try {
+        const peer = new Peer();
 
-      peer.on('connection', (conn) => {
-        conn.on('open', () => {
-          set((state) => ({ connections: [...state.connections, conn] }));
-          
-          // Send the audio stream to the new guest immediately
-          const dest = audioContextState.mediaStreamDestination;
-          if (dest && peer) {
-            peer.call(conn.peer, dest.stream);
-          }
+        peer.on('open', (id) => {
+          clearTimeout(timeoutId);
+          set({ peer, peerId: id, isHost: true, status: 'connected' });
+          resolve(id);
         });
 
-        conn.on('close', () => {
-          set((state) => ({
-            connections: state.connections.filter((c) => c.peer !== conn.peer)
-          }));
+        peer.on('connection', (conn) => {
+          conn.on('open', () => {
+            set((state) => ({ connections: [...state.connections, conn] }));
+            
+            // Send the audio stream to the new guest immediately
+            const dest = audioContextState.mediaStreamDestination;
+            if (dest && peer) {
+              peer.call(conn.peer, dest.stream);
+            }
+          });
+
+          conn.on('close', () => {
+            set((state) => ({
+              connections: state.connections.filter((c) => c.peer !== conn.peer)
+            }));
+          });
         });
-      });
 
-      peer.on('call', (call) => {
-        // Guests shouldn't be calling host, but just in case
-        call.answer();
-      });
+        peer.on('call', (call) => {
+          call.answer();
+        });
 
-      peer.on('error', (err) => {
-        set({ error: err.message, status: 'disconnected' });
+        peer.on('error', (err) => {
+          clearTimeout(timeoutId);
+          set({ error: err.message, status: 'disconnected' });
+          reject(err);
+        });
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        set({ status: 'disconnected', error: err.message || 'Failed to initialize peer' });
         reject(err);
-      });
+      }
     });
   },
 
   joinRoom: async (hostId: string) => {
     return new Promise((resolve, reject) => {
       set({ status: 'connecting', error: null });
-      const peer = new Peer();
+      
+      const timeoutId = setTimeout(() => {
+        set({ status: 'disconnected', error: 'Connection timed out. Please try again.' });
+        reject(new Error('Connection timed out'));
+      }, 10000);
 
-      peer.on('open', (id) => {
-        set({ peer, peerId: id, isHost: false });
+      try {
+        const peer = new Peer();
 
-        const conn = peer.connect(hostId);
-        
-        conn.on('open', () => {
-          set({ hostConnection: conn, status: 'connected' });
-          resolve();
+        peer.on('open', (id) => {
+          set({ peer, peerId: id, isHost: false });
+
+          const conn = peer.connect(hostId);
+          
+          conn.on('open', () => {
+            clearTimeout(timeoutId);
+            set({ hostConnection: conn, status: 'connected' });
+            resolve();
+          });
+
+          conn.on('data', (data) => {
+            get().onMessageReceived(data as P2PMessage);
+          });
+
+          conn.on('close', () => {
+            set({ hostConnection: null, status: 'disconnected', remoteStream: null });
+          });
+          
+          conn.on('error', (err) => {
+            clearTimeout(timeoutId);
+            set({ error: err.message, status: 'disconnected' });
+            reject(err);
+          });
         });
 
-        conn.on('data', (data) => {
-          get().onMessageReceived(data as P2PMessage);
+        peer.on('call', (call) => {
+          call.answer();
+          call.on('stream', (remoteStream) => {
+            set({ remoteStream });
+          });
         });
 
-        conn.on('close', () => {
-          set({ hostConnection: null, status: 'disconnected', remoteStream: null });
-        });
-        
-        conn.on('error', (err) => {
+        peer.on('error', (err) => {
+          clearTimeout(timeoutId);
           set({ error: err.message, status: 'disconnected' });
           reject(err);
         });
-      });
-
-      peer.on('call', (call) => {
-        // Automatically answer the call from host
-        call.answer();
-        call.on('stream', (remoteStream) => {
-          set({ remoteStream });
-        });
-      });
-
-      peer.on('error', (err) => {
-        set({ error: err.message, status: 'disconnected' });
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        set({ status: 'disconnected', error: err.message || 'Failed to initialize peer' });
         reject(err);
-      });
+      }
     });
   },
 
