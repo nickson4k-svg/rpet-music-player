@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { TrackUploader } from '../TrackList/TrackUploader';
 import { TrackList } from '../TrackList/TrackList';
 import { PlayerBar } from '../Player/PlayerBar';
 import { Sidebar } from '../Sidebar/Sidebar';
@@ -11,6 +10,8 @@ import { Menu, Search } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useMediaSession } from '../../hooks/useMediaSession';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
+
+const GENRES = ["Pop", "Hip-Hop", "Rock", "Electronic", "R&B", "Jazz", "K-Pop", "Indie", "Classical"];
 
 export const MainLayout: React.FC = () => {
   useMediaSession();
@@ -126,7 +127,24 @@ export const MainLayout: React.FC = () => {
                 </div>
               </form>
             </div>
-            <TrackUploader />
+            
+            {/* Genres Row */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0">
+              {GENRES.map((genre) => (
+                <button
+                  key={genre}
+                  onClick={() => {
+                    setSearchQuery(genre);
+                    searchGlobal(genre, searchProvider);
+                    setCurrentPlaylistId(null);
+                  }}
+                  className="whitespace-nowrap px-4 py-1.5 bg-secondary/20 hover:bg-primary/20 text-gray-300 hover:text-white border border-secondary/40 hover:border-primary/50 rounded-full text-sm font-medium transition-all"
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+
             <div className="flex-1 min-h-0">
                <TrackList />
             </div>

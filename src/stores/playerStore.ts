@@ -24,11 +24,11 @@ interface PlayerState {
   crossfadeEnabled: boolean;
   crossfadeDuration: number;
   normalizationEnabled: boolean;
-  
+
   // Actions
   setTracks: (tracks: Track[]) => void;
   setPlaylists: (playlists: Playlist[]) => void;
-  playTrack: (id: string) => void; 
+  playTrack: (id: string) => void;
   playQueue: (queue: string[], startIndex: number) => void;
   togglePlayPause: () => void;
   setVolume: (volume: number) => void;
@@ -40,7 +40,7 @@ interface PlayerState {
   setRepeatMode: (mode: 'off' | 'all' | 'one') => void;
   toggleShuffle: () => void;
   removeTrack: (id: string) => void;
-  
+
   // Playlist actions
   setCurrentPlaylistId: (id: string | null) => void;
   createPlaylist: (name: string) => void;
@@ -76,13 +76,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setTracks: (tracks) => set({ tracks }),
   setPlaylists: (playlists) => set({ playlists }),
-  
+
   playTrack: (id) => {
     const { tracks } = get();
     const queue = tracks.map(t => t.id);
     const queueIndex = queue.indexOf(id);
     set({ currentTrackId: id, isPlaying: true, queue, queueIndex: Math.max(0, queueIndex) });
-    
+
     // Increment playCount
     const track = tracks.find(t => t.id === id);
     if (track) {
@@ -91,9 +91,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
 
       // P2P Broadcast
-      useP2PStore.getState().broadcast({ 
-        type: 'TRACK_CHANGE', 
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      useP2PStore.getState().broadcast({
+        type: 'TRACK_CHANGE',
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
       });
       useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
@@ -103,7 +103,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (queue.length === 0) return;
     const id = queue[startIndex];
     set({ queue, queueIndex: startIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
-    
+
     // Increment playCount
     const { tracks } = get();
     const track = tracks.find(t => t.id === id);
@@ -113,14 +113,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
 
       // P2P Broadcast
-      useP2PStore.getState().broadcast({ 
-        type: 'TRACK_CHANGE', 
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      useP2PStore.getState().broadcast({
+        type: 'TRACK_CHANGE',
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
       });
       useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
-  
+
   togglePlayPause: () => {
     set((state) => {
       const newIsPlaying = !state.isPlaying;
@@ -128,20 +128,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return { isPlaying: newIsPlaying };
     });
   },
-  
+
   removeTrack: (id) => {
     const { currentTrackId, tracks, queue } = get();
     if (currentTrackId === id) {
       set({ currentTrackId: null, isPlaying: false, currentTime: 0 });
     }
     const newQueue = queue.filter(qId => qId !== id);
-    set({ 
+    set({
       tracks: tracks.filter(t => t.id !== id),
       queue: newQueue,
       queueIndex: newQueue.indexOf(currentTrackId || '') !== -1 ? newQueue.indexOf(currentTrackId || '') : 0
     });
   },
-  
+
   setVolume: (volume) => set({ volume }),
   setPlaybackRate: (rate) => set({ playbackRate: rate }),
   setCurrentTime: (currentTime) => {
@@ -152,7 +152,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ currentTime });
   },
   setDuration: (duration) => set({ duration }),
-  
+
   playNext: async () => {
     const { queue, queueIndex, repeatMode, shuffle, currentTrackId, tracks } = get();
     if (!queue.length) return;
@@ -178,12 +178,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
             const audiusTracks = await searchAudiusTracks(currentTrack.artist);
             const existingIds = new Set(tracks.map(t => t.id));
             const newTracks = audiusTracks.filter((t: Track) => !existingIds.has(t.id)).slice(0, 10);
-            
+
             if (newTracks.length > 0) {
               const newQueue = [...queue, ...newTracks.map(t => t.id)];
-              set({ 
-                tracks: [...tracks, ...newTracks], 
-                queue: newQueue, 
+              set({
+                tracks: [...tracks, ...newTracks],
+                queue: newQueue,
                 queueIndex: nextIndex,
                 currentTrackId: newTracks[0].id,
                 isPlaying: true,
@@ -201,7 +201,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     set({ currentTrackId: queue[nextIndex], isPlaying: true, currentTime: 0, queueIndex: nextIndex });
-    
+
     // Increment playCount
     const track = tracks.find(t => t.id === queue[nextIndex]);
     if (track) {
@@ -210,14 +210,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ tracks: tracks.map(t => t.id === queue[nextIndex] ? updated : t) });
 
       // P2P Broadcast
-      useP2PStore.getState().broadcast({ 
-        type: 'TRACK_CHANGE', 
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      useP2PStore.getState().broadcast({
+        type: 'TRACK_CHANGE',
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
       });
       useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
-  
+
   playPrevious: () => {
     const { queue, queueIndex, currentTime, tracks } = get();
     if (!queue.length) return;
@@ -233,7 +233,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (prevIndex < 0) prevIndex = queue.length - 1;
 
     set({ currentTrackId: queue[prevIndex], isPlaying: true, currentTime: 0, queueIndex: prevIndex });
-    
+
     // Increment playCount
     const track = tracks.find(t => t.id === queue[prevIndex]);
     if (track) {
@@ -242,9 +242,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ tracks: tracks.map(t => t.id === queue[prevIndex] ? updated : t) });
 
       // P2P Broadcast
-      useP2PStore.getState().broadcast({ 
-        type: 'TRACK_CHANGE', 
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      useP2PStore.getState().broadcast({
+        type: 'TRACK_CHANGE',
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
       });
       useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
@@ -254,7 +254,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),
 
   setCurrentPlaylistId: (id) => set({ currentPlaylistId: id }),
-  
+
   createPlaylist: async (name) => {
     const newPlaylist: Playlist = {
       id: crypto.randomUUID(),
@@ -282,7 +282,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const updated = { ...playlist, trackIds: [...playlist.trackIds, trackId] };
     await updatePlaylistIdb(updated);
-    
+
     set(state => ({
       playlists: state.playlists.map(p => p.id === playlistId ? updated : p)
     }));
@@ -295,7 +295,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const updated = { ...playlist, trackIds: playlist.trackIds.filter(id => id !== trackId) };
     await updatePlaylistIdb(updated);
-    
+
     set(state => ({
       playlists: state.playlists.map(p => p.id === playlistId ? updated : p)
     }));
@@ -335,7 +335,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (provider === 'audius') tracks = await searchAudiusTracks(query);
     else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
     else tracks = await searchItunesTracks(query);
-    
+
     if (tracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));
@@ -357,7 +357,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       tracks: state.tracks.map(t => t.id === id ? updatedTrack : t)
     }));
   },
-  
+
   toggleCrossfade: () => set(state => ({ crossfadeEnabled: !state.crossfadeEnabled })),
   toggleNormalization: () => set(state => ({ normalizationEnabled: !state.normalizationEnabled })),
 
@@ -367,12 +367,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!track) return false;
 
     // Use name and artist if available, or just name
-    const query = track.artist && track.artist !== 'Unknown Artist' 
+    const query = track.artist && track.artist !== 'Unknown Artist'
       ? `"${track.name}" AND artist:"${track.artist}"`
       : `"${track.name}"`;
 
     const metadata = await fetchMusicBrainzMetadata(query);
-    
+
     if (metadata) {
       const updatedTrack = {
         ...track,

@@ -1,7 +1,8 @@
 import React from 'react';
-import { X, Palette, Settings } from 'lucide-react';
+import { X, Palette, Settings, Upload } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { usePlayerStore } from '../stores/playerStore';
+import { TrackUploader } from './TrackList/TrackUploader';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -41,25 +42,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         </div>
         
         <div className="p-6 space-y-8">
-          {/* Theme Color Section */}
-          <section>
-            <h3 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
-              <Palette className="w-4 h-4" /> Колір теми
-            </h3>
-            <div className="flex gap-4 flex-wrap">
-              {colors.map(color => (
-                <button
-                  key={color}
-                  onClick={() => handleColorChange(color)}
-                  className="w-10 h-10 rounded-full border-2 border-transparent hover:border-white transition-all hover:scale-110 shadow-lg"
-                  style={{ backgroundColor: color }}
-                  title="Змінити колір"
-                />
-              ))}
-            </div>
-          </section>
+            {/* Theme Color Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+                <Palette className="w-4 h-4" /> Колір теми
+              </h3>
+              <div className="flex gap-4 flex-wrap">
+                {colors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorChange(color)}
+                    className="w-10 h-10 rounded-full border-2 border-transparent hover:border-white transition-all hover:scale-110 shadow-lg"
+                    style={{ backgroundColor: color }}
+                    title="Змінити колір"
+                  />
+                ))}
+              </div>
+            </section>
 
-          {/* Audio Features Section */}
+            {/* Local Audio Upload Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+                <Upload className="w-4 h-4" /> Локальні аудіофайли
+              </h3>
+              <TrackUploader />
+            </section>
+
+            {/* Audio Features Section */}
           <section>
             <h3 className="text-sm font-medium text-gray-300 mb-4">Аудіо</h3>
             <div className="space-y-3">
