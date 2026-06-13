@@ -22,7 +22,7 @@ export const MainLayout: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchProvider, setSearchProvider] = useState<'audius' | 'apple'>('audius');
+  const [searchProvider, setSearchProvider] = useState<'audius' | 'apple' | 'jiosaavn'>('jiosaavn');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,9 +102,10 @@ export const MainLayout: React.FC = () => {
               <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2">
                 <select
                   value={searchProvider}
-                  onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'apple')}
+                  onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'apple' | 'jiosaavn')}
                   className="bg-secondary/30 text-white text-sm rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm cursor-pointer appearance-none"
                 >
+                  <option value="jiosaavn">JioSaavn</option>
                   <option value="audius">Audius</option>
                   <option value="apple">Apple Music</option>
                 </select>
@@ -113,7 +114,7 @@ export const MainLayout: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={searchProvider === 'audius' ? "Шукати в Audius..." : "Шукати в Apple Music..."}
+                    placeholder={searchProvider === 'audius' ? "Шукати в Audius..." : searchProvider === 'jiosaavn' ? "Шукати в JioSaavn..." : "Шукати в Apple Music..."}
                     className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
                   />
                   <button

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
 import { searchAudiusTracks } from '../utils/audiusApi';
+import { searchJioSaavnTracks } from '../utils/jioSaavnApi';
 import { searchItunesTracks } from '../utils/itunesApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 import { useP2PStore } from './p2pStore';
@@ -48,7 +49,7 @@ interface PlayerState {
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   reorderPlaylistTracks: (playlistId: string, startIndex: number, endIndex: number) => void;
   loadJamendoTracks: () => Promise<void>;
-  searchGlobal: (query: string, provider: 'audius' | 'apple') => Promise<void>;
+  searchGlobal: (query: string, provider: 'audius' | 'apple' | 'jiosaavn') => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
@@ -329,8 +330,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
-  searchGlobal: async (query: string, provider: 'audius' | 'apple') => {
-    const tracks = provider === 'audius' ? await searchAudiusTracks(query) : await searchItunesTracks(query);
+  searchGlobal: async (query: string, provider: 'audius' | 'apple' | 'jiosaavn') => {
+    let tracks: Track[] = [];
+    if (provider === 'audius') tracks = await searchAudiusTracks(query);
+    else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
+    else tracks = await searchItunesTracks(query);
+    
     if (tracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));
