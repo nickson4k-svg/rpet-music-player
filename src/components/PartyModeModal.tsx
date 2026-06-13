@@ -156,11 +156,25 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                 Ви успішно підключилися до хоста. Слухайте музику та насолоджуйтесь спільним вайбом!
               </p>
               
-              <div className="p-4 bg-secondary/20 rounded-xl">
+              <div className="p-4 bg-secondary/20 rounded-xl space-y-4">
                 <div className="flex items-center justify-center gap-3">
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-green-400 font-medium">Синхронізація активна</span>
                 </div>
+                
+                <button 
+                  onClick={() => {
+                    const audio = document.getElementById('audio-remote') as HTMLAudioElement;
+                    if (audio) {
+                      audio.play().catch(console.error);
+                      audio.muted = false;
+                      audio.volume = 1;
+                    }
+                  }}
+                  className="w-full py-2 px-4 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  🎧 Немає звуку? Натисніть тут
+                </button>
               </div>
 
               <button 
