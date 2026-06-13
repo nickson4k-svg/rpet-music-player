@@ -122,7 +122,7 @@ export const Lyrics: React.FC = () => {
       </button>
 
       {isOpen && createPortal(
-        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex flex-col pt-12 pb-32 px-4 transition-all duration-500 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex flex-col pt-12 pb-32 px-4 transition-all duration-500 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button 
             onClick={() => setIsOpen(false)}
             className="fixed top-6 right-6 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 z-[110] transition-colors"

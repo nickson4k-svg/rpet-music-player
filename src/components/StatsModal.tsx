@@ -51,7 +51,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ onClose }) => {
   const totalHours = (stats.totalTime / 3600).toFixed(1);
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" onClick={onClose}>
       <div className="bg-background border border-secondary rounded-2xl w-full max-w-4xl shadow-2xl my-8 relative overflow-hidden" onClick={e => e.stopPropagation()}>
         
         {/* Header */}

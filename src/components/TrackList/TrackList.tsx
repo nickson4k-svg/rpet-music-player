@@ -80,7 +80,7 @@ export const TrackList: React.FC = () => {
           <Droppable droppableId="playlist-tracks">
             {(provided) => (
               <div 
-                className="flex-1 overflow-y-auto overflow-x-hidden"
+                className="flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >

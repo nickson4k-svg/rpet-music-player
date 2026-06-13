@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
 
         <button
