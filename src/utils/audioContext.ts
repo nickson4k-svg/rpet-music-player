@@ -11,6 +11,7 @@ export const audioContextState = {
   trebleNode: null as BiquadFilterNode | null,
   reverbGainNode: null as GainNode | null,
   dryGainNode: null as GainNode | null,
+  mediaStreamDestination: null as MediaStreamAudioDestinationNode | null,
 };
 
 function createReverbBuffer(ctx: AudioContext, duration: number, decay: number) {
@@ -97,8 +98,10 @@ export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElem
     dryGain.connect(compressor);
     reverbGain.connect(compressor);
     
+    const streamDest = ctx.createMediaStreamDestination();
     compressor.connect(analyser);
     analyser.connect(ctx.destination);
+    analyser.connect(streamDest);
 
     audioContextState.context = ctx;
     audioContextState.analyser = analyser;
@@ -112,6 +115,7 @@ export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElem
     audioContextState.trebleNode = treble;
     audioContextState.reverbGainNode = reverbGain;
     audioContextState.dryGainNode = dryGain;
+    audioContextState.mediaStreamDestination = streamDest;
   }
   return audioContextState;
 };

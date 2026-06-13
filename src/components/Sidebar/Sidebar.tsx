@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X, Settings, BarChart2, Download } from 'lucide-react';
+import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
 import { StatsModal } from '../StatsModal';
+import { PartyModeModal } from '../PartyModeModal';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 interface SidebarProps {
@@ -22,6 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isPartyModeOpen, setIsPartyModeOpen] = useState(false);
 
   const { handleInstall } = useInstallPrompt();
 
@@ -62,6 +64,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           Rpet
         </h2>
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsPartyModeOpen(true)} 
+            className="p-1 text-purple-400 hover:text-purple-300 transition-colors"
+            title="Спільне прослуховування"
+          >
+            <Radio className="w-5 h-5" />
+          </button>
           <button 
             onClick={handleInstall} 
             className="p-1 text-green-400 hover:text-green-300 transition-colors"
@@ -187,6 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       </div>
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
       {isStatsOpen && <StatsModal onClose={() => setIsStatsOpen(false)} />}
+      {isPartyModeOpen && <PartyModeModal onClose={() => setIsPartyModeOpen(false)} />}
     </aside>
   );
 };

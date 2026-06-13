@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { initAudioContext, audioContextState, updateNormalization } from '../../utils/audioContext';
+import { useP2PStore } from '../../stores/p2pStore';
 
 export const AudioEngine: React.FC = () => {
   const audioARef = useRef<HTMLAudioElement>(null);
@@ -294,10 +295,55 @@ export const AudioEngine: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlayPause]);
 
+  const { remoteStream } = useP2PStore();
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    useP2PStore.setState({
+      onMessageReceived: (msg) => {
+        const state = usePlayerStore.getState();
+        if (msg.type === 'PLAY') {
+          if (!state.isPlaying) state.togglePlayPause();
+        } else if (msg.type === 'PAUSE') {
+          if (state.isPlaying) state.togglePlayPause();
+        } else if (msg.type === 'SEEK') {
+          state.setCurrentTime(msg.payload);
+          // Assuming remote streaming takes care of actual audio time sync, but we update UI
+        } else if (msg.type === 'TRACK_CHANGE') {
+          // Add dummy track to queue if not exists to display metadata
+          const { id, title, artist, coverUrl } = msg.payload;
+          let track: any = state.tracks.find(t => t.id === id);
+          if (!track) {
+            track = {
+              id, name: title, artist, coverUrl, audioUrl: '', duration: 0
+            };
+            state.setTracks([...state.tracks, track as any]);
+          }
+          usePlayerStore.setState({ 
+            currentTrackId: id,
+            queue: [id],
+            queueIndex: 0
+          });
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (remoteAudioRef.current) {
+      if (remoteStream) {
+        remoteAudioRef.current.srcObject = remoteStream;
+      } else {
+        remoteAudioRef.current.srcObject = null;
+      }
+    }
+  }, [remoteStream]);
+
   return (
     <>
-      <audio ref={audioARef} crossOrigin="anonymous" className="hidden" id="audio-deck-a" />
-      <audio ref={audioBRef} crossOrigin="anonymous" className="hidden" id="audio-deck-b" />
+      <audio ref={audioARef} crossOrigin="anonymous" className="hidden" id="audio-deck-a" muted={!!remoteStream} />
+      <audio ref={audioBRef} crossOrigin="anonymous" className="hidden" id="audio-deck-b" muted={!!remoteStream} />
+      <audio ref={remoteAudioRef} autoPlay className="hidden" id="audio-remote" />
     </>
   );
 };

@@ -3,6 +3,7 @@ import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
 import { searchItunesTracks } from '../utils/itunesApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
+import { useP2PStore } from './p2pStore';
 
 interface PlayerState {
   tracks: Track[];
@@ -86,6 +87,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const updated = { ...track, playCount: (track.playCount || 0) + 1 };
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
+
+      // P2P Broadcast
+      useP2PStore.getState().broadcast({ 
+        type: 'TRACK_CHANGE', 
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      });
+      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
 
@@ -101,10 +109,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const updated = { ...track, playCount: (track.playCount || 0) + 1 };
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
+
+      // P2P Broadcast
+      useP2PStore.getState().broadcast({ 
+        type: 'TRACK_CHANGE', 
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      });
+      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
   
-  togglePlayPause: () => set((state) => ({ isPlaying: !state.isPlaying })),
+  togglePlayPause: () => {
+    set((state) => {
+      const newIsPlaying = !state.isPlaying;
+      useP2PStore.getState().broadcast({ type: newIsPlaying ? 'PLAY' : 'PAUSE' });
+      return { isPlaying: newIsPlaying };
+    });
+  },
   
   removeTrack: (id) => {
     const { currentTrackId, tracks, queue } = get();
@@ -121,7 +142,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   
   setVolume: (volume) => set({ volume }),
   setPlaybackRate: (rate) => set({ playbackRate: rate }),
-  setCurrentTime: (currentTime) => set({ currentTime }),
+  setCurrentTime: (currentTime) => {
+    const state = get();
+    if (Math.abs(state.currentTime - currentTime) > 2) {
+      useP2PStore.getState().broadcast({ type: 'SEEK', payload: currentTime });
+    }
+    set({ currentTime });
+  },
   setDuration: (duration) => set({ duration }),
   
   playNext: async () => {
@@ -179,6 +206,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const updated = { ...track, playCount: (track.playCount || 0) + 1 };
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === queue[nextIndex] ? updated : t) });
+
+      // P2P Broadcast
+      useP2PStore.getState().broadcast({ 
+        type: 'TRACK_CHANGE', 
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      });
+      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
   
@@ -204,6 +238,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const updated = { ...track, playCount: (track.playCount || 0) + 1 };
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === queue[prevIndex] ? updated : t) });
+
+      // P2P Broadcast
+      useP2PStore.getState().broadcast({ 
+        type: 'TRACK_CHANGE', 
+        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl } 
+      });
+      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
 
