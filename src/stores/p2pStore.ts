@@ -46,7 +46,15 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       }, 10000);
 
       try {
-        const peer = new Peer();
+        const peer = new Peer({
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
 
         peer.on('open', (id) => {
           clearTimeout(timeoutId);
@@ -99,7 +107,15 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       }, 10000);
 
       try {
-        const peer = new Peer();
+        const peer = new Peer({
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
 
         peer.on('open', (id) => {
           set({ peer, peerId: id, isHost: false });

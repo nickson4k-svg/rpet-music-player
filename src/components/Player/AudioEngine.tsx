@@ -374,6 +374,10 @@ export const AudioEngine: React.FC = () => {
     if (remoteAudioRef.current) {
       if (remoteStream) {
         remoteAudioRef.current.srcObject = remoteStream;
+        // Explicitly play to prevent autoPlay failures in some browsers
+        remoteAudioRef.current.play().catch(e => {
+          console.error('Guest remote audio play error:', e);
+        });
       } else {
         remoteAudioRef.current.srcObject = null;
       }
