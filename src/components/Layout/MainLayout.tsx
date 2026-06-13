@@ -98,7 +98,7 @@ export const MainLayout: React.FC = () => {
                 <h1 className="text-xl font-bold text-primary mr-2 flex-grow sm:flex-grow-0">Rpet</h1>
               </div>
               
-              <form onSubmit={handleSearch} className="relative w-full sm:max-w-md ml-auto">
+              <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto">
                 <input
                   type="text"
                   value={searchQuery}
