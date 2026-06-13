@@ -102,15 +102,15 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         </p>
       </div>
 
-      <div className="text-sm text-gray-400 px-4 hidden sm:block w-32 truncate">
+      <div className="text-sm text-gray-400 px-4 hidden sm:block w-32 truncate shrink-0">
         {track.album}
       </div>
 
-      <div className="hidden sm:block text-sm text-gray-400 w-12 text-right">
+      <div className="hidden sm:block text-sm text-gray-400 w-12 text-right shrink-0">
         {formatTime(track.duration)}
       </div>
 
-      <div className="flex items-center">
+      <div className="flex items-center justify-end w-20 sm:w-28 shrink-0">
         <button
           onClick={handleAutoTag}
           disabled={isTagging}

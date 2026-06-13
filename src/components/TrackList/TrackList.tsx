@@ -68,12 +68,13 @@ export const TrackList: React.FC = () => {
 
   return (
     <div className="h-full border border-secondary rounded-lg bg-background/50 overflow-hidden flex flex-col">
-      <div className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border-b border-secondary bg-secondary/20 text-xs sm:text-sm font-medium text-gray-400 shrink-0">
-        <div className="w-10 sm:w-12 pl-1 sm:pl-2"></div>
-        <div className="flex-1">Назва</div>
-        <div className="hidden sm:block w-32 px-4">Альбом</div>
-        <div className="hidden sm:block w-12 text-right">Час</div>
-      </div>
+        <div className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border-b border-secondary bg-secondary/20 text-xs sm:text-sm font-medium text-gray-400 shrink-0">
+          <div className="w-10 sm:w-12 pl-1 sm:pl-2 shrink-0"></div>
+          <div className="flex-1">Назва</div>
+          <div className="hidden sm:block w-32 px-4 shrink-0">Альбом</div>
+          <div className="hidden sm:block w-12 text-right shrink-0">Час</div>
+          <div className="w-20 sm:w-28 shrink-0"></div>
+        </div>
       
       {isDraggablePlaylist ? (
         <DragDropContext onDragEnd={onDragEnd}>
