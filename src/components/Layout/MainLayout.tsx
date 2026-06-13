@@ -17,16 +17,17 @@ export const MainLayout: React.FC = () => {
   
   const setTracks = usePlayerStore(state => state.setTracks);
   const setPlaylists = usePlayerStore(state => state.setPlaylists);
-  const searchJamendo = usePlayerStore(state => state.searchJamendo);
+  const searchGlobal = usePlayerStore(state => state.searchGlobal);
   const setCurrentPlaylistId = usePlayerStore(state => state.setCurrentPlaylistId);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchProvider, setSearchProvider] = useState<'youtube' | 'apple'>('youtube');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      searchJamendo(searchQuery.trim());
+      searchGlobal(searchQuery.trim(), searchProvider);
       setSearchQuery('');
       setCurrentPlaylistId(null);
     }
@@ -98,20 +99,30 @@ export const MainLayout: React.FC = () => {
                 <h1 className="text-xl font-bold text-primary mr-2 flex-grow sm:flex-grow-0">Rpet</h1>
               </div>
               
-              <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Шукати в Apple Music..."
-                  className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2">
+                <select
+                  value={searchProvider}
+                  onChange={(e) => setSearchProvider(e.target.value as 'youtube' | 'apple')}
+                  className="bg-secondary/30 text-white text-sm rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm cursor-pointer appearance-none"
                 >
-                  <Search className="w-4 h-4" />
-                </button>
+                  <option value="youtube">YouTube</option>
+                  <option value="apple">Apple Music</option>
+                </select>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={searchProvider === 'youtube' ? "Шукати в YouTube..." : "Шукати в Apple Music..."}
+                    className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
+                </div>
               </form>
             </div>
             <TrackUploader />

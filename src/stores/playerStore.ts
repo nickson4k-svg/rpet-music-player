@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
 import { searchPipedTracks } from '../utils/pipedApi';
+import { searchItunesTracks } from '../utils/itunesApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 import { useP2PStore } from './p2pStore';
 
@@ -46,8 +47,8 @@ interface PlayerState {
   addTrackToPlaylist: (playlistId: string, trackId: string) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   reorderPlaylistTracks: (playlistId: string, startIndex: number, endIndex: number) => void;
-  loadJamendoTracks: () => Promise<void>; // keeping name for Sidebar compatibility, but fetches top from iTunes
-  searchJamendo: (query: string) => Promise<void>;
+  loadJamendoTracks: () => Promise<void>;
+  searchGlobal: (query: string, provider: 'youtube' | 'apple') => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
@@ -328,12 +329,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
-  searchJamendo: async (query: string) => {
-    const pipedTracks = await searchPipedTracks(query);
-    if (pipedTracks.length > 0) {
+  searchGlobal: async (query: string, provider: 'youtube' | 'apple') => {
+    const tracks = provider === 'youtube' ? await searchPipedTracks(query) : await searchItunesTracks(query);
+    if (tracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));
-        const newTracks = pipedTracks.filter(t => !existingIds.has(t.id));
+        const newTracks = tracks.filter(t => !existingIds.has(t.id));
         return { tracks: [...newTracks, ...state.tracks] }; // Put new tracks at the top
       });
     }
