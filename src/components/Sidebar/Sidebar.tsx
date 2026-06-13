@@ -95,9 +95,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           <button
             onClick={() => { setCurrentPlaylistId(null); onClose?.(); }}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-              currentPlaylistId === null ? '' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
+              currentPlaylistId === null 
+                ? (dominantColor ? '' : 'bg-primary/20 text-primary') 
+                : 'text-gray-400 hover:text-white hover:bg-secondary/50'
             }`}
-            style={currentPlaylistId === null ? { backgroundColor: dominantColor ? `${dominantColor}33` : 'var(--color-primary)', color: dominantColor || 'var(--color-primary)' } : undefined}
+            style={currentPlaylistId === null && dominantColor ? { backgroundColor: `${dominantColor}33`, color: dominantColor } : undefined}
           >
             <ListMusic className="w-4 h-4" />
             Всі треки
@@ -132,9 +134,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, pl.id)}
                 className={`group flex items-center justify-between px-3 py-2 rounded-md transition-colors ${
-                  currentPlaylistId === pl.id ? '' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
+                  currentPlaylistId === pl.id 
+                    ? (dominantColor ? '' : 'bg-primary/20 text-primary') 
+                    : 'text-gray-400 hover:text-white hover:bg-secondary/50'
                 }`}
-                style={currentPlaylistId === pl.id ? { backgroundColor: dominantColor ? `${dominantColor}33` : 'var(--color-primary)', color: dominantColor || 'var(--color-primary)' } : undefined}
+                style={currentPlaylistId === pl.id && dominantColor ? { backgroundColor: `${dominantColor}33`, color: dominantColor } : undefined}
               >
                 <button
                   onClick={() => { setCurrentPlaylistId(pl.id); onClose?.(); }}

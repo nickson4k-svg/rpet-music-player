@@ -77,7 +77,7 @@ export const PlayerBar: React.FC = () => {
   return (
     <>
       <AudioEngine />
-      <div className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-auto sm:w-[95vw] sm:max-w-6xl sm:left-1/2 sm:-translate-x-1/2 bg-background/80 backdrop-blur-2xl border border-secondary/50 rounded-2xl sm:rounded-[2rem] p-2 px-3 sm:p-3 sm:px-6 flex items-center justify-between z-50 gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300">
+      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-background/80 backdrop-blur-2xl border border-secondary/50 rounded-2xl md:rounded-[2rem] p-2 px-3 sm:p-3 sm:px-6 flex items-center justify-between z-50 gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300">
         {/* Mobile progress bar */}
         <div className="absolute top-0 left-0 right-0 -translate-y-full sm:hidden">
           <ProgressBar mobile />
