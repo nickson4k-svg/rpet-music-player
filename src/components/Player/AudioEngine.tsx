@@ -27,16 +27,33 @@ export const AudioEngine: React.FC = () => {
 
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize Audio Context on first play
+  // Initialize Audio Context on first play or when hosting
   useEffect(() => {
-    if (isPlaying && !initialized && audioARef.current && audioBRef.current) {
+    const isHost = useP2PStore.getState().isHost;
+    if ((isPlaying || isHost) && !initialized && audioARef.current && audioBRef.current) {
       initAudioContext(audioARef.current, audioBRef.current);
       setInitialized(true);
+      
+      // If we just initialized and we are the host, start streaming to any guests
+      if (isHost) {
+        import('../../stores/p2pStore').then(({ streamAudioToGuests }) => streamAudioToGuests());
+      }
     }
     if (isPlaying && audioContextState.context?.state === 'suspended') {
       audioContextState.context.resume();
     }
   }, [isPlaying, initialized]);
+
+  // Subscribe to isHost changes to initialize audio context
+  useEffect(() => {
+    return useP2PStore.subscribe((state) => {
+      if (state.isHost && !initialized && audioARef.current && audioBRef.current) {
+        initAudioContext(audioARef.current, audioBRef.current);
+        setInitialized(true);
+        import('../../stores/p2pStore').then(({ streamAudioToGuests }) => streamAudioToGuests());
+      }
+    });
+  }, [initialized]);
 
   // Handle Normalization Toggle
   useEffect(() => {
@@ -55,6 +72,12 @@ export const AudioEngine: React.FC = () => {
     }
 
     const setupAudio = async () => {
+      // If we are a guest receiving a remote stream, we don't load local audio.
+      const isGuest = !!useP2PStore.getState().hostConnection;
+      if (isGuest) {
+        return;
+      }
+      
       let url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
       
       // Handle Audius dynamically resolving streams
@@ -137,6 +160,10 @@ export const AudioEngine: React.FC = () => {
     if (!activeAudio || !activeAudio.src) return;
 
     if (isPlaying) {
+      if (useP2PStore.getState().hostConnection) {
+         // Guest mode, just rely on remoteAudioRef
+         return;
+      }
       if (audioContextState.context?.state === 'suspended') {
         audioContextState.context.resume();
       }
@@ -153,6 +180,7 @@ export const AudioEngine: React.FC = () => {
   useEffect(() => {
     if (audioARef.current) audioARef.current.volume = volume;
     if (audioBRef.current) audioBRef.current.volume = volume;
+    if (remoteAudioRef.current) remoteAudioRef.current.volume = volume;
   }, [volume]);
 
   // Playback Rate
@@ -167,11 +195,19 @@ export const AudioEngine: React.FC = () => {
     let lastSave = 0;
     
     const updateTime = (timestamp: number) => {
+      const state = usePlayerStore.getState();
+      const p2pState = useP2PStore.getState();
+      
+      if (p2pState.hostConnection && remoteAudioRef.current) {
+        // In guest mode, we don't handle crossfading or playNext locally based on time
+        // Just sync the UI to the host's current time if needed (but host sends SEEK events)
+        rafId = requestAnimationFrame(updateTime);
+        return;
+      }
+      
       const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
       if (!activeAudio) return;
 
-      const state = usePlayerStore.getState();
-      
       if (activeAudio.duration > 0) {
         setCurrentTime(activeAudio.currentTime);
         setDuration(activeAudio.duration);
@@ -181,10 +217,6 @@ export const AudioEngine: React.FC = () => {
           const timeLeft = activeAudio.duration - activeAudio.currentTime;
           if (state.crossfadeEnabled) {
             if (timeLeft <= state.crossfadeDuration && timeLeft > 0.1 && state.queue.length > 1) {
-              // Trigger playNext early for crossfade
-              // To prevent multiple triggers, we must ensure we only call it once per track.
-              // A simple way is to check if we are near the end, and we haven't already switched trackId
-              // Actually, playNext() changes currentTrackId immediately, so activeAudio will swap!
               playNext();
             }
           } else {
@@ -193,8 +225,8 @@ export const AudioEngine: React.FC = () => {
         }
       }
 
-      // Save position and update stats every 10 seconds
-      if (timestamp - lastSave > 10000) { 
+      // Save position and update stats every 10 seconds (only if not guest)
+      if (timestamp - lastSave > 10000 && !p2pState.hostConnection) { 
         const state = usePlayerStore.getState();
         const currentTrack = state.tracks.find(t => t.id === state.currentTrackId);
         
@@ -229,7 +261,7 @@ export const AudioEngine: React.FC = () => {
   // Event Listeners for Media Session & Fallback ended event
   useEffect(() => {
     const handleEnded = () => {
-      if (!usePlayerStore.getState().crossfadeEnabled) {
+      if (!usePlayerStore.getState().crossfadeEnabled && !useP2PStore.getState().hostConnection) {
         playNext();
       }
     };
