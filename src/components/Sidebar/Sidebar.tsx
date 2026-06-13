@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Globe, Search, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
+import { Plus, ListMusic, Music, Trash2, Globe, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
 import { StatsModal } from '../StatsModal';
 import { PartyModeModal } from '../PartyModeModal';
@@ -18,7 +18,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const deletePlaylist = usePlayerStore(state => state.deletePlaylist);
   const addTrackToPlaylist = usePlayerStore(state => state.addTrackToPlaylist);
   const loadJamendoTracks = usePlayerStore(state => state.loadJamendoTracks);
-  const searchJamendo = usePlayerStore(state => state.searchJamendo);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
