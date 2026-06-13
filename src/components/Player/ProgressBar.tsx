@@ -11,6 +11,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
   const duration = usePlayerStore(state => state.duration);
   const currentTime = usePlayerStore(state => state.currentTime);
   const hasTrack = usePlayerStore(state => state.currentTrackId !== null);
+  const dominantColor = usePlayerStore(state => state.dominantColor);
   
   const [isDragging, setIsDragging] = useState(false);
   const [dragTime, setDragTime] = useState(0);
@@ -73,8 +74,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
         onPointerDown={handlePointerDown}
       >
         <div 
-          className="absolute top-0 left-0 h-full bg-primary"
-          style={{ width: `${progressPercent}%` }}
+          className="absolute top-0 left-0 h-full transition-colors duration-500"
+          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-primary)' }}
         />
         <div 
           className="absolute top-1/2 -mt-1 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
@@ -96,8 +97,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
         onPointerDown={handlePointerDown}
       >
         <div 
-          className="absolute top-0 left-0 h-full bg-primary rounded-full"
-          style={{ width: `${progressPercent}%` }}
+          className="absolute top-0 left-0 h-full rounded-full transition-colors duration-500"
+          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-primary)' }}
         />
         <div 
           className="absolute top-1/2 -mt-1.5 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"

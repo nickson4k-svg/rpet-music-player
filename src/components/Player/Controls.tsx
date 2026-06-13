@@ -10,6 +10,7 @@ export const Controls: React.FC = () => {
   const repeatMode = usePlayerStore(state => state.repeatMode);
   const setRepeatMode = usePlayerStore(state => state.setRepeatMode);
   const shuffle = usePlayerStore(state => state.shuffle);
+  const dominantColor = usePlayerStore(state => state.dominantColor);
   const toggleShuffle = usePlayerStore(state => state.toggleShuffle);
   const hasTrack = usePlayerStore(state => state.currentTrackId !== null);
 
@@ -40,7 +41,8 @@ export const Controls: React.FC = () => {
       <button
         onClick={togglePlayPause}
         disabled={!hasTrack}
-        className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-primary text-primary-foreground rounded-full hover:scale-105 transition-transform disabled:opacity-50 text-white shrink-0 relative overflow-hidden"
+        className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-white rounded-full hover:scale-105 transition-all duration-500 disabled:opacity-50 shrink-0 relative overflow-hidden"
+        style={{ backgroundColor: dominantColor || 'var(--color-primary)' }}
       >
         {isPlaying ? (
           <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />

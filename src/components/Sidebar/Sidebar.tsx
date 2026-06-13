@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Globe, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
+import { Plus, ListMusic, Music, Trash2, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
 import { StatsModal } from '../StatsModal';
 import { PartyModeModal } from '../PartyModeModal';
@@ -17,15 +17,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const createPlaylist = usePlayerStore(state => state.createPlaylist);
   const deletePlaylist = usePlayerStore(state => state.deletePlaylist);
   const addTrackToPlaylist = usePlayerStore(state => state.addTrackToPlaylist);
-  const loadJamendoTracks = usePlayerStore(state => state.loadJamendoTracks);
+  const dominantColor = usePlayerStore(state => state.dominantColor);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isPartyModeOpen, setIsPartyModeOpen] = useState(false);
 
   const { handleInstall } = useInstallPrompt();
-
-
 
   const handleCreatePlaylist = () => {
     const name = window.prompt('Введіть назву плейлиста:');
@@ -47,9 +45,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   };
 
   return (
-    <aside className="w-64 border-r border-secondary bg-background/95 md:bg-background/50 backdrop-blur-md flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none">
+    <aside className="w-64 border-r border-secondary bg-background/95 md:bg-background/50 backdrop-blur-md flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
       <div className="p-4 border-b border-secondary flex items-center justify-between">
-        <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+        <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: dominantColor || 'var(--color-primary)' }}>
           <Music className="w-5 h-5" />
           Rpet
         </h2>
@@ -92,16 +90,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
-
-
-
         {/* All Tracks & Favorites */}
         <div className="space-y-1">
           <button
             onClick={() => { setCurrentPlaylistId(null); onClose?.(); }}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-              currentPlaylistId === null ? 'bg-primary/20 text-primary' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
+              currentPlaylistId === null ? '' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
             }`}
+            style={currentPlaylistId === null ? { backgroundColor: dominantColor ? `${dominantColor}33` : 'var(--color-primary)', color: dominantColor || 'var(--color-primary)' } : undefined}
           >
             <ListMusic className="w-4 h-4" />
             Всі треки
@@ -136,8 +132,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, pl.id)}
                 className={`group flex items-center justify-between px-3 py-2 rounded-md transition-colors ${
-                  currentPlaylistId === pl.id ? 'bg-primary/20 text-primary' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
+                  currentPlaylistId === pl.id ? '' : 'text-gray-400 hover:text-white hover:bg-secondary/50'
                 }`}
+                style={currentPlaylistId === pl.id ? { backgroundColor: dominantColor ? `${dominantColor}33` : 'var(--color-primary)', color: dominantColor || 'var(--color-primary)' } : undefined}
               >
                 <button
                   onClick={() => { setCurrentPlaylistId(pl.id); onClose?.(); }}

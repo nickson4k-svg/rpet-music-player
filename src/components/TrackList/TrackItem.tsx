@@ -32,6 +32,8 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const toggleFavorite = usePlayerStore(state => state.toggleFavorite);
   const autoTagTrack = usePlayerStore(state => state.autoTagTrack);
+  const viewMode = usePlayerStore(state => state.viewMode);
+  const dominantColor = usePlayerStore(state => state.dominantColor);
   const [isTagging, setIsTagging] = useState(false);
 
   const handleAutoTag = async (e: React.MouseEvent) => {
@@ -54,17 +56,98 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
     }
   }, [track.coverBlob, track.coverUrl]);
 
+  if (viewMode === 'grid') {
+    return (
+      <div
+        ref={innerRef}
+        {...draggableProps}
+        {...dragHandleProps}
+        className={`group relative flex flex-col gap-2 p-3 transition-all duration-300 hover:bg-secondary/30 rounded-xl hover:-translate-y-1 hover:shadow-xl ${
+          isCurrentTrack ? 'bg-secondary/20' : ''
+        } ${isDragging ? 'bg-secondary/80 shadow-2xl z-50' : ''}`}
+        onDoubleClick={() => onPlay(track.id)}
+      >
+        <div className="relative w-full aspect-square bg-secondary rounded-lg overflow-hidden shadow-md">
+          {coverUrl ? (
+            <img src={coverUrl} alt={track.name} className="object-cover w-full h-full" loading="lazy" />
+          ) : (
+            <div className="w-full h-full bg-secondary flex items-center justify-center text-xs text-gray-500 text-center leading-none p-2">
+              No Cover
+            </div>
+          )}
+          
+          <button
+            className={`absolute right-2 bottom-2 w-10 h-10 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-105 ${
+              isCurrentTrack && !isPlaying ? 'opacity-100' : ''
+            }`}
+            onClick={() => {
+              if (isCurrentTrack) {
+                onTogglePlayPause();
+              } else {
+                onPlay(track.id);
+              }
+            }}
+          >
+            {isCurrentTrack && isPlaying ? (
+              <Pause className="w-5 h-5 text-white" />
+            ) : (
+              <Play className="w-5 h-5 text-white ml-1" />
+            )}
+          </button>
+
+          {isCurrentTrack && isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:opacity-0 transition-opacity pointer-events-none">
+              <div className="flex items-end gap-1 h-6">
+                <div className="w-1.5 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+                <div className="w-1.5 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+                <div className="w-1.5 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col min-w-0 px-1">
+          <h3 
+            className="truncate font-semibold text-sm transition-colors"
+            style={isCurrentTrack ? { color: dominantColor || 'var(--color-primary)' } : {}}
+          >
+            {track.name}
+          </h3>
+          <p className="truncate text-xs text-gray-400 mt-0.5">
+            {track.artist}
+          </p>
+        </div>
+
+        <div className="absolute top-4 right-4 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(track.id);
+            }}
+            className={`p-1.5 backdrop-blur-md rounded-full transition-all ${
+              track.isFavorite 
+                ? 'bg-red-500/20 text-red-500' 
+                : 'bg-black/40 text-white hover:bg-black/60 hover:text-red-400'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${track.isFavorite ? 'fill-red-500' : ''}`} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={innerRef}
       {...draggableProps}
       {...dragHandleProps}
-      className={`group flex items-center gap-2 sm:gap-4 p-2 sm:p-3 transition-colors hover:bg-secondary/50 ${
-        isCurrentTrack ? 'bg-secondary' : ''
+      className={`group flex items-center gap-2 sm:gap-4 p-2 sm:p-3 transition-colors hover:bg-secondary/50 border-b border-transparent ${
+        isCurrentTrack ? 'bg-secondary/30' : ''
       } ${isDragging ? 'bg-secondary/80 shadow-2xl z-50' : ''}`}
       onDoubleClick={() => onPlay(track.id)}
     >
-      <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-secondary rounded overflow-hidden">
+      <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-secondary rounded overflow-hidden shadow-sm">
         {coverUrl ? (
           <img src={coverUrl} alt={track.name} className="object-cover w-full h-full" loading="lazy" />
         ) : (
@@ -75,7 +158,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         
         <button
           className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity ${
-            isCurrentTrack ? 'opacity-100' : ''
+            isCurrentTrack && !isPlaying ? 'opacity-100' : ''
           }`}
           onClick={() => {
             if (isCurrentTrack) {
@@ -91,10 +174,24 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
             <Play className="w-6 h-6 text-white ml-1" />
           )}
         </button>
+
+        {/* Animated EQ Icon for Playing Track (shows when not hovered) */}
+        {isCurrentTrack && isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:opacity-0 transition-opacity pointer-events-none">
+            <div className="flex items-end gap-0.5 h-4">
+              <div className="w-1 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+              <div className="w-1 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+              <div className="w-1 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-w-0 pr-2">
-        <h3 className={`truncate font-medium text-sm sm:text-base ${isCurrentTrack ? 'text-primary' : 'text-foreground'}`}>
+        <h3 
+          className="truncate font-medium text-sm sm:text-base transition-colors"
+          style={isCurrentTrack ? { color: dominantColor || 'var(--color-primary)' } : {}}
+        >
           {track.name}
         </h3>
         <p className="truncate text-xs sm:text-sm text-gray-400">

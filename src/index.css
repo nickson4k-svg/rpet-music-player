@@ -47,3 +47,9 @@
 /* Hide all scrollbars globally */
 ::-webkit-scrollbar { display: none; width: 0; height: 0; }
 * { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes eq { 0% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } 100% { transform: scaleY(0.3); } }
+.eq-bar { animation: eq 1.2s ease-in-out infinite; transform-origin: bottom; }
+.eq-bar:nth-child(1) { animation-delay: -0.2s; }
+.eq-bar:nth-child(2) { animation-delay: -0.6s; }
+.eq-bar:nth-child(3) { animation-delay: -0.4s; }

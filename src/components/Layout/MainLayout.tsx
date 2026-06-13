@@ -6,7 +6,7 @@ import { getAllTracks, getAllPlaylists } from '../../utils/idbStorage';
 import { usePlayerStore } from '../../stores/playerStore';
 
 import { ThemeManager } from '../ThemeManager';
-import { Menu, Search } from 'lucide-react';
+import { Menu, Search, LayoutGrid, List } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useMediaSession } from '../../hooks/useMediaSession';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
@@ -20,6 +20,9 @@ export const MainLayout: React.FC = () => {
   const setPlaylists = usePlayerStore(state => state.setPlaylists);
   const searchGlobal = usePlayerStore(state => state.searchGlobal);
   const setCurrentPlaylistId = usePlayerStore(state => state.setCurrentPlaylistId);
+  const viewMode = usePlayerStore(state => state.viewMode);
+  const setViewMode = usePlayerStore(state => state.setViewMode);
+  const setDominantColor = usePlayerStore(state => state.setDominantColor);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,8 +69,12 @@ export const MainLayout: React.FC = () => {
   const dominantColor = useDominantColor(coverUrl);
   const defaultBg = `rgb(var(--theme-color-rgb))`;
 
+  useEffect(() => {
+    setDominantColor(dominantColor);
+  }, [dominantColor, setDominantColor]);
+
   return (
-    <div className="h-[100dvh] bg-transparent flex flex-col pb-[72px] sm:pb-24 overflow-hidden relative z-0">
+    <div className="h-[100dvh] bg-transparent flex flex-col pb-32 sm:pb-36 overflow-hidden relative z-0">
       <ThemeManager />
       
       {/* Animated Mesh Gradient Background (Ambient Canvas) */}
@@ -128,21 +135,39 @@ export const MainLayout: React.FC = () => {
               </form>
             </div>
             
-            {/* Genres Row */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {GENRES.map((genre) => (
+            {/* Genres Row & View Toggle */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {GENRES.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => {
+                      setSearchQuery(genre);
+                      searchGlobal(genre, searchProvider);
+                      setCurrentPlaylistId(null);
+                    }}
+                    className="whitespace-nowrap px-4 py-1.5 bg-secondary/20 hover:bg-primary/20 text-gray-300 hover:text-white border border-secondary/40 hover:border-primary/50 rounded-full text-sm font-medium transition-all"
+                    style={{ borderColor: dominantColor ? `${dominantColor}40` : undefined, color: dominantColor || undefined }}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="hidden sm:flex items-center bg-secondary/30 rounded-full p-1 border border-secondary/50">
                 <button
-                  key={genre}
-                  onClick={() => {
-                    setSearchQuery(genre);
-                    searchGlobal(genre, searchProvider);
-                    setCurrentPlaylistId(null);
-                  }}
-                  className="whitespace-nowrap px-4 py-1.5 bg-secondary/20 hover:bg-primary/20 text-gray-300 hover:text-white border border-secondary/40 hover:border-primary/50 rounded-full text-sm font-medium transition-all"
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-secondary text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                  {genre}
+                  <List className="w-4 h-4" />
                 </button>
-              ))}
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-secondary text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 min-h-0">

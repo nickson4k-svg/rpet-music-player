@@ -25,7 +25,15 @@ interface PlayerState {
   crossfadeDuration: number;
   normalizationEnabled: boolean;
 
+  // UI State
+  dominantColor: string | null;
+  viewMode: 'list' | 'grid';
+  isSearchLoading: boolean;
+
   // Actions
+  setDominantColor: (color: string | null) => void;
+  setViewMode: (mode: 'list' | 'grid') => void;
+  setSearchLoading: (isLoading: boolean) => void;
   setTracks: (tracks: Track[]) => void;
   setPlaylists: (playlists: Playlist[]) => void;
   playTrack: (id: string) => void;
@@ -73,6 +81,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   crossfadeEnabled: false,
   crossfadeDuration: 4,
   normalizationEnabled: false,
+
+  dominantColor: null,
+  viewMode: 'list',
+  isSearchLoading: false,
+
+  setDominantColor: (color) => set({ dominantColor: color }),
+  setViewMode: (mode) => set({ viewMode: mode }),
+  setSearchLoading: (isLoading) => set({ isSearchLoading: isLoading }),
 
   setTracks: (tracks) => set({ tracks }),
   setPlaylists: (playlists) => set({ playlists }),
@@ -331,17 +347,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   searchGlobal: async (query: string, provider: 'audius' | 'apple' | 'jiosaavn') => {
-    let tracks: Track[] = [];
-    if (provider === 'audius') tracks = await searchAudiusTracks(query);
-    else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
-    else tracks = await searchItunesTracks(query);
+    set({ isSearchLoading: true });
+    try {
+      let tracks: Track[] = [];
+      if (provider === 'audius') tracks = await searchAudiusTracks(query);
+      else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
+      else tracks = await searchItunesTracks(query);
 
-    if (tracks.length > 0) {
-      set(state => {
-        const existingIds = new Set(state.tracks.map(t => t.id));
-        const newTracks = tracks.filter(t => !existingIds.has(t.id));
-        return { tracks: [...newTracks, ...state.tracks] }; // Put new tracks at the top
-      });
+      if (tracks.length > 0) {
+        set(state => {
+          const existingIds = new Set(state.tracks.map(t => t.id));
+          const newTracks = tracks.filter(t => !existingIds.has(t.id));
+          return { tracks: [...newTracks, ...state.tracks] }; // Put new tracks at the top
+        });
+      }
+    } finally {
+      set({ isSearchLoading: false });
     }
   },
 

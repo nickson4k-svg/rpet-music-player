@@ -77,7 +77,7 @@ export const PlayerBar: React.FC = () => {
   return (
     <>
       <AudioEngine />
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-secondary p-2 px-3 sm:p-4 sm:px-6 flex items-center justify-between z-50 gap-2">
+      <div className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-auto sm:w-[95vw] sm:max-w-6xl sm:left-1/2 sm:-translate-x-1/2 bg-background/80 backdrop-blur-2xl border border-secondary/50 rounded-2xl sm:rounded-[2rem] p-2 px-3 sm:p-3 sm:px-6 flex items-center justify-between z-50 gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300">
         {/* Mobile progress bar */}
         <div className="absolute top-0 left-0 right-0 -translate-y-full sm:hidden">
           <ProgressBar mobile />
@@ -142,7 +142,7 @@ export const PlayerBar: React.FC = () => {
 
       {/* Mobile Actions Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-0 bottom-[72px] sm:bottom-24 bg-background/95 backdrop-blur-xl border-t border-secondary p-4 rounded-t-2xl z-[60] shadow-2xl animate-slide-up">
+        <div className="xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-background/95 backdrop-blur-xl border border-secondary p-4 rounded-2xl z-[60] shadow-2xl animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold px-2">Додаткові функції</h3>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-secondary/50 rounded-full">
