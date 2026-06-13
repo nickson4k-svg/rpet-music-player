@@ -43,7 +43,7 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       const timeoutId = setTimeout(() => {
         set({ status: 'disconnected', error: 'Connection timed out. Please try again.' });
         reject(new Error('Connection timed out'));
-      }, 10000);
+      }, 20000);
 
       try {
         const peer = new Peer({
@@ -104,7 +104,7 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       const timeoutId = setTimeout(() => {
         set({ status: 'disconnected', error: 'Connection timed out. Please try again.' });
         reject(new Error('Connection timed out'));
-      }, 10000);
+      }, 20000);
 
       try {
         const peer = new Peer({
