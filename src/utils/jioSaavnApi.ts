@@ -1,9 +1,8 @@
 import type { Track } from '../types';
 
 const JIOSAAVN_INSTANCES = [
-  'https://saavn.dev/api',
-  'https://jiosaavn-api-privatecvc2.vercel.app',
-  'https://jiosaavn-api-v3.vercel.app',
+  'https://jiosaavn-api-sigma-sandy.vercel.app',
+  'https://saavn-api.vercel.app',
 ];
 
 async function fetchWithFallback(endpoint: string): Promise<any> {
@@ -16,11 +15,18 @@ async function fetchWithFallback(endpoint: string): Promise<any> {
       
       if (res.ok) {
         const json = await res.json();
+        // sigma-sandy format
+        if (json.status === 'SUCCESS' && json.data && json.data.results) {
+            return json.data.results;
+        }
         // sumitkolhe/jiosaavn-api structure
         if (json.success && json.data && json.data.results) {
             return json.data.results;
         }
-        // older structure
+        // older structure (saavn-api.vercel.app)
+        if (Array.isArray(json)) {
+            return json;
+        }
         if (json.results) {
             return json.results;
         }
@@ -40,18 +46,20 @@ export async function searchJioSaavnTracks(query: string): Promise<Track[]> {
     
     return results.map((item: any) => {
       // Find highest quality image
-      let coverUrl = '';
-      if (item.image && Array.isArray(item.image)) {
+      let coverUrl = item.image || '';
+      if (Array.isArray(item.image)) {
         const bestImage = item.image.reduce((prev: any, current: any) => {
           const prevQuality = parseInt(prev.quality) || 0;
           const currQuality = parseInt(current.quality) || 0;
           return (prevQuality > currQuality) ? prev : current;
         }, item.image[0]);
         coverUrl = bestImage?.url || '';
+      } else if (typeof item.image === 'string') {
+        coverUrl = item.image;
       }
       
       // Find highest quality download URL
-      let streamUrl = '';
+      let streamUrl = item.url || item.media_url || '';
       if (item.downloadUrl && Array.isArray(item.downloadUrl)) {
         const bestAudio = item.downloadUrl.reduce((prev: any, current: any) => {
           const prevQuality = parseInt(prev.quality) || 0;
@@ -63,21 +71,25 @@ export async function searchJioSaavnTracks(query: string): Promise<Track[]> {
       
       // Parse artist
       let artist = 'Unknown Artist';
-      if (item.artists && item.artists.primary && item.artists.primary.length > 0) {
+      if (item.artists && typeof item.artists === 'string') {
+        artist = item.artists; // older saavn-api format
+      } else if (item.artists && item.artists.primary && item.artists.primary.length > 0) {
         artist = item.artists.primary[0].name;
       } else if (item.primaryArtists) {
         artist = item.primaryArtists;
       }
       
+      const title = item.name || item.title || 'Unknown Track';
+      
       return {
         id: `jiosaavn-${item.id}`,
-        name: item.name.replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
+        name: title.replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
         artist: artist.replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
         coverUrl: coverUrl,
         duration: parseInt(item.duration) || 0,
         url: streamUrl, // Direct mp4/mp3 stream url
         audioUrl: streamUrl, 
-        album: item.album?.name || '',
+        album: item.album?.name || item.album || '',
         year: item.year ? String(item.year) : undefined,
         hash: `jiosaavn-${item.id}`,
         addedAt: Date.now(),
