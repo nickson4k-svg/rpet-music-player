@@ -7,7 +7,7 @@ import { getAllTracks, getAllPlaylists } from '../../utils/idbStorage';
 import { usePlayerStore } from '../../stores/playerStore';
 
 import { ThemeManager } from '../ThemeManager';
-import { Menu } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useMediaSession } from '../../hooks/useMediaSession';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
@@ -17,7 +17,20 @@ export const MainLayout: React.FC = () => {
   
   const setTracks = usePlayerStore(state => state.setTracks);
   const setPlaylists = usePlayerStore(state => state.setPlaylists);
+  const searchJamendo = usePlayerStore(state => state.searchJamendo);
+  const setCurrentPlaylistId = usePlayerStore(state => state.setCurrentPlaylistId);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      searchJamendo(searchQuery.trim());
+      setSearchQuery('');
+      setCurrentPlaylistId(null);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -74,14 +87,32 @@ export const MainLayout: React.FC = () => {
 
         <main className="flex-1 p-3 sm:p-6 overflow-hidden flex flex-col w-full">
           <div className="max-w-5xl mx-auto w-full flex flex-col h-full space-y-4 sm:space-y-6">
-            <div className="flex items-center gap-3 md:hidden mb-2">
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <h1 className="text-xl font-bold text-primary">Rpet</h1>
+            <div className="flex items-center gap-3 mb-2 flex-col sm:flex-row">
+              <div className="flex items-center gap-3 md:hidden w-full sm:w-auto">
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors flex-shrink-0"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+                <h1 className="text-xl font-bold text-primary mr-2 flex-grow sm:flex-grow-0">Rpet</h1>
+              </div>
+              
+              <form onSubmit={handleSearch} className="relative w-full sm:max-w-md ml-auto">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Шукати в Apple Music..."
+                  className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </form>
             </div>
             <TrackUploader />
             <div className="flex-1 min-h-0">
