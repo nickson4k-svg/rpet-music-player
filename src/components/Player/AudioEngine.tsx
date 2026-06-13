@@ -386,9 +386,9 @@ export const AudioEngine: React.FC = () => {
 
   return (
     <>
-      <audio ref={audioARef} crossOrigin="anonymous" className="hidden" id="audio-deck-a" muted={!!remoteStream} />
-      <audio ref={audioBRef} crossOrigin="anonymous" className="hidden" id="audio-deck-b" muted={!!remoteStream} />
-      <audio ref={remoteAudioRef} autoPlay className="hidden" id="audio-remote" />
+      <audio ref={audioARef} crossOrigin="anonymous" className="opacity-0 w-0 h-0 absolute pointer-events-none" id="audio-deck-a" muted={!!remoteStream} />
+      <audio ref={audioBRef} crossOrigin="anonymous" className="opacity-0 w-0 h-0 absolute pointer-events-none" id="audio-deck-b" muted={!!remoteStream} />
+      <audio ref={remoteAudioRef} autoPlay className="opacity-0 w-0 h-0 absolute pointer-events-none" id="audio-remote" />
     </>
   );
 };
