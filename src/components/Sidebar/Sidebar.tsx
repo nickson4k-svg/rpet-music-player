@@ -101,6 +101,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <form onSubmit={handleSearch} className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Шукати в Apple Music..."
+            className="w-full bg-secondary/30 text-white text-sm rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+        </form>
+
+        <button
+          onClick={() => { loadJamendoTracks(); onClose?.(); }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-pink-400 hover:text-pink-300 hover:bg-secondary/50 font-medium"
+        >
+          <Globe className="w-4 h-4" />
+          Топ Хіти (Apple Music)
+        </button>
+
         {/* All Tracks & Favorites */}
         <div className="space-y-1">
           <button
@@ -123,30 +147,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
             Улюблені
           </button>
         </div>  
-          <button
-            onClick={() => { loadJamendoTracks(); onClose?.(); }}
-            className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-pink-400 hover:text-pink-300 hover:bg-secondary/50"
-          >
-            <Globe className="w-4 h-4" />
-            Топ Хіти (Apple Music)
-          </button>
-          
-          <form onSubmit={handleSearch} className="mt-2 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Шукати в Apple Music..."
-              className="w-full bg-secondary/30 text-white text-sm rounded-md pl-3 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </form>
-
         {/* Playlists */}
         <div>
           <div className="flex items-center justify-between px-3 mb-2">
