@@ -10,6 +10,7 @@ export interface Track {
   coverUrl?: string;
   audioBlob?: Blob;
   audioUrl?: string;
+  url?: string;
   hash: string;
   addedAt: number;
   playCount: number;

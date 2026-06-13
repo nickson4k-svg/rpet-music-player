@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
-import { searchPipedTracks } from '../utils/pipedApi';
+import { searchAudiusTracks } from '../utils/audiusApi';
 import { searchItunesTracks } from '../utils/itunesApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 import { useP2PStore } from './p2pStore';
@@ -48,7 +48,7 @@ interface PlayerState {
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   reorderPlaylistTracks: (playlistId: string, startIndex: number, endIndex: number) => void;
   loadJamendoTracks: () => Promise<void>;
-  searchGlobal: (query: string, provider: 'youtube' | 'apple') => Promise<void>;
+  searchGlobal: (query: string, provider: 'audius' | 'apple') => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
@@ -174,9 +174,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         const currentTrack = tracks.find(t => t.id === currentTrackId);
         if (currentTrack && currentTrack.artist) {
           try {
-            const pipedTracks = await searchPipedTracks(currentTrack.artist);
+            const audiusTracks = await searchAudiusTracks(currentTrack.artist);
             const existingIds = new Set(tracks.map(t => t.id));
-            const newTracks = pipedTracks.filter(t => !existingIds.has(t.id)).slice(0, 10);
+            const newTracks = audiusTracks.filter((t: Track) => !existingIds.has(t.id)).slice(0, 10);
             
             if (newTracks.length > 0) {
               const newQueue = [...queue, ...newTracks.map(t => t.id)];
@@ -319,18 +319,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   loadJamendoTracks: async () => {
     // "Топ" - популярний запит в YouTube Music
-    const pipedTracks = await searchPipedTracks('top hits 2024');
-    if (pipedTracks.length > 0) {
+    const audiusTracks = await searchAudiusTracks('edm'); // Audius is better for edm
+    if (audiusTracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));
-        const newTracks = pipedTracks.filter(t => !existingIds.has(t.id));
+        const newTracks = audiusTracks.filter((t: Track) => !existingIds.has(t.id));
         return { tracks: [...state.tracks, ...newTracks] };
       });
     }
   },
 
-  searchGlobal: async (query: string, provider: 'youtube' | 'apple') => {
-    const tracks = provider === 'youtube' ? await searchPipedTracks(query) : await searchItunesTracks(query);
+  searchGlobal: async (query: string, provider: 'audius' | 'apple') => {
+    const tracks = provider === 'audius' ? await searchAudiusTracks(query) : await searchItunesTracks(query);
     if (tracks.length > 0) {
       set(state => {
         const existingIds = new Set(state.tracks.map(t => t.id));

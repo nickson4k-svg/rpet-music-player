@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { initAudioContext, audioContextState, updateNormalization } from '../../utils/audioContext';
 import { useP2PStore } from '../../stores/p2pStore';
-import { getPipedStreamUrl } from '../../utils/pipedApi';
 
 export const AudioEngine: React.FC = () => {
   const audioARef = useRef<HTMLAudioElement>(null);
@@ -58,15 +57,10 @@ export const AudioEngine: React.FC = () => {
     const setupAudio = async () => {
       let url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
       
-      if (url.startsWith('piped:')) {
-        const videoId = url.replace('piped:', '');
-        const realUrl = await getPipedStreamUrl(videoId);
-        if (realUrl) {
-          url = realUrl;
-        } else {
-          console.error('Failed to resolve Piped stream for', videoId);
-          return;
-        }
+      // Handle Audius dynamically resolving streams
+      if (typeof track.url === 'string' && track.url.startsWith('audius:')) {
+        const trackId = track.url.split(':')[1];
+        url = `https://discoveryprovider.audius.co/v1/tracks/${trackId}/stream?app_name=Rpet`;
       }
 
       const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
