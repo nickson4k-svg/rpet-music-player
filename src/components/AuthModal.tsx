@@ -16,7 +16,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
 
   const { user, login, register, logout } = useAuthStore();
-  const { disconnect } = useP2PStore();
+  const { leaveRoom } = useP2PStore();
 
   if (!isOpen) return null;
 
@@ -46,7 +46,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleLogout = () => {
-    disconnect(); // Disconnect P2P if connected
+    leaveRoom(); // Disconnect P2P if connected
     logout();
   };
 
