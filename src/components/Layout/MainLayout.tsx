@@ -154,7 +154,7 @@ export const MainLayout: React.FC = () => {
                 ))}
               </div>
               
-              <div className="hidden sm:flex items-center bg-secondary/30 rounded-full p-1 border border-secondary/50">
+              <div className="flex items-center bg-secondary/30 rounded-full p-1 border border-secondary/50 shrink-0">
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-1.5 rounded-full transition-colors ${viewMode === 'list' ? 'bg-secondary text-white' : 'text-gray-400 hover:text-white'}`}
