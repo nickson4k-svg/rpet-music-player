@@ -9,6 +9,7 @@ interface PartyModeModalProps {
 
 export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const { peerId, isHost, status, error, connections, hostRoom, joinRoom, leaveRoom } = useP2PStore();
+  const { user } = useAuthStore();
   const [joinCode, setJoinCode] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +35,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     try {
       let code = joinCode.trim();
       if (!code.startsWith('rpet-user-') && code.length < 30 && !code.includes('-')) {
-        code = \pet-user-\\;
+        code = "rpet-user-" + code.toLowerCase();
       }
       await joinRoom(code);
     } catch (err) {
