@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrackList } from '../TrackList/TrackList';
 import { PlayerBar } from '../Player/PlayerBar';
+import { AuthModal } from '../AuthModal';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { getAllTracks, getAllPlaylists } from '../../utils/idbStorage';
 import { usePlayerStore } from '../../stores/playerStore';
@@ -25,6 +26,13 @@ export const MainLayout: React.FC = () => {
   const setDominantColor = usePlayerStore(state => state.setDominantColor);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    window.addEventListener('open-auth-modal', handleOpenAuth);
+    return () => window.removeEventListener('open-auth-modal', handleOpenAuth);
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchProvider, setSearchProvider] = useState<'audius' | 'apple' | 'jiosaavn'>('jiosaavn');
 
@@ -177,6 +185,7 @@ export const MainLayout: React.FC = () => {
         </main>
       </div>
       <PlayerBar />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 };
