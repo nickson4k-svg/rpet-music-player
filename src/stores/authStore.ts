@@ -1,61 +1,66 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
+import { persist } from 'zustand/middleware';
 
-interface AuthState {
-  user: User | null;
-  session: Session | null;
-  profile: { username: string; peer_id: string | null } | null;
-  setUser: (user: User | null, session: Session | null) => void;
-  setProfile: (profile: { username: string; peer_id: string | null } | null) => void;
-  initialize: () => Promise<void>;
-  signOut: () => Promise<void>;
+interface UserProfile {
+  username: string;
+  peer_id: string;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  session: null,
-  profile: null,
-  setUser: (user, session) => set({ user, session }),
-  setProfile: (profile) => set({ profile }),
-  initialize: async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      set({ session, user: session?.user || null });
+interface AuthState {
+  user: UserProfile | null;
+  accounts: Record<string, string>; // username -> password (simple local mock)
+  login: (username: string, password: string) => void;
+  register: (username: string, password: string) => void;
+  logout: () => void;
+}
 
-      if (session?.user) {
-        // Fetch profile
-        const { data } = await supabase
-          .from('profiles')
-          .select('username, peer_id')
-          .eq('id', session.user.id)
-          .single();
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      accounts: {},
+      
+      login: (username, password) => {
+        const { accounts } = get();
+        if (!accounts[username]) {
+          throw new Error('Користувача не знайдено');
+        }
+        if (accounts[username] !== password) {
+          throw new Error('Неправильний пароль');
+        }
         
-        if (data) {
-          set({ profile: data });
+        // Ensure valid peer ID format (lowercase, no spaces)
+        const safeUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        const peer_id = `rpet-user-${safeUsername}`;
+        
+        set({ user: { username, peer_id } });
+      },
+      
+      register: (username, password) => {
+        const { accounts } = get();
+        if (accounts[username]) {
+          throw new Error('Користувач з таким нікнеймом вже існує');
         }
-      }
+        
+        const safeUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        if (safeUsername.length < 3) {
+          throw new Error('Нікнейм має містити мінімум 3 літери/цифри');
+        }
 
-      // Listen for auth changes
-      supabase.auth.onAuthStateChange(async (_event, newSession) => {
-        set({ session: newSession, user: newSession?.user || null });
-        if (newSession?.user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('username, peer_id')
-            .eq('id', newSession.user.id)
-            .single();
-          if (data) set({ profile: data });
-        } else {
-          set({ profile: null });
-        }
-      });
-    } catch (err) {
-      console.warn("Supabase auth initialization failed (missing keys?)", err);
+        const peer_id = `rpet-user-${safeUsername}`;
+        
+        set({ 
+          accounts: { ...accounts, [username]: password },
+          user: { username, peer_id }
+        });
+      },
+      
+      logout: () => {
+        set({ user: null });
+      }
+    }),
+    {
+      name: 'rpet-auth-storage',
     }
-  },
-  signOut: async () => {
-    await supabase.auth.signOut();
-    set({ user: null, session: null, profile: null });
-  }
-}));
+  )
+);

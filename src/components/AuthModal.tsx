@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User as UserIcon, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { X, Lock, User as UserIcon, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { useP2PStore } from '../stores/p2pStore';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,13 +10,13 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { user, profile, signOut } = useAuthStore();
+  const { user, login, register, logout } = useAuthStore();
+  const { disconnect } = useP2PStore();
 
   if (!isOpen) return null;
 
@@ -26,35 +26,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setError(null);
 
     try {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        onClose();
+        login(username, password);
       } else {
-        const { data, error } = await supabase.auth.signUp({ 
-          email, 
-          password,
-          options: {
-            data: { username }
-          }
-        });
-        if (error) throw error;
-        
-        // Auto create profile
-        if (data.user) {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            username: username || email.split('@')[0],
-          });
-        }
-        
-        onClose();
+        register(username, password);
       }
+      onClose();
+      
+      // Clear password field
+      setPassword('');
     } catch (err: any) {
-      setError(err.message || 'Щось пішло не так');
+      setError(err.message || 'Помилка');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    disconnect(); // Disconnect P2P if connected
+    logout();
   };
 
   return (
@@ -76,11 +69,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <UserIcon className="w-10 h-10 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">{profile?.username || 'Користувач'}</h3>
-                <p className="text-sm text-gray-400">{user.email}</p>
+                <h3 className="text-xl font-bold text-white">{user.username}</h3>
+                <p className="text-sm text-gray-400 font-mono mt-1 bg-secondary/30 p-2 rounded">
+                  Твій Peer ID: <br/> {user.peer_id}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Друзі можуть підключитися до тебе, ввівши твій нікнейм.
+                </p>
               </div>
               <button
-                onClick={() => signOut()}
+                onClick={handleLogout}
                 className="w-full py-3 bg-red-500/20 text-red-500 hover:bg-red-500/30 font-medium rounded-lg transition-colors mt-6"
               >
                 Вийти
@@ -94,34 +92,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
               
-              {!isLogin && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Нікнейм</label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                      type="text"
-                      required
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      className="w-full bg-secondary/50 border border-secondary text-white rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-primary transition-colors"
-                      placeholder="Ваш нікнейм"
-                    />
-                  </div>
-                </div>
-              )}
-
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Нікнейм</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
-                    type="email"
+                    type="text"
                     required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
                     className="w-full bg-secondary/50 border border-secondary text-white rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-primary transition-colors"
-                    placeholder="email@example.com"
+                    placeholder="Наприклад: nickson"
                   />
                 </div>
               </div>

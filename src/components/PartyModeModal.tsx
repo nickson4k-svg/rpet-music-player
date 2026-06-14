@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Users, Headphones, Copy, Check, Radio } from 'lucide-react';
 import { useP2PStore } from '../stores/p2pStore';
+import { useAuthStore } from '../stores/authStore';
 
 interface PartyModeModalProps {
   onClose: () => void;
@@ -31,7 +32,11 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     e.preventDefault();
     if (!joinCode.trim()) return;
     try {
-      await joinRoom(joinCode.trim());
+      let code = joinCode.trim();
+      if (!code.startsWith('rpet-user-') && code.length < 30 && !code.includes('-')) {
+        code = \pet-user-\\;
+      }
+      await joinRoom(code);
     } catch (err) {
       console.error('Failed to join', err);
     }
@@ -85,7 +90,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               <form onSubmit={handleJoin} className="space-y-3">
                 <input
                   type="text"
-                  placeholder="Введіть код кімнати..."
+                  placeholder="Код кімнати або нікнейм друга..."
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                   className="w-full px-4 py-3 bg-secondary/30 border border-secondary rounded-xl text-white focus:outline-none focus:border-primary transition-colors"
@@ -116,11 +121,11 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               </div>
               <h3 className="text-xl font-bold">Ви - Хост кімнати</h3>
               <p className="text-sm text-gray-400">
-                Скопіюйте цей код і надішліть другу. Коли він приєднається, музика гратиме у вас обох.
+                Ваші друзі можуть підключитися, ввівши ваш {user ? 'нікнейм' : 'код'}. Коли він приєднається, музика гратиме у вас обох.
               </p>
               
               <div className="p-4 bg-secondary/40 rounded-xl flex items-center justify-between border border-secondary">
-                <code className="text-lg font-mono text-white select-all">{peerId}</code>
+                <code className="text-lg font-mono text-white select-all">{user ? user.username : peerId}</code>
                 <button 
                   onClick={handleCopy}
                   className="p-2 hover:bg-secondary rounded-lg transition-colors text-primary"
