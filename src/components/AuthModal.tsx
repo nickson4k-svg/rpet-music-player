@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User as UserIcon, Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useAuthStore } from '../../stores/authStore';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/authStore';
 
 interface AuthModalProps {
   isOpen: boolean;
