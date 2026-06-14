@@ -64,7 +64,7 @@ export const TrackList: React.FC = () => {
     return (
       <div className="h-full border border-secondary rounded-lg bg-background/50 overflow-y-auto p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="bg-secondary/20 rounded-xl aspect-square animate-pulse" />
             ))}
@@ -106,7 +106,7 @@ export const TrackList: React.FC = () => {
             {(provided) => (
               <div 
                 className={viewMode === 'grid' 
-                  ? "flex-1 overflow-y-auto overflow-x-hidden p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  ? "flex-1 overflow-y-auto overflow-x-hidden p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                   : "flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 }
                 {...provided.droppableProps}
@@ -138,7 +138,7 @@ export const TrackList: React.FC = () => {
       ) : viewMode === 'grid' ? (
         <VirtuosoGrid
           className="flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4"
+          listClassName="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 p-4"
           data={displayedTracks}
           itemContent={(_, track) => (
             <TrackItem

@@ -62,7 +62,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         ref={innerRef}
         {...draggableProps}
         {...dragHandleProps}
-        className={`group relative flex flex-col gap-2 p-3 transition-all duration-300 hover:bg-secondary/30 rounded-xl hover:-translate-y-1 hover:shadow-xl ${
+        className={`group relative flex flex-col gap-2 p-2 sm:p-3 transition-all duration-300 hover:bg-secondary/30 rounded-xl hover:-translate-y-1 hover:shadow-xl ${
           isCurrentTrack ? 'bg-secondary/20' : ''
         } ${isDragging ? 'bg-secondary/80 shadow-2xl z-50' : ''}`}
         onDoubleClick={() => onPlay(track.id)}
