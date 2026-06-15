@@ -70,43 +70,43 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
     return (
       <div 
         ref={progressBarRef}
-        className="relative w-full h-1 bg-secondary/50 cursor-pointer group"
+        className="relative w-full h-1.5 bg-bg-tertiary cursor-pointer group"
         onPointerDown={handlePointerDown}
       >
         <div 
           className="absolute top-0 left-0 h-full transition-colors duration-500"
-          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-primary)' }}
+          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-accent)' }}
         />
         <div 
-          className="absolute top-1/2 -mt-1 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
-          style={{ left: `${progressPercent}%`, marginLeft: '-4px' }}
+          className="absolute top-1/2 -mt-1.5 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+          style={{ left: `${progressPercent}%`, marginLeft: '-6px' }}
         />
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 w-full max-w-2xl">
-      <span className="text-xs text-gray-400 w-10 text-right">
+    <div className="flex items-center gap-3 w-full max-w-2xl group">
+      <span className="text-xs font-medium text-foreground-muted w-10 text-right tabular-nums">
         {formatTime(displayTime)}
       </span>
       
       <div 
         ref={progressBarRef}
-        className="relative flex-1 h-2 bg-secondary rounded-full cursor-pointer group"
+        className="relative flex-1 h-1.5 hover:h-2 transition-all duration-200 bg-bg-tertiary rounded-full cursor-pointer flex items-center"
         onPointerDown={handlePointerDown}
       >
         <div 
-          className="absolute top-0 left-0 h-full rounded-full transition-colors duration-500"
-          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-primary)' }}
+          className="absolute left-0 h-full rounded-full transition-colors duration-500"
+          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-accent)' }}
         />
         <div 
-          className="absolute top-1/2 -mt-1.5 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
-          style={{ left: `${progressPercent}%`, marginLeft: '-6px' }}
+          className="absolute w-3.5 h-3.5 hover:w-4 hover:h-4 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md"
+          style={{ left: `${progressPercent}%`, marginLeft: '-7px' }}
         />
       </div>
 
-      <span className="text-xs text-gray-400 w-10">
+      <span className="text-xs font-medium text-foreground-muted w-10 tabular-nums">
         {formatTime(duration)}
       </span>
     </div>

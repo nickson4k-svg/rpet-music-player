@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(222.2, 84%, 4.9%);
-  --color-foreground: hsl(210, 40%, 98%);
-  --color-primary: hsl(217.2, 91.2%, 59.8%);
-  --color-primary-foreground: hsl(210, 40%, 98%);
-  --color-secondary: hsl(217.2, 32.6%, 17.5%);
-  --color-accent: hsl(210, 40%, 96%);
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #121212;
+  --color-bg-tertiary: #18181b;
+  --color-bg-hover: #27272a;
+  --color-accent: #facc15;
+  --color-accent-hover: #eab308;
+  --color-foreground: #f8fafc;
+  --color-foreground-muted: #94a3b8;
+  --color-border: #27272a;
+  
+  --color-background: var(--color-bg-primary); /* For backward compatibility if used */
 }
 
 @layer base {
@@ -15,7 +20,7 @@
   }
 
   * {
-    border-color: var(--color-secondary);
+    border-color: var(--color-border);
   }
   
   body {

@@ -62,23 +62,23 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         ref={innerRef}
         {...draggableProps}
         {...dragHandleProps}
-        className={`group relative flex flex-col gap-2 p-2 sm:p-3 transition-all duration-300 hover:bg-secondary/30 rounded-xl hover:-translate-y-1 hover:shadow-xl ${
-          isCurrentTrack ? 'bg-secondary/20' : ''
-        } ${isDragging ? 'bg-secondary/80 shadow-2xl z-50' : ''}`}
+        className={`group relative flex flex-col gap-3 p-3 rounded-2xl transition-all duration-300 hover:bg-bg-tertiary border border-transparent hover:border-border hover:shadow-xl hover:-translate-y-1 ${
+          isCurrentTrack ? 'bg-bg-tertiary border-border shadow-md' : ''
+        } ${isDragging ? 'bg-bg-tertiary shadow-2xl z-50 scale-105' : ''}`}
         onDoubleClick={() => onPlay(track.id)}
       >
-        <div className="relative w-full aspect-square bg-secondary rounded-lg overflow-hidden shadow-md">
+        <div className="relative w-full aspect-square bg-bg-secondary rounded-xl overflow-hidden shadow-md">
           {coverUrl ? (
-            <img src={coverUrl} alt={track.name} className="object-cover w-full h-full" loading="lazy" />
+            <img src={coverUrl} alt={track.name} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" loading="lazy" />
           ) : (
-            <div className="w-full h-full bg-secondary flex items-center justify-center text-xs text-gray-500 text-center leading-none p-2">
+            <div className="w-full h-full bg-bg-secondary flex items-center justify-center text-xs text-gray-500 font-medium text-center">
               No Cover
             </div>
           )}
           
           <button
-            className={`absolute right-2 bottom-2 w-10 h-10 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-105 ${
-              isCurrentTrack && !isPlaying ? 'opacity-100' : ''
+            className={`absolute right-3 bottom-3 w-12 h-12 flex items-center justify-center bg-accent/90 backdrop-blur-md rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-accent ${
+              isCurrentTrack && !isPlaying ? 'opacity-100 bg-accent' : ''
             }`}
             onClick={() => {
               if (isCurrentTrack) {
@@ -89,18 +89,18 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
             }}
           >
             {isCurrentTrack && isPlaying ? (
-              <Pause className="w-5 h-5 text-white" />
+              <Pause className="w-6 h-6 text-black" />
             ) : (
-              <Play className="w-5 h-5 text-white ml-1" />
+              <Play className="w-6 h-6 text-black ml-1" />
             )}
           </button>
 
           {isCurrentTrack && isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:opacity-0 transition-opacity pointer-events-none">
-              <div className="flex items-end gap-1 h-6">
-                <div className="w-1.5 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
-                <div className="w-1.5 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
-                <div className="w-1.5 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 group-hover:opacity-0 transition-opacity pointer-events-none">
+              <div className="flex items-end gap-1 h-8">
+                <div className="w-2 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
+                <div className="w-2 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
+                <div className="w-2 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
               </div>
             </div>
           )}
@@ -108,12 +108,11 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
 
         <div className="flex flex-col min-w-0 px-1">
           <h3 
-            className="truncate font-semibold text-sm transition-colors"
-            style={isCurrentTrack ? { color: dominantColor || 'var(--color-primary)' } : {}}
+            className={`truncate font-bold text-base transition-colors ${isCurrentTrack ? 'text-accent' : 'text-gray-100'}`}
           >
             {track.name}
           </h3>
-          <p className="truncate text-xs text-gray-400 mt-0.5">
+          <p className="truncate text-sm text-gray-400 mt-0.5 font-medium">
             {track.artist}
           </p>
         </div>
@@ -124,7 +123,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
               e.stopPropagation();
               toggleFavorite(track.id);
             }}
-            className={`p-1.5 backdrop-blur-md rounded-full transition-all ${
+            className={`p-2 backdrop-blur-md rounded-full transition-all duration-200 shadow-sm ${
               track.isFavorite 
                 ? 'bg-red-500/20 text-red-500' 
                 : 'bg-black/40 text-white hover:bg-black/60 hover:text-red-400'
@@ -142,22 +141,22 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
       ref={innerRef}
       {...draggableProps}
       {...dragHandleProps}
-      className={`group flex items-center gap-2 sm:gap-4 p-2 sm:p-3 transition-colors hover:bg-secondary/50 border-b border-transparent ${
-        isCurrentTrack ? 'bg-secondary/30' : ''
-      } ${isDragging ? 'bg-secondary/80 shadow-2xl z-50' : ''}`}
+      className={`group flex items-center gap-3 sm:gap-4 p-2 sm:p-3 rounded-xl transition-all duration-200 hover:bg-bg-tertiary border border-transparent hover:border-border hover:shadow-md ${
+        isCurrentTrack ? 'bg-bg-tertiary border-border' : ''
+      } ${isDragging ? 'bg-bg-tertiary shadow-2xl z-50 scale-105' : ''}`}
       onDoubleClick={() => onPlay(track.id)}
     >
-      <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-secondary rounded overflow-hidden shadow-sm">
+      <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 bg-bg-secondary rounded-lg overflow-hidden shadow-sm">
         {coverUrl ? (
-          <img src={coverUrl} alt={track.name} className="object-cover w-full h-full" loading="lazy" />
+          <img src={coverUrl} alt={track.name} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" loading="lazy" />
         ) : (
-          <div className="w-full h-full bg-secondary flex items-center justify-center text-[8px] sm:text-[10px] text-gray-500 text-center leading-none">
+          <div className="w-full h-full bg-bg-secondary flex items-center justify-center text-[10px] text-gray-500 font-medium text-center">
             No Cover
           </div>
         )}
         
         <button
-          className={`absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity ${
+          className={`absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
             isCurrentTrack && !isPlaying ? 'opacity-100' : ''
           }`}
           onClick={() => {
@@ -169,19 +168,19 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
           }}
         >
           {isCurrentTrack && isPlaying ? (
-            <Pause className="w-6 h-6 text-white" />
+            <Pause className="w-7 h-7 text-white drop-shadow-lg" />
           ) : (
-            <Play className="w-6 h-6 text-white ml-1" />
+            <Play className="w-7 h-7 text-white ml-1 drop-shadow-lg" />
           )}
         </button>
 
         {/* Animated EQ Icon for Playing Track (shows when not hovered) */}
         {isCurrentTrack && isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:opacity-0 transition-opacity pointer-events-none">
-            <div className="flex items-end gap-0.5 h-4">
-              <div className="w-1 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
-              <div className="w-1 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
-              <div className="w-1 bg-white eq-bar rounded-t" style={{ backgroundColor: dominantColor || 'white' }}></div>
+            <div className="flex items-end gap-0.5 h-5">
+              <div className="w-1.5 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
+              <div className="w-1.5 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
+              <div className="w-1.5 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
             </div>
           </div>
         )}
@@ -189,37 +188,36 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
 
       <div className="flex-1 min-w-0 pr-2">
         <h3 
-          className="truncate font-medium text-sm sm:text-base transition-colors"
-          style={isCurrentTrack ? { color: dominantColor || 'var(--color-primary)' } : {}}
+          className={`truncate font-bold text-sm sm:text-base transition-colors ${isCurrentTrack ? 'text-accent' : 'text-gray-100'}`}
         >
           {track.name}
         </h3>
-        <p className="truncate text-xs sm:text-sm text-gray-400">
+        <p className="truncate text-xs sm:text-sm text-gray-400 font-medium mt-0.5">
           {track.artist} <span className="sm:hidden ml-1 opacity-70">• {formatTime(track.duration)}</span>
         </p>
       </div>
 
-      <div className="text-sm text-gray-400 px-4 hidden sm:block w-32 truncate shrink-0">
+      <div className="text-sm text-gray-400 font-medium px-4 hidden sm:block w-32 truncate shrink-0">
         {track.album}
       </div>
 
-      <div className="hidden sm:block text-sm text-gray-400 w-12 text-right shrink-0">
+      <div className="hidden sm:block text-sm text-gray-400 font-medium w-16 text-right shrink-0">
         {formatTime(track.duration)}
       </div>
 
-      <div className="flex items-center justify-end w-20 sm:w-28 shrink-0">
+      <div className="flex items-center justify-end w-24 sm:w-32 shrink-0 gap-1">
         <button
           onClick={handleAutoTag}
           disabled={isTagging}
-          className={`p-1.5 sm:p-2 transition-all rounded-full hover:bg-blue-500/10 sm:ml-2 text-gray-500 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-500 ${
+          className={`p-2 transition-all duration-200 rounded-full hover:bg-blue-500/10 text-gray-400 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-500 ${
             isTagging ? 'opacity-100' : ''
           }`}
           title="Auto-tag with MusicBrainz"
         >
           {isTagging ? (
-            <Loader2 className="w-4 h-4 sm:w-4 sm:h-4 animate-spin text-blue-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
           ) : (
-            <Wand2 className="w-4 h-4 sm:w-4 sm:h-4" />
+            <Wand2 className="w-5 h-5" />
           )}
         </button>
 
@@ -228,14 +226,14 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
             e.stopPropagation();
             toggleFavorite(track.id);
           }}
-          className={`p-1.5 sm:p-2 transition-all rounded-full hover:bg-red-500/10 sm:ml-2 ${
+          className={`p-2 transition-all duration-200 rounded-full hover:bg-red-500/10 ${
             track.isFavorite 
               ? 'text-red-500 opacity-100' 
-              : 'text-gray-500 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500'
+              : 'text-gray-400 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500'
           }`}
           title={track.isFavorite ? "Видалити з улюблених" : "Додати в улюблені"}
         >
-          <Heart className={`w-4 h-4 sm:w-4 sm:h-4 ${track.isFavorite ? 'fill-red-500' : ''}`} />
+          <Heart className={`w-5 h-5 ${track.isFavorite ? 'fill-red-500' : ''}`} />
         </button>
 
         <button
@@ -243,10 +241,10 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
             e.stopPropagation();
             onDelete(track.id);
           }}
-          className="p-1.5 sm:p-2 text-gray-500 hover:text-red-500 sm:opacity-0 group-hover:opacity-100 transition-all focus:opacity-100 rounded-full hover:bg-red-500/10 sm:ml-1"
+          className="p-2 text-gray-400 hover:text-red-500 sm:opacity-0 group-hover:opacity-100 transition-all duration-200 focus:opacity-100 rounded-full hover:bg-red-500/10"
           title="Видалити трек"
         >
-          <Trash2 className="w-4 h-4 sm:w-4 sm:h-4" />
+          <Trash2 className="w-5 h-5" />
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { searchJioSaavnTracks } from '../utils/jioSaavnApi';
 import { searchItunesTracks } from '../utils/itunesApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 import { useP2PStore } from './p2pStore';
+import { generateSearchQueries } from '../utils/recommendationEngine';
 
 interface PlayerState {
   tracks: Track[];
@@ -29,6 +30,10 @@ interface PlayerState {
   dominantColor: string | null;
   viewMode: 'list' | 'grid';
   isSearchLoading: boolean;
+  
+  // Recommendations
+  recommendedTracks: Track[];
+  isGeneratingRecommendations: boolean;
 
   // Actions
   setDominantColor: (color: string | null) => void;
@@ -62,6 +67,7 @@ interface PlayerState {
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
   autoTagTrack: (id: string) => Promise<boolean>;
+  generateRecommendations: () => Promise<void>;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -83,8 +89,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   normalizationEnabled: false,
 
   dominantColor: null,
-  viewMode: 'list',
+  viewMode: 'grid',
   isSearchLoading: false,
+  
+  recommendedTracks: [],
+  isGeneratingRecommendations: false,
 
   setDominantColor: (color) => set({ dominantColor: color }),
   setViewMode: (mode) => set({ viewMode: mode }),
@@ -431,5 +440,47 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return true;
     }
     return false;
+  },
+
+  generateRecommendations: async () => {
+    set({ isGeneratingRecommendations: true });
+    try {
+      const { tracks } = get();
+      const queries = generateSearchQueries(tracks);
+      
+      // Select a random query from the top queries
+      const query = queries[Math.floor(Math.random() * queries.length)];
+      
+      const { searchSoundCloud } = await import('../lib/soundcloud');
+      const scTracks = await searchSoundCloud(query, 30); // Requesting up to 30 tracks
+      
+      const recommended = scTracks.map(t => {
+        let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
+        if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
+        
+        return {
+          id: `soundcloud-${t.id}`,
+          name: t.title,
+          artist: t.user.username,
+          duration: t.duration / 1000,
+          audioUrl: '',
+          coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+          url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`
+        } as any;
+      });
+
+      // Filter out tracks we already have locally
+      const existingIds = new Set(tracks.map(t => t.id));
+      const freshTracks = recommended.filter(t => !existingIds.has(t.id));
+
+      // Randomize the resulting list a bit
+      freshTracks.sort(() => 0.5 - Math.random());
+
+      set({ recommendedTracks: freshTracks });
+    } catch (error) {
+      console.error('Failed to generate recommendations', error);
+    } finally {
+      set({ isGeneratingRecommendations: false });
+    }
   },
 }));

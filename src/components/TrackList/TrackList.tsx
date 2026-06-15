@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 import { Virtuoso, VirtuosoGrid } from 'react-virtuoso';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
@@ -19,8 +20,20 @@ export const TrackList: React.FC = () => {
   const reorderPlaylistTracks = usePlayerStore(state => state.reorderPlaylistTracks);
   const viewMode = usePlayerStore(state => state.viewMode);
   const isSearchLoading = usePlayerStore(state => state.isSearchLoading);
+  const recommendedTracks = usePlayerStore(state => state.recommendedTracks);
+  const isGeneratingRecommendations = usePlayerStore(state => state.isGeneratingRecommendations);
+  const generateRecommendations = usePlayerStore(state => state.generateRecommendations);
+
+  useEffect(() => {
+    if (currentPlaylistId === 'recommendations' && recommendedTracks.length === 0 && !isGeneratingRecommendations) {
+      generateRecommendations();
+    }
+  }, [currentPlaylistId, recommendedTracks.length, isGeneratingRecommendations, generateRecommendations]);
 
   const displayedTracks = useMemo(() => {
+    if (currentPlaylistId === 'recommendations') {
+      return recommendedTracks;
+    }
     if (currentPlaylistId === 'favorites') {
       return tracks.filter(t => t.isFavorite);
     }
@@ -58,15 +71,23 @@ export const TrackList: React.FC = () => {
     reorderPlaylistTracks(currentPlaylistId, result.source.index, result.destination.index);
   };
 
-  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites';
+  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations';
 
-  if (isSearchLoading) {
+  if (isSearchLoading || isGeneratingRecommendations) {
     return (
-      <div className="h-full border border-secondary rounded-lg bg-background/50 overflow-y-auto p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="h-full border border-border rounded-xl bg-bg-secondary/50 backdrop-blur-xl overflow-y-auto p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {currentPlaylistId === 'recommendations' && (
+          <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center gap-2 text-accent">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              <h2 className="text-lg font-bold">Генеруємо рекомендації...</h2>
+            </div>
+          </div>
+        )}
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-secondary/20 rounded-xl aspect-square animate-pulse" />
+              <div key={i} className="bg-bg-tertiary rounded-2xl aspect-square animate-pulse" />
             ))}
           </div>
         ) : (
@@ -82,16 +103,34 @@ export const TrackList: React.FC = () => {
 
   if (displayedTracks.length === 0) {
     return (
-      <div className="mt-8 flex items-center justify-center h-64 border border-secondary rounded-lg bg-background/50 text-gray-500">
+      <div className="mt-8 flex items-center justify-center h-64 border border-border rounded-xl bg-bg-secondary/50 backdrop-blur-xl text-foreground-muted font-medium">
         Немає треків
       </div>
     );
   }
 
   return (
-    <div className="h-full border border-secondary rounded-lg bg-background/50 overflow-hidden flex flex-col">
+    <div className="h-full border border-border rounded-xl bg-bg-secondary/50 backdrop-blur-xl overflow-hidden flex flex-col">
+      {currentPlaylistId === 'recommendations' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-border bg-bg-tertiary/50">
+          <div className="flex items-center gap-2 text-accent">
+            <Sparkles className="w-5 h-5" />
+            <h2 className="text-lg font-bold">Радіо Рекомендацій</h2>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">на основі ваших улюблених треків</span>
+          </div>
+          <button
+            onClick={() => generateRecommendations()}
+            disabled={isGeneratingRecommendations}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-accent/10 hover:bg-accent/20 text-accent rounded-full text-sm font-bold transition-colors w-full sm:w-auto"
+          >
+            <RefreshCw className={`w-4 h-4 ${isGeneratingRecommendations ? 'animate-spin' : ''}`} />
+            Згенерувати нові
+          </button>
+        </div>
+      )}
+
       {viewMode === 'list' && (
-        <div className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border-b border-secondary bg-secondary/20 text-xs sm:text-sm font-medium text-gray-400 shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4 p-3 border-b border-border bg-bg-tertiary/50 text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider shrink-0">
           <div className="w-10 sm:w-12 pl-1 sm:pl-2 shrink-0"></div>
           <div className="flex-1">Назва</div>
           <div className="hidden sm:block w-32 px-4 shrink-0">Альбом</div>
@@ -106,8 +145,8 @@ export const TrackList: React.FC = () => {
             {(provided) => (
               <div 
                 className={viewMode === 'grid' 
-                  ? "flex-1 overflow-y-auto overflow-x-hidden p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                  : "flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  ? "flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  : "flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 }
                 {...provided.droppableProps}
                 ref={provided.innerRef}
@@ -138,7 +177,7 @@ export const TrackList: React.FC = () => {
       ) : viewMode === 'grid' ? (
         <VirtuosoGrid
           className="flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          listClassName="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4 p-4"
+          listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 p-4 sm:p-6"
           data={displayedTracks}
           itemContent={(_, track) => (
             <TrackItem
@@ -154,7 +193,7 @@ export const TrackList: React.FC = () => {
         />
       ) : (
         <Virtuoso
-          className="flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="flex-1 p-2 sm:p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           data={displayedTracks}
           itemContent={(_, track) => (
             <TrackItem

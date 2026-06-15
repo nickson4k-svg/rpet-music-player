@@ -77,7 +77,7 @@ export const PlayerBar: React.FC = () => {
   return (
     <>
       <AudioEngine />
-      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-background/80 backdrop-blur-2xl border border-secondary/50 rounded-2xl md:rounded-[2rem] p-2 px-3 sm:p-3 sm:px-6 flex items-center justify-between z-50 gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300">
+      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-bg-secondary/70 backdrop-blur-2xl border border-border rounded-2xl md:rounded-3xl p-3 px-4 sm:p-4 flex items-center justify-between z-50 gap-4 shadow-2xl transition-all duration-300">
         {/* Mobile progress bar */}
         <div className="absolute top-0 left-0 right-0 -translate-y-full sm:hidden">
           <ProgressBar mobile />
@@ -86,22 +86,22 @@ export const PlayerBar: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 sm:min-w-[150px]">
           {currentTrack ? (
             <>
-              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-secondary rounded shadow-lg overflow-hidden flex-shrink-0">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-bg-secondary rounded-lg shadow-lg overflow-hidden flex-shrink-0">
                 {coverUrl ? (
                   <img src={coverUrl} alt={currentTrack.name} className="object-cover w-full h-full" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-secondary text-[8px] sm:text-[10px] text-gray-500 text-center leading-none">
+                  <div className="w-full h-full flex items-center justify-center bg-bg-secondary text-[8px] sm:text-[10px] text-gray-500 font-medium text-center">
                     No Cover
                   </div>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <h4 className="font-semibold text-sm sm:text-base text-foreground truncate">{currentTrack.name}</h4>
-                <p className="text-xs sm:text-sm text-gray-400 truncate">{currentTrack.artist}</p>
+                <h4 className="font-bold text-sm sm:text-base text-foreground truncate">{currentTrack.name}</h4>
+                <p className="text-xs sm:text-sm text-foreground-muted font-medium truncate">{currentTrack.artist}</p>
               </div>
             </>
           ) : (
-            <div className="text-xs sm:text-sm text-gray-500">No track selected</div>
+            <div className="text-xs sm:text-sm text-foreground-muted font-medium">No track selected</div>
           )}
         </div>
 
@@ -142,18 +142,18 @@ export const PlayerBar: React.FC = () => {
 
       {/* Mobile Actions Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-background/95 backdrop-blur-xl border border-secondary p-4 rounded-2xl z-[60] shadow-2xl animate-slide-up">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold px-2">Додаткові функції</h3>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-secondary/50 rounded-full">
+        <div className="xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-bg-secondary/95 backdrop-blur-2xl border border-border p-5 rounded-3xl z-[60] shadow-2xl animate-slide-up">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-bold px-2">Додаткові функції</h3>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-bg-tertiary rounded-full transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-4 items-center justify-center p-4 bg-secondary/20 rounded-2xl">
+          <div className="flex flex-wrap gap-3 sm:gap-4 items-center justify-center p-5 bg-bg-tertiary/50 rounded-2xl">
             {'documentPictureInPicture' in window && (
               <button 
                 onClick={togglePiP} 
-                className={`p-2 transition-colors rounded-full hover:bg-secondary ${pipWindow ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+                className={`p-3 transition-colors rounded-full hover:bg-bg-hover ${pipWindow ? 'text-accent' : 'text-gray-400 hover:text-white'}`}
                 title="Mini Player (PiP)"
               >
                 <PictureInPicture2 className="w-5 h-5" />
@@ -165,7 +165,7 @@ export const PlayerBar: React.FC = () => {
             <Equalizer />
             <Visualizer />
           </div>
-          <div className="mt-4 bg-secondary p-4 rounded-xl">
+          <div className="mt-4 bg-bg-tertiary p-4 rounded-2xl">
             <VolumeControl />
           </div>
         </div>
