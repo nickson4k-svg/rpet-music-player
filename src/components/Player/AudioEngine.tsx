@@ -64,7 +64,8 @@ export const AudioEngine: React.FC = () => {
   useEffect(() => {
     if (!audioARef.current || !audioBRef.current) return;
     
-    const track = tracks.find(t => t.id === currentTrackId);
+    const state = usePlayerStore.getState();
+    const track = state.tracks.find(t => t.id === currentTrackId);
     if (!track) {
       audioARef.current.pause();
       audioBRef.current.pause();
@@ -160,7 +161,7 @@ export const AudioEngine: React.FC = () => {
     return () => {
       // Basic cleanup logic could go here
     };
-  }, [currentTrackId, tracks]);
+  }, [currentTrackId]);
 
   // Handle Play/Pause
   useEffect(() => {
