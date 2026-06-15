@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { seekAudio } from './AudioEngine';
+import { seekAudio } from '../../utils/audioHelpers';
 import { formatTime } from '../../utils/audioHelpers';
 
 interface ProgressBarProps {

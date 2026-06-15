@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Mic2, X } from 'lucide-react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { fetchLyrics, type LyricsData } from '../../utils/lyricsApi';
-import { seekAudio } from './AudioEngine';
+import { seekAudio } from '../../utils/audioHelpers';
 
 const parseSyncedLyrics = (synced: string) => {
   const lines = synced.split('\n');
