@@ -88,7 +88,7 @@ export const AudioEngine: React.FC = () => {
 
       // Handle SoundCloud dynamically resolving streams
       if (typeof track.url === 'string' && track.url.startsWith('soundcloud:')) {
-        const trackId = track.url.split(':')[1];
+        const trackId = track.url.replace('soundcloud:', '');
         const { getSCStreamUrl } = await import('../../lib/soundcloud');
         const scUrl = await getSCStreamUrl(trackId);
         if (scUrl) url = scUrl;

@@ -62,28 +62,24 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
   }
 }
 
-export async function getSCStreamUrl(trackId: string): Promise<string | null> {
+export async function getSCStreamUrl(trackIdOrUrl: string): Promise<string | null> {
   try {
     const clientId = await getSCClientId();
+    let transcodingUrl = trackIdOrUrl;
     
-    // First, fetch the track details to get the transcodings
-    const res = await fetch(`/api/soundcloud/tracks/${trackId}?client_id=${clientId}`);
-    if (!res.ok) return null;
-    
-    const track: SCTrack = await res.json();
-    
-    // Prioritize progressive streams (MP3/AAC directly) over HLS (m3u8) since native audio tag doesn't support HLS universally
-    let transcoding = track.media.transcodings.find(t => t.format.protocol === 'progressive');
-    
-    // Fallback to HLS if progressive is not available (though it might fail on some browsers)
-    if (!transcoding) {
-      transcoding = track.media.transcodings.find(t => t.format.protocol === 'hls');
+    if (!trackIdOrUrl.startsWith('https://')) {
+      // It's a track ID, fetch transcodings first
+      const res = await fetch(`/api/soundcloud/tracks/${trackIdOrUrl}?client_id=${clientId}`);
+      if (!res.ok) return null;
+      
+      const track: SCTrack = await res.json();
+      let transcoding = track.media.transcodings.find(t => t.format.protocol === 'progressive') || track.media.transcodings.find(t => t.format.protocol === 'hls');
+      if (!transcoding) return null;
+      transcodingUrl = transcoding.url;
     }
     
-    if (!transcoding) return null;
-    
     // Fetch the actual streaming URL
-    const proxyUrl = transcoding.url.replace('https://api-v2.soundcloud.com', '/api/soundcloud');
+    const proxyUrl = transcodingUrl.replace('https://api-v2.soundcloud.com', '/api/soundcloud');
     const streamInfoRes = await fetch(`${proxyUrl}?client_id=${clientId}`);
     if (!streamInfoRes.ok) return null;
     

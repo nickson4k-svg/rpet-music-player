@@ -355,15 +355,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       else if (provider === 'soundcloud') {
         const { searchSoundCloud } = await import('../lib/soundcloud');
         const scTracks = await searchSoundCloud(query);
-        tracks = scTracks.map(t => ({
-          id: `soundcloud-${t.id}`,
-          name: t.title,
-          artist: t.user.username,
-          duration: t.duration / 1000,
-          audioUrl: '',
-          coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
-          url: `soundcloud:${t.id}`
-        } as any));
+        tracks = scTracks.map(t => {
+          let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
+          if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
+          
+          return {
+            id: `soundcloud-${t.id}`,
+            name: t.title,
+            artist: t.user.username,
+            duration: t.duration / 1000,
+            audioUrl: '',
+            coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+            url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`
+          } as any;
+        });
       }
       else tracks = await searchItunesTracks(query);
 
