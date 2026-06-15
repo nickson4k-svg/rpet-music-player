@@ -57,7 +57,7 @@ interface PlayerState {
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   reorderPlaylistTracks: (playlistId: string, startIndex: number, endIndex: number) => void;
   loadJamendoTracks: () => Promise<void>;
-  searchGlobal: (query: string, provider: 'audius' | 'apple' | 'jiosaavn') => Promise<void>;
+  searchGlobal: (query: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
@@ -346,12 +346,25 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
-  searchGlobal: async (query: string, provider: 'audius' | 'apple' | 'jiosaavn') => {
+  searchGlobal: async (query: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
     set({ isSearchLoading: true });
     try {
       let tracks: Track[] = [];
       if (provider === 'audius') tracks = await searchAudiusTracks(query);
       else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
+      else if (provider === 'soundcloud') {
+        const { searchSoundCloud } = await import('../lib/soundcloud');
+        const scTracks = await searchSoundCloud(query);
+        tracks = scTracks.map(t => ({
+          id: `soundcloud-${t.id}`,
+          name: t.title,
+          artist: t.user.username,
+          duration: t.duration / 1000,
+          audioUrl: '',
+          coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+          url: `soundcloud:${t.id}`
+        } as any));
+      }
       else tracks = await searchItunesTracks(query);
 
       if (tracks.length > 0) {

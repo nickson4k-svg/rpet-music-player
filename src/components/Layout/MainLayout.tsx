@@ -34,7 +34,7 @@ export const MainLayout: React.FC = () => {
     return () => window.removeEventListener('open-auth-modal', handleOpenAuth);
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchProvider, setSearchProvider] = useState<'audius' | 'apple' | 'jiosaavn'>('jiosaavn');
+  const [searchProvider, setSearchProvider] = useState<'audius' | 'apple' | 'jiosaavn' | 'soundcloud'>('soundcloud');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,9 +118,10 @@ export const MainLayout: React.FC = () => {
               <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2">
                 <select
                   value={searchProvider}
-                  onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'apple' | 'jiosaavn')}
+                  onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'apple' | 'jiosaavn' | 'soundcloud')}
                   className="bg-secondary/30 text-white text-sm rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm cursor-pointer appearance-none"
                 >
+                  <option value="soundcloud">SoundCloud</option>
                   <option value="jiosaavn">JioSaavn</option>
                   <option value="audius">Audius</option>
                   <option value="apple">Apple Music</option>
@@ -130,7 +131,7 @@ export const MainLayout: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={searchProvider === 'audius' ? "Шукати в Audius..." : searchProvider === 'jiosaavn' ? "Шукати в JioSaavn..." : "Шукати в Apple Music..."}
+                    placeholder={searchProvider === 'soundcloud' ? "Шукати в SoundCloud..." : searchProvider === 'audius' ? "Шукати в Audius..." : searchProvider === 'jiosaavn' ? "Шукати в JioSaavn..." : "Шукати в Apple Music..."}
                     className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
                   />
                   <button
