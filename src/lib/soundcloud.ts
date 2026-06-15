@@ -1,4 +1,4 @@
-let cachedClientId: string | null = null;
+let cachedClientId: string | null = '9RxIC6NwiaJEj6SsGAJgmHYOYauqhn9E'; // Hardcoded fallback
 
 export async function getSCClientId(): Promise<string> {
   if (cachedClientId) return cachedClientId;
@@ -25,10 +25,11 @@ export async function getSCClientId(): Promise<string> {
       }
     }
     
-    throw new Error('Client ID not found in scripts');
+    return '9RxIC6NwiaJEj6SsGAJgmHYOYauqhn9E'; // Fallback
   } catch (error) {
-    console.error('Failed to get SoundCloud Client ID:', error);
-    throw error;
+    console.warn('Failed to get SoundCloud Client ID dynamically (likely CORS), using fallback.');
+    cachedClientId = '9RxIC6NwiaJEj6SsGAJgmHYOYauqhn9E';
+    return cachedClientId;
   }
 }
 
