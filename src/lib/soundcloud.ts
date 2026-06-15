@@ -50,7 +50,7 @@ export interface SCTrack {
 export async function searchSoundCloud(query: string, limit = 20): Promise<SCTrack[]> {
   try {
     const clientId = await getSCClientId();
-    const res = await fetch(`https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
+    const res = await fetch(`/api/soundcloud/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
     
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     
@@ -67,7 +67,7 @@ export async function getSCStreamUrl(trackId: string): Promise<string | null> {
     const clientId = await getSCClientId();
     
     // First, fetch the track details to get the transcodings
-    const res = await fetch(`https://api-v2.soundcloud.com/tracks/${trackId}?client_id=${clientId}`);
+    const res = await fetch(`/api/soundcloud/tracks/${trackId}?client_id=${clientId}`);
     if (!res.ok) return null;
     
     const track: SCTrack = await res.json();
