@@ -86,6 +86,14 @@ export const AudioEngine: React.FC = () => {
         url = `https://discoveryprovider.audius.co/v1/tracks/${trackId}/stream?app_name=Rpet`;
       }
 
+      // Handle SoundCloud dynamically resolving streams
+      if (typeof track.url === 'string' && track.url.startsWith('soundcloud:')) {
+        const trackId = track.url.split(':')[1];
+        const { getSCStreamUrl } = await import('../../lib/soundcloud');
+        const scUrl = await getSCStreamUrl(trackId);
+        if (scUrl) url = scUrl;
+      }
+
       const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
       const inactiveAudio = activeDeckRef.current === 'A' ? audioBRef.current : audioARef.current;
       const activeGain = activeDeckRef.current === 'A' ? audioContextState.gainA : audioContextState.gainB;

@@ -83,7 +83,8 @@ export async function getSCStreamUrl(trackId: string): Promise<string | null> {
     if (!transcoding) return null;
     
     // Fetch the actual streaming URL
-    const streamInfoRes = await fetch(`${transcoding.url}?client_id=${clientId}`);
+    const proxyUrl = transcoding.url.replace('https://api-v2.soundcloud.com', '/api/soundcloud');
+    const streamInfoRes = await fetch(`${proxyUrl}?client_id=${clientId}`);
     if (!streamInfoRes.ok) return null;
     
     const streamInfo = await streamInfoRes.json();
