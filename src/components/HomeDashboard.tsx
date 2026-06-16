@@ -40,7 +40,7 @@ export const HomeDashboard: React.FC = () => {
         <div className="w-24 h-24 mb-6 rounded-full bg-bg-secondary flex items-center justify-center">
           <Sparkles className="w-10 h-10 text-accent/50" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Ласкаво просимо до 50 Faces!</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">Ласкаво просимо до 50 Faces!</h2>
         <p className="max-w-md">Знайдіть улюблені треки за допомогою пошуку або почніть слухати, щоб ми могли створити для вас персональні рекомендації.</p>
       </div>
     );

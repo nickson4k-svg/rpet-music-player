@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Music, Trash2, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
+import { Plus, ListMusic, Trash2, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
 import { StatsModal } from '../StatsModal';
 import { PartyModeModal } from '../PartyModeModal';
@@ -48,8 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     <aside className="w-64 border-r border-border bg-bg-secondary/80 md:bg-bg-secondary/60 backdrop-blur-xl flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
       <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex w-full justify-between items-center">
-          <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-accent">
-            <Music className="w-6 h-6" />
+          <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-white">
+
             50 Faces
           </h2>
           {onClose && (
@@ -59,29 +59,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           )}
         </div>
         <div className="flex items-center gap-0.5 w-full justify-around sm:justify-end">
-          <button 
-            onClick={() => setIsPartyModeOpen(true)} 
+          <button
+            onClick={() => setIsPartyModeOpen(true)}
             className="p-2 text-purple-400 hover:text-purple-300 hover:bg-white/5 rounded-full transition-all"
             title="Спільне прослуховування"
           >
             <Radio className="w-5 h-5" />
           </button>
-          <button 
-            onClick={handleInstall} 
+          <button
+            onClick={handleInstall}
             className="p-2 text-green-400 hover:text-green-300 hover:bg-white/5 rounded-full transition-all"
             title="Встановити додаток (Офлайн доступ)"
           >
             <Download className="w-5 h-5" />
           </button>
-          <button 
-            onClick={() => setIsStatsOpen(true)} 
+          <button
+            onClick={() => setIsStatsOpen(true)}
             className="p-2 text-blue-400 hover:text-blue-300 hover:bg-white/5 rounded-full transition-all"
             title="Статистика"
           >
             <BarChart2 className="w-5 h-5" />
           </button>
-          <button 
-            onClick={() => setIsSettingsOpen(true)} 
+          <button
+            onClick={() => setIsSettingsOpen(true)}
             className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
             title="Налаштування"
           >
@@ -96,24 +96,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         <div className="space-y-2">
           <button
             onClick={() => { setCurrentPlaylistId(null); onClose?.(); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-              currentPlaylistId === null 
-                ? 'bg-accent/10 text-accent' 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${currentPlaylistId === null
+                ? 'bg-accent/10 text-accent'
                 : 'text-gray-400 hover:text-white hover:bg-bg-hover'
-            }`}
+              }`}
             style={currentPlaylistId === null && dominantColor ? { backgroundColor: `${dominantColor}33` } : undefined}
           >
             <ListMusic className="w-5 h-5" />
             Всі треки
           </button>
-          
+
           <button
             onClick={() => { setCurrentPlaylistId('recommendations'); onClose?.(); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-              currentPlaylistId === 'recommendations' 
-                ? 'bg-accent/10 text-accent' 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${currentPlaylistId === 'recommendations'
+                ? 'bg-accent/10 text-accent'
                 : 'text-gray-400 hover:text-white hover:bg-bg-hover'
-            }`}
+              }`}
             style={currentPlaylistId === 'recommendations' && dominantColor ? { backgroundColor: `${dominantColor}33`, color: dominantColor } : undefined}
           >
             <Radio className="w-5 h-5" />
@@ -122,19 +120,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
           <button
             onClick={() => { setCurrentPlaylistId('favorites'); onClose?.(); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-              currentPlaylistId === 'favorites' ? 'bg-red-500/10 text-red-500' : 'text-gray-400 hover:text-white hover:bg-bg-hover'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${currentPlaylistId === 'favorites' ? 'bg-red-500/10 text-red-500' : 'text-gray-400 hover:text-white hover:bg-bg-hover'
+              }`}
           >
             <Heart className={`w-5 h-5 ${currentPlaylistId === 'favorites' ? 'fill-red-500' : ''}`} />
             Улюблені
           </button>
-        </div>  
+        </div>
         {/* Playlists */}
         <div>
           <div className="flex items-center justify-between px-4 mb-3">
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Плейлисти</h3>
-            <button 
+            <button
               onClick={handleCreatePlaylist}
               className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all"
               title="Новий плейлист"
@@ -148,11 +145,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 key={pl.id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, pl.id)}
-                className={`group flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-                  currentPlaylistId === pl.id 
-                    ? 'bg-accent/10 text-accent' 
+                className={`group flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${currentPlaylistId === pl.id
+                    ? 'bg-accent/10 text-accent'
                     : 'text-gray-400 hover:text-white hover:bg-bg-hover'
-                }`}
+                  }`}
                 style={currentPlaylistId === pl.id && dominantColor ? { backgroundColor: `${dominantColor}33` } : undefined}
               >
                 <button
