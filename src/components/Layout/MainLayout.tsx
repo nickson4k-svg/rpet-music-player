@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TrackList } from '../TrackList/TrackList';
 import { PlayerBar } from '../Player/PlayerBar';
 import { AuthModal } from '../AuthModal';
@@ -28,7 +28,6 @@ export const MainLayout: React.FC = () => {
   const setViewMode = usePlayerStore(state => state.setViewMode);
   const setDominantColor = usePlayerStore(state => state.setDominantColor);
   const isSearchMode = usePlayerStore(state => state.isSearchMode);
-  const setSearchMode = usePlayerStore(state => state.setSearchMode);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
