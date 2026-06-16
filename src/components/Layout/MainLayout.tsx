@@ -117,7 +117,7 @@ export const MainLayout: React.FC = () => {
                 >
                   <Menu className="w-6 h-6" />
                 </button>
-                <h1 className="text-xl font-bold text-white mr-2 flex-grow sm:flex-grow-0">50 Faces</h1>
+                <h1 className="text-xl font-bold text-white mr-2 flex-grow sm:flex-grow-0 drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">50 Faces</h1>
               </div>
               
               <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2">

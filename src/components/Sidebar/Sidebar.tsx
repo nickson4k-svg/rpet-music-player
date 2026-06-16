@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     <aside className="w-64 border-r border-border bg-bg-secondary/80 md:bg-bg-secondary/60 backdrop-blur-xl flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
       <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="flex w-full justify-between items-center">
-          <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-white">
+          <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">
 
             50 Faces
           </h2>
