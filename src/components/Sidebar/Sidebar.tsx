@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         <div className="flex w-full justify-between items-center">
           <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-accent">
             <Music className="w-6 h-6" />
-            Rpet
+            50 Faces
           </h2>
           {onClose && (
             <button onClick={onClose} className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
