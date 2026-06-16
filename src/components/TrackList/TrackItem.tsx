@@ -77,7 +77,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
           )}
           
           <button
-            className={`absolute right-3 bottom-3 w-12 h-12 flex items-center justify-center bg-accent/90 backdrop-blur-md rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-accent ${
+            className={`absolute right-2 bottom-2 sm:right-3 sm:bottom-3 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-accent/90 backdrop-blur-md rounded-full shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-accent ${
               isCurrentTrack && !isPlaying ? 'opacity-100 bg-accent' : ''
             }`}
             onClick={() => {
@@ -209,7 +209,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         <button
           onClick={handleAutoTag}
           disabled={isTagging}
-          className={`p-2 transition-all duration-200 rounded-full hover:bg-blue-500/10 text-gray-400 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-500 ${
+          className={`p-2 transition-all duration-200 rounded-full hover:bg-blue-500/10 text-gray-400 opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-blue-500 ${
             isTagging ? 'opacity-100' : ''
           }`}
           title="Auto-tag with MusicBrainz"
@@ -229,7 +229,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
           className={`p-2 transition-all duration-200 rounded-full hover:bg-red-500/10 ${
             track.isFavorite 
               ? 'text-red-500 opacity-100' 
-              : 'text-gray-400 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500'
+              : 'text-gray-400 opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500'
           }`}
           title={track.isFavorite ? "Видалити з улюблених" : "Додати в улюблені"}
         >
@@ -241,7 +241,7 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
             e.stopPropagation();
             onDelete(track.id);
           }}
-          className="p-2 text-gray-400 hover:text-red-500 sm:opacity-0 group-hover:opacity-100 transition-all duration-200 focus:opacity-100 rounded-full hover:bg-red-500/10"
+          className="p-2 text-gray-400 hover:text-red-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-200 focus:opacity-100 rounded-full hover:bg-red-500/10"
           title="Видалити трек"
         >
           <Trash2 className="w-5 h-5" />

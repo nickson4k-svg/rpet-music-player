@@ -9,7 +9,7 @@ export const AudioEngine: React.FC = () => {
   const activeDeckRef = useRef<'A' | 'B'>('A');
   const fadeTimeoutRef = useRef<number | null>(null);
   
-  const tracks = usePlayerStore(state => state.tracks);
+  const getTrackById = usePlayerStore(state => state.getTrackById);
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const volume = usePlayerStore(state => state.volume);
@@ -65,7 +65,7 @@ export const AudioEngine: React.FC = () => {
     if (!audioARef.current || !audioBRef.current) return;
     
     const state = usePlayerStore.getState();
-    const track = state.tracks.find(t => t.id === currentTrackId);
+    const track = state.getTrackById(currentTrackId);
     if (!track) {
       audioARef.current.pause();
       audioBRef.current.pause();
@@ -237,7 +237,7 @@ export const AudioEngine: React.FC = () => {
       // Save position and update stats every 10 seconds (only if not guest)
       if (timestamp - lastSave > 10000 && !p2pState.hostConnection) { 
         const state = usePlayerStore.getState();
-        const currentTrack = state.tracks.find(t => t.id === state.currentTrackId);
+        const currentTrack = state.getTrackById(state.currentTrackId);
         
         if (currentTrack && state.isPlaying && !activeAudio.paused) {
           const updatedTrack = { 
@@ -287,7 +287,7 @@ export const AudioEngine: React.FC = () => {
   // Media Session metadata
   useEffect(() => {
     if ('mediaSession' in navigator) {
-      const track = tracks.find(t => t.id === currentTrackId);
+      const track = getTrackById(currentTrackId);
       if (track) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: track.name,
@@ -305,7 +305,7 @@ export const AudioEngine: React.FC = () => {
         navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
       }
     }
-  }, [currentTrackId, tracks, isPlaying, togglePlayPause, playNext, playPrevious]);
+  }, [currentTrackId, getTrackById, isPlaying, togglePlayPause, playNext, playPrevious]);
 
   // Global Hotkeys
   useEffect(() => {
@@ -362,7 +362,7 @@ export const AudioEngine: React.FC = () => {
         } else if (msg.type === 'TRACK_CHANGE') {
           // Add dummy track to queue if not exists to display metadata
           const { id, title, artist, coverUrl } = msg.payload;
-          let track: any = state.tracks.find(t => t.id === id);
+          let track: any = state.getTrackById(id);
           if (!track) {
             track = {
               id, name: title, artist, coverUrl, audioUrl: '', duration: 0

@@ -95,12 +95,12 @@ export const Visualizer: React.FC = () => {
 
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-40 bg-background/90 flex flex-col items-center justify-center transition-colors duration-1000">
-        <div className="absolute top-6 left-6 z-50 flex gap-2">
-          <button onClick={() => setTheme('bars')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'bars' ? 'bg-primary text-white' : 'bg-secondary text-gray-300'}`}>Bars</button>
-          <button onClick={() => setTheme('wave')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'wave' ? 'bg-primary text-white' : 'bg-secondary text-gray-300'}`}>Wave</button>
-          <button onClick={() => setTheme('circle')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'circle' ? 'bg-primary text-white' : 'bg-secondary text-gray-300'}`}>Circle</button>
-        </div>
+        <div className="fixed inset-0 z-40 bg-background/90 flex flex-col items-center justify-center transition-colors duration-1000">
+          <div className="absolute top-6 left-6 z-50 flex gap-2">
+            <button onClick={() => setTheme('bars')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'bars' ? 'bg-accent text-white' : 'bg-bg-secondary text-gray-300'}`}>Bars</button>
+            <button onClick={() => setTheme('wave')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'wave' ? 'bg-accent text-white' : 'bg-bg-secondary text-gray-300'}`}>Wave</button>
+            <button onClick={() => setTheme('circle')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'circle' ? 'bg-accent text-white' : 'bg-bg-secondary text-gray-300'}`}>Circle</button>
+          </div>
         <button 
           onClick={toggleFullscreen}
           className="absolute top-6 right-6 p-3 bg-black/50 text-white rounded-full hover:bg-black/70 z-50 transition-colors"
@@ -123,7 +123,7 @@ export const Visualizer: React.FC = () => {
         ref={canvasRef}
         width={100}
         height={30}
-        className="w-24 h-8 bg-secondary/30 rounded"
+        className="w-24 h-8 bg-bg-tertiary rounded"
       />
       <button 
         onClick={toggleFullscreen} 

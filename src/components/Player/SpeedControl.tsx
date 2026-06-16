@@ -26,7 +26,7 @@ export const SpeedControl: React.FC = () => {
     <div className="relative" ref={popoverRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 flex items-center gap-1 transition-colors rounded-full hover:bg-secondary ${isOpen || playbackRate !== 1 ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+        className={`p-2 flex items-center gap-1 transition-colors rounded-full hover:bg-bg-hover ${isOpen || playbackRate !== 1 ? 'text-accent' : 'text-gray-400 hover:text-white'}`}
         title="Швидкість відтворення"
       >
         <FastForward className="w-5 h-5" />
@@ -34,7 +34,7 @@ export const SpeedControl: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-4 bg-secondary p-2 rounded-xl shadow-2xl border border-secondary/50 flex flex-col min-w-[80px] z-50">
+        <div className="absolute bottom-full right-0 mb-4 bg-bg-secondary p-2 rounded-3xl shadow-2xl border border-border flex flex-col min-w-[80px] z-50 backdrop-blur-xl">
           {SPEEDS.map(speed => (
             <button
               key={speed}
@@ -42,8 +42,8 @@ export const SpeedControl: React.FC = () => {
                 setPlaybackRate(speed);
                 setIsOpen(false);
               }}
-              className={`px-4 py-2 text-sm text-left hover:bg-white/10 rounded transition-colors ${
-                playbackRate === speed ? 'text-primary font-bold bg-primary/10' : 'text-white'
+              className={`py-2 px-4 rounded-xl text-sm font-medium transition-colors hover:bg-bg-hover ${
+                playbackRate === speed ? 'text-accent bg-accent/10' : 'text-gray-300'
               }`}
             >
               {speed}x

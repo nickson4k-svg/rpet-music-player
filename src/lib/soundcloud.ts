@@ -4,7 +4,7 @@ export async function getSCClientId(): Promise<string> {
   if (cachedClientId) return cachedClientId;
 
   try {
-    const htmlRes = await fetch('https://soundcloud.com');
+    const htmlRes = await fetch('https://corsproxy.io/?https://soundcloud.com');
     const html = await htmlRes.text();
     
     const matches = html.match(/<script crossorigin src="([^"]+)"/g);

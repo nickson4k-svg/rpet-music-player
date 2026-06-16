@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { TrackList } from '../TrackList/TrackList';
 import { PlayerBar } from '../Player/PlayerBar';
 import { AuthModal } from '../AuthModal';
 import { Sidebar } from '../Sidebar/Sidebar';
+import { SearchResults } from '../TrackList/SearchResults';
 import { getAllTracks, getAllPlaylists } from '../../utils/idbStorage';
 import { usePlayerStore } from '../../stores/playerStore';
 
@@ -11,8 +12,9 @@ import { Menu, Search, LayoutGrid, List } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useMediaSession } from '../../hooks/useMediaSession';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
+import { HomeDashboard } from '../HomeDashboard';
 
-const GENRES = ["Pop", "Hip-Hop", "Rock", "Electronic", "R&B", "Jazz", "K-Pop", "Indie", "Classical"];
+const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
 
 export const MainLayout: React.FC = () => {
   useMediaSession();
@@ -20,10 +22,13 @@ export const MainLayout: React.FC = () => {
   const setTracks = usePlayerStore(state => state.setTracks);
   const setPlaylists = usePlayerStore(state => state.setPlaylists);
   const searchGlobal = usePlayerStore(state => state.searchGlobal);
+  const currentPlaylistId = usePlayerStore(state => state.currentPlaylistId);
   const setCurrentPlaylistId = usePlayerStore(state => state.setCurrentPlaylistId);
   const viewMode = usePlayerStore(state => state.viewMode);
   const setViewMode = usePlayerStore(state => state.setViewMode);
   const setDominantColor = usePlayerStore(state => state.setDominantColor);
+  const isSearchMode = usePlayerStore(state => state.isSearchMode);
+  const setSearchMode = usePlayerStore(state => state.setSearchMode);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -62,6 +67,7 @@ export const MainLayout: React.FC = () => {
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  
   useEffect(() => {
     if (currentTrack?.coverUrl) {
       setCoverUrl(currentTrack.coverUrl);
@@ -82,7 +88,7 @@ export const MainLayout: React.FC = () => {
   }, [dominantColor, setDominantColor]);
 
   return (
-    <div className="h-[100dvh] bg-transparent flex flex-col pb-32 sm:pb-36 overflow-hidden relative z-0">
+    <div className="h-[100dvh] bg-transparent flex flex-col overflow-hidden relative z-0">
       <ThemeManager />
       
       {/* Animated Mesh Gradient Background (Ambient Canvas) */}
@@ -102,8 +108,8 @@ export const MainLayout: React.FC = () => {
           <Sidebar onClose={() => setIsSidebarOpen(false)} />
         </div>
 
-        <main className="flex-1 p-3 sm:p-6 overflow-hidden flex flex-col w-full">
-          <div className="max-w-5xl mx-auto w-full flex flex-col h-full space-y-4 sm:space-y-6">
+        <main className="flex-1 p-3 sm:p-6 pb-32 sm:pb-40 overflow-hidden flex flex-col w-full">
+          <div className="max-w-[1600px] mx-auto w-full flex flex-col h-full space-y-4 sm:space-y-6">
             <div className="flex items-center gap-3 mb-2 flex-col sm:flex-row">
               <div className="flex items-center gap-3 md:hidden w-full sm:w-auto">
                 <button 
@@ -144,21 +150,20 @@ export const MainLayout: React.FC = () => {
               </form>
             </div>
             
-            {/* Genres Row & View Toggle */}
+            {/* Genres & Quick Picks Row */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {GENRES.map((genre) => (
+                {MOODS.map((category) => (
                   <button
-                    key={genre}
+                    key={category}
                     onClick={() => {
-                      setSearchQuery(genre);
-                      searchGlobal(genre, searchProvider);
-                      setCurrentPlaylistId(null);
+                      setSearchQuery('');
+                      usePlayerStore.getState().openMood(category, searchProvider);
                     }}
                     className="whitespace-nowrap px-5 py-2 bg-bg-tertiary hover:bg-accent/10 text-foreground-muted hover:text-accent border border-transparent hover:border-accent/30 rounded-full text-sm font-bold transition-all duration-300"
                     style={{ borderColor: dominantColor ? `${dominantColor}40` : undefined }}
                   >
-                    {genre}
+                    {category}
                   </button>
                 ))}
               </div>
@@ -180,7 +185,13 @@ export const MainLayout: React.FC = () => {
             </div>
 
             <div className="flex-1 min-h-0">
-               <TrackList />
+               {isSearchMode ? (
+                 <SearchResults />
+               ) : (!searchQuery && !currentPlaylistId) ? (
+                 <HomeDashboard />
+               ) : (
+                 <TrackList />
+               )}
             </div>
           </div>
         </main>

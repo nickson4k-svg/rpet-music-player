@@ -32,7 +32,7 @@ export const VolumeControl: React.FC = () => {
         step="0.01"
         value={volume}
         onChange={handleVolumeChange}
-        className="w-full h-1 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+        className="w-full h-1.5 bg-bg-tertiary rounded-lg appearance-none cursor-pointer accent-accent hover:h-2 transition-all duration-200"
       />
     </div>
   );

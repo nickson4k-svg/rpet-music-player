@@ -23,6 +23,8 @@ export const TrackList: React.FC = () => {
   const recommendedTracks = usePlayerStore(state => state.recommendedTracks);
   const isGeneratingRecommendations = usePlayerStore(state => state.isGeneratingRecommendations);
   const generateRecommendations = usePlayerStore(state => state.generateRecommendations);
+  const currentMood = usePlayerStore(state => state.currentMood);
+  const moodTracks = usePlayerStore(state => state.moodTracks);
 
   useEffect(() => {
     if (currentPlaylistId === 'recommendations' && recommendedTracks.length === 0 && !isGeneratingRecommendations) {
@@ -33,6 +35,9 @@ export const TrackList: React.FC = () => {
   const displayedTracks = useMemo(() => {
     if (currentPlaylistId === 'recommendations') {
       return recommendedTracks;
+    }
+    if (currentPlaylistId === 'mood') {
+      return moodTracks;
     }
     if (currentPlaylistId === 'favorites') {
       return tracks.filter(t => t.isFavorite);
@@ -71,7 +76,7 @@ export const TrackList: React.FC = () => {
     reorderPlaylistTracks(currentPlaylistId, result.source.index, result.destination.index);
   };
 
-  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations';
+  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood';
 
   if (isSearchLoading || isGeneratingRecommendations) {
     return (
@@ -81,6 +86,14 @@ export const TrackList: React.FC = () => {
             <div className="flex items-center gap-2 text-accent">
               <Sparkles className="w-5 h-5 animate-pulse" />
               <h2 className="text-lg font-bold">Генеруємо рекомендації...</h2>
+            </div>
+          </div>
+        )}
+        {currentPlaylistId === 'mood' && currentMood && (
+          <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center gap-2 text-accent">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              <h2 className="text-lg font-bold">Шукаємо треки для настрою "{currentMood}"...</h2>
             </div>
           </div>
         )}
@@ -126,6 +139,15 @@ export const TrackList: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${isGeneratingRecommendations ? 'animate-spin' : ''}`} />
             Згенерувати нові
           </button>
+        </div>
+      )}
+      {currentPlaylistId === 'mood' && currentMood && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-border bg-bg-tertiary/50">
+          <div className="flex items-center gap-2 text-accent">
+            <Sparkles className="w-5 h-5" />
+            <h2 className="text-lg font-bold">Мікс: {currentMood}</h2>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">Знайдено на SoundCloud</span>
+          </div>
         </div>
       )}
 

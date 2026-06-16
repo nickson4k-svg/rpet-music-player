@@ -115,7 +115,7 @@ export const Lyrics: React.FC = () => {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 transition-colors rounded-full hover:bg-secondary ${isOpen ? 'text-primary bg-secondary' : 'text-gray-400 hover:text-white'}`}
+        className={`p-2 transition-colors rounded-full hover:bg-bg-hover ${isOpen ? 'text-accent bg-accent/10' : 'text-gray-400 hover:text-white'}`}
         title="Текст пісні"
       >
         <Mic2 className="w-5 h-5" />
@@ -134,7 +134,7 @@ export const Lyrics: React.FC = () => {
             {currentTrack && (
               <div className="mb-12 text-center sticky top-0 py-4 z-10">
                 <h2 className="text-3xl font-bold text-white mb-2">{currentTrack.name}</h2>
-                <h3 className="text-lg text-primary/80">{currentTrack.artist}</h3>
+                <h3 className="text-lg text-accent/80">{currentTrack.artist}</h3>
               </div>
             )}
             

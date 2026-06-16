@@ -77,7 +77,7 @@ export const PlayerBar: React.FC = () => {
   return (
     <>
       <AudioEngine />
-      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-bg-secondary/70 backdrop-blur-2xl border border-border rounded-2xl md:rounded-3xl p-3 px-4 sm:p-4 flex items-center justify-between z-50 gap-4 shadow-2xl transition-all duration-300">
+      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-black/30 backdrop-blur-3xl border border-white/10 rounded-2xl md:rounded-3xl p-3 px-4 sm:p-4 flex items-center justify-between z-50 gap-4 shadow-2xl transition-all duration-300">
         {/* Mobile progress bar */}
         <div className="absolute top-0 left-0 right-0 -translate-y-full sm:hidden">
           <ProgressBar mobile />
@@ -142,8 +142,8 @@ export const PlayerBar: React.FC = () => {
 
       {/* Mobile Actions Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-bg-secondary/95 backdrop-blur-2xl border border-border p-5 rounded-3xl z-[60] shadow-2xl animate-slide-up">
-          <div className="flex items-center justify-between mb-5">
+        <div className="xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-bg-secondary/95 backdrop-blur-2xl border border-border p-5 rounded-3xl z-[60] shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex items-center justify-between mb-5 sticky top-0 bg-bg-secondary/90 backdrop-blur-md pb-2 z-10 -mt-2 pt-2">
             <h3 className="text-lg font-bold px-2">Додаткові функції</h3>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-bg-tertiary rounded-full transition-colors">
               <X className="w-5 h-5" />

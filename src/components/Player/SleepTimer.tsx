@@ -57,7 +57,7 @@ export const SleepTimer: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)} 
-        className={`p-2 transition-colors rounded-full flex items-center relative hover:bg-secondary ${minutesLeft !== null ? 'text-primary bg-secondary/50' : 'text-gray-400 hover:text-white'}`}
+        className={`p-2 transition-colors rounded-full flex items-center relative hover:bg-bg-hover ${minutesLeft !== null ? 'text-accent bg-accent/10' : 'text-gray-400 hover:text-white'}`}
         title={minutesLeft ? `Таймер сну (${minutesLeft} хв)` : "Таймер сну"}
       >
         {minutesLeft ? <Timer className="w-5 h-5" /> : <TimerOff className="w-5 h-5" />}
@@ -69,16 +69,16 @@ export const SleepTimer: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-4 bg-background/95 backdrop-blur border border-secondary rounded-lg shadow-xl overflow-hidden min-w-[140px] z-50">
-          <div className="p-2 border-b border-secondary">
-            <h4 className="text-xs font-semibold text-gray-400 text-center uppercase">Таймер сну</h4>
+        <div className="absolute bottom-full right-0 mb-4 bg-bg-secondary p-2 rounded-3xl shadow-2xl border border-border flex flex-col min-w-[160px] z-50 backdrop-blur-xl">
+          <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-border mb-2">
+            Зупинити через
           </div>
           <div className="py-1">
             {options.map((opt, idx) => (
               <button
-                key={idx}
+                key={opt.value ?? idx}
                 onClick={() => handleSelect(opt.value)}
-                className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-secondary flex items-center justify-between ${minutesLeft === opt.value ? 'text-primary font-medium bg-secondary/20' : 'text-gray-300'}`}
+                className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-bg-hover flex items-center justify-between rounded-xl ${minutesLeft === opt.value ? 'text-accent font-medium bg-accent/10' : 'text-gray-300'}`}
               >
                 {opt.label}
               </button>

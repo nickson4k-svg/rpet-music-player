@@ -30,15 +30,21 @@ interface PlayerState {
   dominantColor: string | null;
   viewMode: 'list' | 'grid';
   isSearchLoading: boolean;
+  searchResults: Track[];
+  isSearchMode: boolean;
   
   // Recommendations
   recommendedTracks: Track[];
   isGeneratingRecommendations: boolean;
 
+  currentMood: string | null;
+  moodTracks: Track[];
+
   // Actions
   setDominantColor: (color: string | null) => void;
   setViewMode: (mode: 'list' | 'grid') => void;
   setSearchLoading: (isLoading: boolean) => void;
+  setSearchMode: (isSearchMode: boolean) => void;
   setTracks: (tracks: Track[]) => void;
   setPlaylists: (playlists: Playlist[]) => void;
   playTrack: (id: string) => void;
@@ -68,6 +74,8 @@ interface PlayerState {
   toggleNormalization: () => void;
   autoTagTrack: (id: string) => Promise<boolean>;
   generateRecommendations: () => Promise<void>;
+  openMood: (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => Promise<void>;
+  getTrackById: (id: string | null) => Track | undefined;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -89,28 +97,44 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   normalizationEnabled: false,
 
   dominantColor: null,
-  viewMode: 'grid',
+  viewMode: 'list',
   isSearchLoading: false,
+  searchResults: [],
+  isSearchMode: false,
   
   recommendedTracks: [],
   isGeneratingRecommendations: false,
 
-  setDominantColor: (color) => set({ dominantColor: color }),
-  setViewMode: (mode) => set({ viewMode: mode }),
-  setSearchLoading: (isLoading) => set({ isSearchLoading: isLoading }),
+  currentMood: null,
+  moodTracks: [],
 
+  setDominantColor: (color) => set({ dominantColor: color }),
+  setViewMode: (viewMode) => set({ viewMode }),
+  setSearchLoading: (isLoading) => set({ isSearchLoading: isLoading }),
+  setSearchMode: (isSearchMode) => set({ isSearchMode }),
   setTracks: (tracks) => set({ tracks }),
+
+  getTrackById: (id) => {
+    if (!id) return undefined;
+    const { tracks, recommendedTracks, moodTracks, searchResults } = get();
+    return tracks.find(t => t.id === id) || 
+           recommendedTracks.find(t => t.id === id) || 
+           moodTracks.find(t => t.id === id) ||
+           searchResults.find(t => t.id === id);
+  },
+
   setPlaylists: (playlists) => set({ playlists }),
 
   playTrack: (id) => {
     const { tracks } = get();
+    const track = get().getTrackById(id);
+    if (!track) return;
     const queue = tracks.map(t => t.id);
     const queueIndex = queue.indexOf(id);
-    set({ currentTrackId: id, isPlaying: true, queue, queueIndex: Math.max(0, queueIndex) });
+    set({ currentTrackId: id, isPlaying: true, queue: queueIndex === -1 ? [id] : queue, queueIndex: Math.max(0, queueIndex) });
 
-    // Increment playCount
-    const track = tracks.find(t => t.id === id);
-    if (track) {
+    // Increment playCount only for local tracks
+    if (tracks.find(t => t.id === id)) {
       const updated = { ...track, playCount: (track.playCount || 0) + 1 };
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
@@ -179,12 +203,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setDuration: (duration) => set({ duration }),
 
   playNext: async () => {
-    const { queue, queueIndex, repeatMode, shuffle, currentTrackId, tracks } = get();
+    const { queue, queueIndex, repeatMode, shuffle, currentTrackId, tracks, getTrackById } = get();
     if (!queue.length) return;
 
-    if (repeatMode === 'one') {
-      const audio = document.getElementById('main-audio-element') as HTMLAudioElement;
-      if (audio) audio.currentTime = 0;
+    if (repeatMode === 'one' && currentTrackId) {
       set({ currentTime: 0 });
       return;
     }
@@ -197,7 +219,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       if (repeatMode === 'all') {
         nextIndex = 0;
       } else {
-        const currentTrack = tracks.find(t => t.id === currentTrackId);
+        const currentTrack = getTrackById(currentTrackId);
         if (currentTrack && currentTrack.artist) {
           try {
             const audiusTracks = await searchAudiusTracks(currentTrack.artist);
@@ -278,7 +300,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setRepeatMode: (repeatMode) => set({ repeatMode }),
   toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),
 
-  setCurrentPlaylistId: (id) => set({ currentPlaylistId: id }),
+  setCurrentPlaylistId: (id) => set({ currentPlaylistId: id, isSearchMode: false }),
 
   createPlaylist: async (name) => {
     const newPlaylist: Playlist = {
@@ -382,11 +404,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       else tracks = await searchItunesTracks(query);
 
       if (tracks.length > 0) {
-        set(state => {
-          const existingIds = new Set(state.tracks.map(t => t.id));
-          const newTracks = tracks.filter(t => !existingIds.has(t.id));
-          return { tracks: [...newTracks, ...state.tracks] }; // Put new tracks at the top
-        });
+        set({ searchResults: tracks, isSearchMode: true });
       }
     } finally {
       set({ isSearchLoading: false });
@@ -394,16 +412,29 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   toggleFavorite: async (id: string) => {
-    const { tracks } = get();
-    const track = tracks.find(t => t.id === id);
-    if (!track) return;
+    const { tracks, searchResults, recommendedTracks, moodTracks } = get();
+    let track = tracks.find(t => t.id === id);
+    let isNewToLibrary = false;
 
-    const updatedTrack = { ...track, isFavorite: !track.isFavorite };
+    if (!track) {
+      track = searchResults.find(t => t.id === id) || 
+              recommendedTracks.find(t => t.id === id) || 
+              moodTracks.find(t => t.id === id);
+      if (!track) return;
+      isNewToLibrary = true;
+    }
+
+    const updatedTrack = { ...track, isFavorite: !track.isFavorite, addedAt: Date.now() };
     await addTrackIdb(updatedTrack); // This will save or update it in IDB so it persists
 
-    set(state => ({
-      tracks: state.tracks.map(t => t.id === id ? updatedTrack : t)
-    }));
+    set(state => {
+      if (isNewToLibrary) {
+        return { tracks: [updatedTrack, ...state.tracks] };
+      }
+      return {
+        tracks: state.tracks.map(t => t.id === id ? updatedTrack : t)
+      };
+    });
   },
 
   toggleCrossfade: () => set(state => ({ crossfadeEnabled: !state.crossfadeEnabled })),
@@ -481,6 +512,55 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       console.error('Failed to generate recommendations', error);
     } finally {
       set({ isGeneratingRecommendations: false });
+    }
+  },
+
+  openMood: async (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
+    set({ isSearchLoading: true, currentMood: mood, currentPlaylistId: 'mood' });
+    try {
+      let tracks: Track[] = [];
+      
+      const moodMap: Record<string, string> = {
+        "Сон": "sleep lofi",
+        "Заряд енергії": "phonk energy",
+        "Тренування": "workout hardstyle",
+        "Релакс": "chillout acoustic",
+        "В дорозі": "synthwave driving",
+        "Весела": "upbeat dance pop",
+        "Сум": "sad piano",
+        "Романтика": "romantic r&b",
+        "Вечірка": "party club edm",
+        "Концентрація": "study ambient"
+      };
+      
+      const query = moodMap[mood] || mood;
+      
+      if (provider === 'audius') tracks = await searchAudiusTracks(query);
+      else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
+      else if (provider === 'apple') tracks = await searchItunesTracks(query);
+      else if (provider === 'soundcloud') {
+        const { searchSoundCloud } = await import('../lib/soundcloud');
+        const scTracks = await searchSoundCloud(query, 30);
+        tracks = scTracks.map(t => {
+          let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
+          if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
+          
+          return {
+            id: 'soundcloud-' + t.id,
+            name: t.title,
+            artist: t.user.username,
+            duration: t.duration / 1000,
+            audioUrl: '',
+            coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+            url: transcoding ? 'soundcloud:' + transcoding.url : 'soundcloud:' + t.id
+          } as any;
+        });
+      }
+      set({ moodTracks: tracks });
+    } catch (error) {
+      console.error('Error fetching mood tracks:', error);
+    } finally {
+      set({ isSearchLoading: false });
     }
   },
 }));

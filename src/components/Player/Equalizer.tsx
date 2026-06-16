@@ -84,20 +84,20 @@ export const Equalizer: React.FC = () => {
     <div className="relative" ref={popoverRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 transition-colors rounded-full hover:bg-secondary ${isOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+        className={`p-2 transition-colors rounded-full hover:bg-bg-hover ${isOpen ? 'text-accent' : 'text-gray-400 hover:text-white'}`}
         title="Еквалайзер"
       >
         <SlidersHorizontal className="w-5 h-5" />
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-4 bg-secondary p-4 rounded-xl shadow-2xl border border-secondary/50 flex flex-col gap-4 z-50 w-64">
+        <div className="absolute bottom-full right-0 mb-4 bg-bg-secondary p-5 rounded-3xl shadow-2xl border border-border flex flex-col gap-4 z-50 w-64 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Пресет</span>
             <select 
               value={activePreset} 
               onChange={(e) => applyPreset(e.target.value)}
-              className="bg-background text-xs text-white px-2 py-1 rounded border border-secondary/50 outline-none"
+              className="bg-background text-xs text-white px-2 py-1 rounded border border-border outline-none"
             >
               <option value="Custom">Custom</option>
               {Object.keys(PRESETS).map(p => (

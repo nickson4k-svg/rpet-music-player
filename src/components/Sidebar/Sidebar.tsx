@@ -46,12 +46,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   return (
     <aside className="w-64 border-r border-border bg-bg-secondary/80 md:bg-bg-secondary/60 backdrop-blur-xl flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
-      <div className="p-5 border-b border-border flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-3 tracking-tight text-accent">
-          <Music className="w-6 h-6" />
-          Rpet
-        </h2>
-        <div className="flex items-center gap-1">
+      <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <div className="flex w-full justify-between items-center">
+          <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-accent">
+            <Music className="w-6 h-6" />
+            Rpet
+          </h2>
+          {onClose && (
+            <button onClick={onClose} className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
+              <X className="w-6 h-6" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-0.5 w-full justify-around sm:justify-end">
           <button 
             onClick={() => setIsPartyModeOpen(true)} 
             className="p-2 text-purple-400 hover:text-purple-300 hover:bg-white/5 rounded-full transition-all"
@@ -80,15 +87,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           >
             <Settings className="w-5 h-5" />
           </button>
-          {onClose && (
-            <button onClick={onClose} className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
-              <X className="w-5 h-5" />
-            </button>
-          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex-1 overflow-y-auto p-5 pb-32 sm:pb-36 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
         {/* All Tracks & Favorites */}
         <div className="space-y-2">
