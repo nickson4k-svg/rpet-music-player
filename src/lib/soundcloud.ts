@@ -50,12 +50,35 @@ export interface SCTrack {
 export async function searchSoundCloud(query: string, limit = 20): Promise<SCTrack[]> {
   try {
     const clientId = await getSCClientId();
-    const res = await fetch(`/api/soundcloud/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
+    const res = await fetch(`/api/soundcloud/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit * 2}`); // Fetch more to compensate for filtered out tracks
     
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     
     const data = await res.json();
-    return data.collection || [];
+    
+    // Filter out premium/blocked/snipped tracks
+    const validTracks = (data.collection || []).filter((t: any) => {
+      // policy can be 'BLOCK', 'SNIP' (Soundcloud Go+ 30s previews)
+      if (t.policy && t.policy !== 'ALLOW') return false;
+      
+      // Monetization model: SUB-HIGH-TIER means it's a SoundCloud Go+ premium track
+      if (t.monetization_model === 'SUB-HIGH-TIER' || t.monetization_model === 'BLACKBOX') return false;
+      
+      // Must have media transcodings
+      if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
+      
+      // Check if any stream is marked as snipped
+      const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
+      if (isSnipped) return false;
+      
+      // MUST have a progressive stream (we cannot play pure HLS streams reliably)
+      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format.protocol === 'progressive');
+      if (!hasProgressive) return false;
+      
+      return true;
+    });
+
+    return validTracks.slice(0, limit);
   } catch (error) {
     console.error('SoundCloud search error:', error);
     return [];
