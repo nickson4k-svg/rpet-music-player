@@ -44,7 +44,7 @@ export const Controls: React.FC = () => {
         onClick={togglePlayPause}
         disabled={!hasTrack}
         className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-black rounded-full hover:scale-105 transition-transform duration-300 disabled:opacity-50 shrink-0 shadow-lg"
-        style={{ backgroundColor: dominantColor || 'var(--color-accent)' }}
+        style={{ backgroundColor: 'var(--color-accent)' }}
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? (

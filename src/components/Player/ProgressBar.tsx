@@ -75,7 +75,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
       >
         <div 
           className="absolute top-0 left-0 h-full transition-colors duration-500"
-          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-accent)' }}
+          style={{ width: `${progressPercent}%`, backgroundColor: 'var(--color-accent)' }}
         />
         <div 
           className="absolute top-1/2 -mt-1.5 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
@@ -97,8 +97,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
         onPointerDown={handlePointerDown}
       >
         <div 
-          className="absolute left-0 h-full rounded-full transition-colors duration-500"
-          style={{ width: `${progressPercent}%`, backgroundColor: dominantColor || 'var(--color-accent)' }}
+          className="h-full rounded-full transition-all duration-100 relative group-hover:brightness-110"
+          style={{ width: `${progressPercent}%`, backgroundColor: 'var(--color-accent)' }}
         />
         <div 
           className="absolute w-3.5 h-3.5 hover:w-4 hover:h-4 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md"

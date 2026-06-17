@@ -98,9 +98,9 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
           {isCurrentTrack && isPlaying && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 group-hover:opacity-0 transition-opacity pointer-events-none">
               <div className="flex items-end gap-1 h-8">
-                <div className="w-2 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
-                <div className="w-2 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
-                <div className="w-2 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
+                <div className="w-2 bg-accent eq-bar rounded-t"></div>
+                <div className="w-2 bg-accent eq-bar rounded-t" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 bg-accent eq-bar rounded-t" style={{ animationDelay: '0.4s' }}></div>
               </div>
             </div>
           )}
@@ -178,9 +178,9 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         {isCurrentTrack && isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:opacity-0 transition-opacity pointer-events-none">
             <div className="flex items-end gap-0.5 h-5">
-              <div className="w-1.5 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
-              <div className="w-1.5 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
-              <div className="w-1.5 bg-accent eq-bar rounded-t" style={dominantColor ? { backgroundColor: dominantColor } : undefined}></div>
+              <div className="w-1.5 bg-accent eq-bar rounded-t"></div>
+              <div className="w-1.5 bg-accent eq-bar rounded-t" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-1.5 bg-accent eq-bar rounded-t" style={{ animationDelay: '0.4s' }}></div>
             </div>
           </div>
         )}
