@@ -2,6 +2,9 @@ import React, { useMemo, useEffect } from 'react';
 import { usePlayerStore } from '../stores/playerStore';
 import { TrackCarousel } from './TrackList/TrackCarousel';
 import { Sparkles } from 'lucide-react';
+import { MoodSection } from './Home/MoodSection';
+
+const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
 
 export const HomeDashboard: React.FC = () => {
   const tracks = usePlayerStore(state => state.tracks);
@@ -36,12 +39,20 @@ export const HomeDashboard: React.FC = () => {
 
   if (tracks.length === 0 && recommendedTracks.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-foreground-muted p-8 text-center h-full">
-        <div className="w-24 h-24 mb-6 rounded-full bg-bg-secondary flex items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center text-foreground-muted p-8 text-center h-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="w-24 h-24 mb-6 rounded-full bg-bg-secondary flex items-center justify-center mt-10">
           <Sparkles className="w-10 h-10 text-accent/50" />
         </div>
         <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">Ласкаво просимо до 50 Faces!</h2>
-        <p className="max-w-md">Знайдіть улюблені треки за допомогою пошуку або почніть слухати, щоб ми могли створити для вас персональні рекомендації.</p>
+        <p className="max-w-md mb-8">Знайдіть улюблені треки за допомогою пошуку або почніть слухати, щоб ми могли створити для вас персональні рекомендації.</p>
+        
+        {/* Render moods even when library is empty! */}
+        <div className="w-full text-left mt-8">
+          <h3 className="text-xl font-bold text-white mb-4 px-4 sm:px-6 md:px-8">Популярні жанри</h3>
+          {MOODS.map(mood => (
+            <MoodSection key={mood} mood={mood} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -57,12 +68,12 @@ export const HomeDashboard: React.FC = () => {
         
         {recommendedTracks.length > 0 && (
           <div className="relative">
-            <div className="flex items-center gap-3 mb-1">
+            <div className="flex items-center gap-3 mb-1 px-4 sm:px-6 md:px-8 pt-6">
               <Sparkles className="w-5 h-5 text-accent" />
               <span className="text-sm font-bold text-accent uppercase tracking-wider">Для вас</span>
             </div>
             <TrackCarousel 
-              title="Рекомендуємо" 
+              title="" 
               tracks={recommendedTracks} 
             />
           </div>
@@ -81,7 +92,12 @@ export const HomeDashboard: React.FC = () => {
             tracks={newlyAddedTracks} 
           />
         )}
+        
+        {MOODS.map(mood => (
+          <MoodSection key={mood} mood={mood} />
+        ))}
       </div>
     </div>
   );
 };
+

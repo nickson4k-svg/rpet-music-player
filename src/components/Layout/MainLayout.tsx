@@ -152,19 +152,6 @@ export const MainLayout: React.FC = () => {
             {/* Genres & Quick Picks Row */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {MOODS.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setSearchQuery('');
-                      usePlayerStore.getState().openMood(category, searchProvider);
-                    }}
-                    className="whitespace-nowrap px-5 py-2 bg-bg-tertiary hover:bg-accent/10 text-foreground-muted hover:text-accent border border-transparent hover:border-accent/30 rounded-full text-sm font-bold transition-all duration-300"
-                    style={{ borderColor: dominantColor ? `${dominantColor}40` : undefined }}
-                  >
-                    {category}
-                  </button>
-                ))}
               </div>
               
               <div className="flex items-center bg-secondary/30 rounded-full p-1 border border-secondary/50 shrink-0">
