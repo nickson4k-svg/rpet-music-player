@@ -49,36 +49,36 @@ export const HomeDashboard: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto pb-32 sm:pb-40 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <div className="pt-2">
-        <TrackCarousel 
-          title="Послухати ще раз" 
-          tracks={recentTracks.length > 0 ? recentTracks : newlyAddedTracks} 
-          largeCards={true} 
+        <TrackCarousel
+          title="Послухати ще раз"
+          tracks={recentTracks.length > 0 ? recentTracks : newlyAddedTracks}
+          largeCards={true}
         />
-        
+
         {recommendedTracks.length > 0 && (
           <div className="relative">
             <div className="flex items-center gap-3 mb-1 px-4 sm:px-6 md:px-8 pt-6">
-              <Sparkles className="w-5 h-5 text-accent" />
+
               <span className="text-sm font-bold text-accent uppercase tracking-wider">Для вас</span>
             </div>
-            <TrackCarousel 
-              title="" 
-              tracks={recommendedTracks} 
+            <TrackCarousel
+              title=""
+              tracks={recommendedTracks}
             />
           </div>
         )}
 
         {favoriteTracks.length > 0 && (
-          <TrackCarousel 
-            title="Ваші улюблені" 
-            tracks={favoriteTracks} 
+          <TrackCarousel
+            title="Ваші улюблені"
+            tracks={favoriteTracks}
           />
         )}
 
         {tracks.length > 15 && (
-          <TrackCarousel 
-            title="Нещодавно додані" 
-            tracks={newlyAddedTracks} 
+          <TrackCarousel
+            title="Нещодавно додані"
+            tracks={newlyAddedTracks}
           />
         )}
       </div>

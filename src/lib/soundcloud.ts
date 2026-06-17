@@ -85,6 +85,47 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
   }
 }
 
+export async function searchSoundCloudPlaylists(query: string, limit = 20): Promise<SCTrack[]> {
+  try {
+    const clientId = await getSCClientId();
+    // Search for a playlist
+    const res = await fetch(`/api/soundcloud/search/playlists?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=3`);
+    
+    if (!res.ok) throw new Error(`Playlist search failed: ${res.status}`);
+    
+    const data = await res.json();
+    
+    if (!data.collection || data.collection.length === 0) return [];
+    
+    // Combine tracks from the top 3 playlists to get a good mix
+    let rawTracks: any[] = [];
+    for (const playlist of data.collection) {
+      if (playlist.tracks && Array.isArray(playlist.tracks)) {
+        rawTracks = [...rawTracks, ...playlist.tracks];
+      }
+    }
+    
+    // Filter out premium/blocked/snipped tracks just like in normal search
+    const validTracks = rawTracks.filter((t: any) => {
+      if (t.policy && t.policy !== 'ALLOW') return false;
+      if (t.monetization_model === 'SUB-HIGH-TIER' || t.monetization_model === 'BLACKBOX') return false;
+      if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
+      const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
+      if (isSnipped) return false;
+      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format.protocol === 'progressive');
+      if (!hasProgressive) return false;
+      return true;
+    });
+
+    // Shuffle the tracks to get a fresh mix every time
+    const shuffled = validTracks.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, limit);
+  } catch (error) {
+    console.error('SoundCloud playlist search error:', error);
+    return [];
+  }
+}
+
 export async function getSCStreamUrl(trackIdOrUrl: string): Promise<string | null> {
   try {
     const clientId = await getSCClientId();

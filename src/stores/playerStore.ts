@@ -518,7 +518,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   openMood: async (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
     set({ isSearchLoading: true, currentMood: mood, currentPlaylistId: 'mood' });
     try {
-      const cacheKey = `rpet-mood-${provider}-${mood}`;
+      const cacheKey = `rpet-mood-v2-${provider}-${mood}`;
       const cachedData = localStorage.getItem(cacheKey);
       
       // Cache expires after 24 hours
@@ -557,8 +557,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
       else if (provider === 'apple') tracks = await searchItunesTracks(query);
       else if (provider === 'soundcloud') {
-        const { searchSoundCloud } = await import('../lib/soundcloud');
-        const scTracks = await searchSoundCloud(query, 30);
+        const { searchSoundCloudPlaylists } = await import('../lib/soundcloud');
+        const scTracks = await searchSoundCloudPlaylists(query, 30);
         tracks = scTracks.map(t => {
           let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
           if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
