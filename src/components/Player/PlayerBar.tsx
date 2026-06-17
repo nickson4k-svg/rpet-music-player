@@ -112,8 +112,17 @@ export const PlayerBar: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-none sm:flex-1 flex sm:min-w-[150px] items-center justify-end gap-1.5 md:gap-3">
-          <div className="hidden xl:flex items-center gap-1.5 md:gap-3">
+        <div className="flex-none sm:flex-1 flex sm:min-w-[150px] items-center justify-end gap-1 md:gap-2">
+          {/* Always visible on md+ */}
+          <div className="hidden md:flex items-center">
+            <VolumeControl />
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1">
+            <Lyrics />
+          </div>
+
+          <div className="hidden xl:flex items-center gap-1">
             {'documentPictureInPicture' in window && (
               <button 
                 onClick={togglePiP} 
@@ -123,17 +132,18 @@ export const PlayerBar: React.FC = () => {
                 <PictureInPicture2 className="w-5 h-5" />
               </button>
             )}
+            <Equalizer />
+          </div>
+
+          <div className="hidden 2xl:flex items-center gap-1">
             <SpeedControl />
             <SleepTimer />
-            <Lyrics />
-            <Equalizer />
             <Visualizer />
-            <VolumeControl />
           </div>
           
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`xl:hidden p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+            className={`2xl:hidden p-2 transition-colors ${isMobileMenuOpen ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
           >
             <MoreVertical className="w-6 h-6" />
           </button>
@@ -142,7 +152,7 @@ export const PlayerBar: React.FC = () => {
 
       {/* Mobile Actions Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-bg-secondary/95 backdrop-blur-2xl border border-border p-5 rounded-3xl z-[60] shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="2xl:hidden fixed inset-x-4 bottom-24 sm:bottom-32 bg-bg-secondary/95 backdrop-blur-2xl border border-border p-5 rounded-3xl z-[60] shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <div className="flex items-center justify-between mb-5 sticky top-0 bg-bg-secondary/90 backdrop-blur-md pb-2 z-10 -mt-2 pt-2">
             <h3 className="text-lg font-bold px-2">Додаткові функції</h3>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-white bg-bg-tertiary rounded-full transition-colors">

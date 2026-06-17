@@ -21,7 +21,7 @@ export const Controls: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-3 sm:gap-6 flex-nowrap shrink-0">
+    <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-5 flex-nowrap shrink-0">
       <button
         onClick={toggleShuffle}
         disabled={!hasTrack}
