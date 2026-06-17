@@ -50,7 +50,9 @@ export interface SCTrack {
 export async function searchSoundCloud(query: string, limit = 20): Promise<SCTrack[]> {
   try {
     const clientId = await getSCClientId();
-    const res = await fetch(`/api/soundcloud/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit * 2}`); // Fetch more to compensate for filtered out tracks
+    // Fetch 100 tracks to compensate for heavy premium filtering (especially on US Vercel servers)
+    const fetchLimit = Math.max(limit * 3, 100);
+    const res = await fetch(`/api/soundcloud/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${fetchLimit}`);
     
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     
@@ -89,7 +91,7 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
   try {
     const clientId = await getSCClientId();
     // Search for a playlist
-    const res = await fetch(`/api/soundcloud/search/playlists?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=3`);
+    const res = await fetch(`/api/soundcloud/search/playlists?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=10`);
     
     if (!res.ok) throw new Error(`Playlist search failed: ${res.status}`);
     

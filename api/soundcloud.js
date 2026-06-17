@@ -12,12 +12,13 @@ export default async function handler(req, res) {
   
   try {
     const forwardedFor = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '';
+    const acceptLanguage = req.headers['accept-language'] || 'uk-UA,uk;q=0.9,en-US;q=0.8,en;q=0.7';
     
     const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
         'Accept': 'application/json; charset=utf-8',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Language': acceptLanguage,
         'Origin': 'https://soundcloud.com',
         'Referer': 'https://soundcloud.com/',
         'X-Forwarded-For': forwardedFor

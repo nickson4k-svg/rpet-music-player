@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/**/*.js": {
+      "region": "arn1"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/soundcloud/:path*",
