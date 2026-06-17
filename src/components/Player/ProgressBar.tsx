@@ -11,7 +11,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ mobile }) => {
   const duration = usePlayerStore(state => state.duration);
   const currentTime = usePlayerStore(state => state.currentTime);
   const hasTrack = usePlayerStore(state => state.currentTrackId !== null);
-  const dominantColor = usePlayerStore(state => state.dominantColor);
   
   const [isDragging, setIsDragging] = useState(false);
   const [dragTime, setDragTime] = useState(0);

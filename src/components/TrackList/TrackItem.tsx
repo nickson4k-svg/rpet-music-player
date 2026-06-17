@@ -33,7 +33,6 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
   const toggleFavorite = usePlayerStore(state => state.toggleFavorite);
   const autoTagTrack = usePlayerStore(state => state.autoTagTrack);
   const viewMode = usePlayerStore(state => state.viewMode);
-  const dominantColor = usePlayerStore(state => state.dominantColor);
   const [isTagging, setIsTagging] = useState(false);
 
   const handleAutoTag = async (e: React.MouseEvent) => {

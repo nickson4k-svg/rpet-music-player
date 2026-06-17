@@ -10,7 +10,6 @@ export const Controls: React.FC = () => {
   const repeatMode = usePlayerStore(state => state.repeatMode);
   const setRepeatMode = usePlayerStore(state => state.setRepeatMode);
   const shuffle = usePlayerStore(state => state.shuffle);
-  const dominantColor = usePlayerStore(state => state.dominantColor);
   const toggleShuffle = usePlayerStore(state => state.toggleShuffle);
   const hasTrack = usePlayerStore(state => state.currentTrackId !== null);
 
