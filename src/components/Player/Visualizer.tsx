@@ -35,19 +35,25 @@ export const Visualizer: React.FC = () => {
       
       const barWidth = (canvas.width / bufferLength) * 2.5;
       
+      // Get dynamic accent color from CSS variables
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#ffffff';
+      
       if (theme === 'bars') {
         let x = 0;
         for (let i = 0; i < bufferLength; i++) {
           let barHeight = (dataArray[i] / 255) * canvas.height;
           if (!isFullscreen) barHeight *= 0.8; // keep it slightly smaller than the box
           
-          ctx.fillStyle = `hsl(217.2, 91.2%, 59.8%)`;
+          ctx.fillStyle = accentColor;
+          // Add a slightly rounded top if possible, or just a glassy alpha
+          ctx.globalAlpha = 0.8;
           ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          ctx.globalAlpha = 1.0;
           x += barWidth + 1;
         }
       } else if (theme === 'wave') {
         ctx.lineWidth = isFullscreen ? 4 : 2;
-        ctx.strokeStyle = `hsl(217.2, 91.2%, 59.8%)`;
+        ctx.strokeStyle = accentColor;
         ctx.beginPath();
         let x = 0;
         for (let i = 0; i < bufferLength; i++) {
@@ -64,7 +70,7 @@ export const Visualizer: React.FC = () => {
         const centerY = canvas.height / 2;
         const radius = isFullscreen ? 150 : 12;
         ctx.lineWidth = isFullscreen ? 3 : 1;
-        ctx.strokeStyle = `hsl(217.2, 91.2%, 59.8%)`;
+        ctx.strokeStyle = accentColor;
         for (let i = 0; i < bufferLength; i++) {
           const rads = Math.PI * 2 / bufferLength;
           let barHeight = (dataArray[i] / 255) * (isFullscreen ? 150 : 15);
@@ -95,15 +101,15 @@ export const Visualizer: React.FC = () => {
 
   if (isFullscreen) {
     return (
-        <div className="fixed inset-0 z-40 bg-background/90 flex flex-col items-center justify-center transition-colors duration-1000">
+        <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-3xl flex flex-col items-center justify-center transition-colors duration-1000">
           <div className="absolute top-6 left-6 z-50 flex gap-2">
-            <button onClick={() => setTheme('bars')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'bars' ? 'bg-accent text-white' : 'bg-bg-secondary text-gray-300'}`}>Bars</button>
-            <button onClick={() => setTheme('wave')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'wave' ? 'bg-accent text-white' : 'bg-bg-secondary text-gray-300'}`}>Wave</button>
-            <button onClick={() => setTheme('circle')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'circle' ? 'bg-accent text-white' : 'bg-bg-secondary text-gray-300'}`}>Circle</button>
+            <button onClick={() => setTheme('bars')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'bars' ? 'bg-white/20 backdrop-blur-md border border-white/30 text-white' : 'bg-bg-secondary/50 text-gray-300 hover:text-white'}`}>Bars</button>
+            <button onClick={() => setTheme('wave')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'wave' ? 'bg-white/20 backdrop-blur-md border border-white/30 text-white' : 'bg-bg-secondary/50 text-gray-300 hover:text-white'}`}>Wave</button>
+            <button onClick={() => setTheme('circle')} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${theme === 'circle' ? 'bg-white/20 backdrop-blur-md border border-white/30 text-white' : 'bg-bg-secondary/50 text-gray-300 hover:text-white'}`}>Circle</button>
           </div>
         <button 
           onClick={toggleFullscreen}
-          className="absolute top-6 right-6 p-3 bg-black/50 text-white rounded-full hover:bg-black/70 z-50 transition-colors"
+          className="absolute top-6 right-6 p-3 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-full shadow-lg hover:bg-white/20 z-50 transition-colors"
         >
           <Minimize2 className="w-6 h-6" />
         </button>
@@ -119,12 +125,14 @@ export const Visualizer: React.FC = () => {
 
   return (
     <div className="flex items-center gap-2">
-      <canvas
-        ref={canvasRef}
-        width={100}
-        height={30}
-        className="w-24 h-8 bg-bg-tertiary rounded"
-      />
+      <div className="relative rounded-xl overflow-hidden bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+        <canvas
+          ref={canvasRef}
+          width={100}
+          height={30}
+          className="w-24 h-8"
+        />
+      </div>
       <button 
         onClick={toggleFullscreen} 
         className="text-gray-400 hover:text-white transition-colors p-2"
