@@ -71,8 +71,8 @@ export const TrackCarousel: React.FC<TrackCarouselProps> = ({ title, tracks, lar
                 )}
                 
                 <button
-                  className={`absolute right-3 bottom-3 w-12 h-12 flex items-center justify-center bg-accent/90 backdrop-blur-md rounded-full shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-accent z-10 ${
-                    isCurrent ? 'opacity-100 bg-accent' : ''
+                  className={`absolute right-3 bottom-3 w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.3)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white/30 hover:border-white/40 z-10 ${
+                    isCurrent ? 'opacity-100 bg-white/30 border-white/40' : ''
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -84,9 +84,9 @@ export const TrackCarousel: React.FC<TrackCarouselProps> = ({ title, tracks, lar
                   }}
                 >
                   {isCurrent && isPlaying ? (
-                    <Pause className="w-6 h-6 text-black" />
+                    <Pause className="w-6 h-6 text-white fill-current" />
                   ) : (
-                    <Play className="w-6 h-6 text-black ml-1" />
+                    <Play className="w-6 h-6 text-white fill-current ml-1" />
                   )}
                 </button>
                 <button

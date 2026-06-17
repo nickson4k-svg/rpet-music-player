@@ -77,8 +77,8 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
           )}
           
           <button
-            className={`absolute right-2 bottom-2 sm:right-3 sm:bottom-3 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-accent/90 backdrop-blur-md rounded-full shadow-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-accent ${
-              isCurrentTrack && !isPlaying ? 'opacity-100 bg-accent' : ''
+            className={`absolute right-2 bottom-2 sm:right-3 sm:bottom-3 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.3)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white/30 hover:border-white/40 z-10 ${
+              isCurrentTrack && !isPlaying ? 'opacity-100 bg-white/30 border-white/40' : ''
             }`}
             onClick={() => {
               if (isCurrentTrack) {
@@ -89,9 +89,9 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
             }}
           >
             {isCurrentTrack && isPlaying ? (
-              <Pause className="w-6 h-6 text-black" />
+              <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-current" />
             ) : (
-              <Play className="w-6 h-6 text-black ml-1" />
+              <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-current ml-0.5 sm:ml-1" />
             )}
           </button>
 
