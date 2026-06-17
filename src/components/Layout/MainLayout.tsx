@@ -62,6 +62,8 @@ export const MainLayout: React.FC = () => {
   }, [setTracks, setPlaylists]);
 
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
+  const currentMood = usePlayerStore(state => state.currentMood);
+  const currentPlaylistId = usePlayerStore(state => state.currentPlaylistId);
   
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   
@@ -150,19 +152,26 @@ export const MainLayout: React.FC = () => {
             {/* Genres & Quick Picks Row */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {MOODS.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setSearchQuery('');
-                      usePlayerStore.getState().openMood(category, searchProvider);
-                    }}
-                    className="whitespace-nowrap px-5 py-2 bg-bg-tertiary hover:bg-accent/10 text-foreground-muted hover:text-accent border border-transparent hover:border-accent/30 rounded-full text-sm font-bold transition-all duration-300"
-                    style={{ borderColor: dominantColor ? `${dominantColor}40` : undefined }}
-                  >
-                    {category}
-                  </button>
-                ))}
+                {MOODS.map((category) => {
+                  const isActive = currentPlaylistId === 'mood' && currentMood === category;
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => {
+                        setSearchQuery('');
+                        usePlayerStore.getState().openMood(category, searchProvider);
+                      }}
+                      className={`whitespace-nowrap px-5 py-2 border rounded-full text-sm font-bold transition-all duration-300 ${
+                        isActive 
+                          ? 'bg-accent/20 text-accent border-accent shadow-[0_0_15px_rgba(250,204,21,0.3)]' 
+                          : 'bg-bg-tertiary text-foreground-muted hover:text-accent border-transparent hover:bg-accent/10 hover:border-accent/30'
+                      }`}
+                      style={{ borderColor: !isActive && dominantColor ? `${dominantColor}40` : undefined }}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
               </div>
               
               <div className="flex items-center bg-secondary/30 rounded-full p-1 border border-secondary/50 shrink-0">
