@@ -94,7 +94,7 @@ export const TrackCarousel: React.FC<TrackCarouselProps> = ({ title, tracks, lar
                     e.stopPropagation();
                     toggleFavorite(track.id);
                   }}
-                  className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/60 z-10"
+                  className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-md rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-black/60 z-10"
                   title="Додати в улюблені"
                 >
                   <Heart className={`w-4 h-4 ${allTracks.some(t => t.id === track.id && t.isFavorite) ? 'fill-red-500 text-red-500' : 'text-white hover:text-red-400'}`} />

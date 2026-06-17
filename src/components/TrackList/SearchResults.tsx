@@ -137,7 +137,7 @@ export const SearchResults: React.FC = () => {
                       e.stopPropagation();
                       toggleFavorite(track.id);
                     }}
-                    className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-accent focus:opacity-100"
+                    className="p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-gray-400 hover:text-accent focus:opacity-100"
                     title="Додати в улюблені"
                   >
                     <Heart className={`w-5 h-5 ${tracks.some(t => t.id === track.id && t.isFavorite) ? 'fill-accent text-accent' : ''}`} />
