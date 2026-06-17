@@ -3,7 +3,6 @@ import { FastAverageColor } from 'fast-average-color';
 import { usePlayerStore } from '../stores/playerStore';
 
 export const ThemeManager: React.FC = () => {
-  const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
 
   useEffect(() => {
@@ -43,7 +42,7 @@ export const ThemeManager: React.FC = () => {
     } else {
       root.style.setProperty('--theme-color-rgb', '15, 23, 42');
     }
-  }, [currentTrackId, tracks]);
+  }, [currentTrack]);
 
   return null;
 };

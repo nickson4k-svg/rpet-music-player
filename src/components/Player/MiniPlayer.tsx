@@ -8,7 +8,6 @@ interface MiniPlayerWindowProps {
 }
 
 export const MiniPlayerWindow: React.FC<MiniPlayerWindowProps> = ({ pipWindow, closePip }) => {
-  const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   
   const isPlaying = usePlayerStore(state => state.isPlaying);

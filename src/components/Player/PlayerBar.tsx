@@ -14,7 +14,6 @@ import { createPortal } from 'react-dom';
 import { MiniPlayerWindow } from './MiniPlayer';
 
 export const PlayerBar: React.FC = () => {
-  const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
