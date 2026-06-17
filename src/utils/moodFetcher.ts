@@ -1,7 +1,7 @@
-import { Track } from '../types';
+import type { Track } from '../types';
 import { searchAudiusTracks } from './audiusApi';
 import { searchJioSaavnTracks } from './jioSaavnApi';
-import { searchItunesTracks } from './appleMusicApi';
+import { searchItunesTracks } from './itunesApi';
 
 const moodMap: Record<string, string> = {
   "Сон": "sleep lofi",

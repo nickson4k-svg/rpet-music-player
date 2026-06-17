@@ -14,8 +14,6 @@ import { useMediaSession } from '../../hooks/useMediaSession';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
 import { HomeDashboard } from '../HomeDashboard';
 
-const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
-
 export const MainLayout: React.FC = () => {
   useMediaSession();
   

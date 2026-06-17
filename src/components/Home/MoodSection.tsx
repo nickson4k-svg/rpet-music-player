@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Track } from '../../types';
+import type { Track } from '../../types';
 import { TrackCarousel } from '../TrackList/TrackCarousel';
 import { fetchMoodTracks } from '../../utils/moodFetcher';
 import { Sparkles, Loader2 } from 'lucide-react';
-import { usePlayerStore } from '../../stores/playerStore';
 
 interface MoodSectionProps {
   mood: string;
@@ -15,7 +14,8 @@ export const MoodSection: React.FC<MoodSectionProps> = ({ mood }) => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const searchProvider = usePlayerStore(state => state.searchProvider);
+  // Use soundcloud as the default and best provider for moods
+  const searchProvider = 'soundcloud';
 
   useEffect(() => {
     const observer = new IntersectionObserver(
