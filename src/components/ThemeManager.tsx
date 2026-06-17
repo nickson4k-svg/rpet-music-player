@@ -97,8 +97,8 @@ export const ThemeManager: React.FC = () => {
       }
     } else {
       root.style.setProperty('--theme-color-rgb', '15, 23, 42');
-      root.style.setProperty('--color-accent', '#facc15');
-      root.style.setProperty('--color-accent-hover', '#eab308');
+      root.style.setProperty('--color-accent', '#ffffff');
+      root.style.setProperty('--color-accent-hover', '#e5e5e5');
     }
   }, [currentTrack]);
 
