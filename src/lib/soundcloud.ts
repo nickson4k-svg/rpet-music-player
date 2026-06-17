@@ -1,10 +1,10 @@
-let cachedClientId: string | null = '9RxIC6NwiaJEj6SsGAJgmHYOYauqhn9E'; // Hardcoded fallback
+let cachedClientId: string | null = null;
 
 export async function getSCClientId(): Promise<string> {
   if (cachedClientId) return cachedClientId;
 
   try {
-    const htmlRes = await fetch('https://corsproxy.io/?https://soundcloud.com');
+    const htmlRes = await fetch('/api/soundcloud-html');
     const html = await htmlRes.text();
     
     const matches = html.match(/<script crossorigin src="([^"]+)"/g);

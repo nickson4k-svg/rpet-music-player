@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/soundcloud/:path*",
-      "destination": "https://api-v2.soundcloud.com/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
