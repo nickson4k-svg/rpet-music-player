@@ -65,8 +65,8 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
       // policy can be 'BLOCK', 'SNIP' (Soundcloud Go+ 30s previews)
       if (t.policy && t.policy !== 'ALLOW') return false;
       
-      // Monetization model: SUB-HIGH-TIER means it's a SoundCloud Go+ premium track
-      if (t.monetization_model === 'SUB-HIGH-TIER' || t.monetization_model === 'BLACKBOX') return false;
+      // Removed SUB-HIGH-TIER filter because policy !== 'ALLOW' and isSnipped already catch previews,
+      // and SUB-HIGH-TIER was dropping playable tracks on US Vercel nodes.
       
       // Must have media transcodings
       if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
@@ -112,7 +112,7 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
     // Filter out premium/blocked/snipped tracks just like in normal search
     const validTracks = rawTracks.filter((t: any) => {
       if (t.policy && t.policy !== 'ALLOW') return false;
-      if (t.monetization_model === 'SUB-HIGH-TIER' || t.monetization_model === 'BLACKBOX') return false;
+      // Removed SUB-HIGH-TIER filter
       if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
       const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
       if (isSnipped) return false;
