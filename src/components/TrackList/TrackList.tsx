@@ -48,7 +48,7 @@ export const TrackList: React.FC = () => {
     
     // Maintain playlist order and filter out deleted tracks
     return playlist.trackIds.map(id => tracks.find(t => t.id === id)).filter(t => t !== undefined) as typeof tracks;
-  }, [tracks, playlists, currentPlaylistId]);
+  }, [tracks, playlists, currentPlaylistId, moodTracks, recommendedTracks]);
 
   const handleDelete = async (id: string) => {
     if (currentPlaylistId) {
