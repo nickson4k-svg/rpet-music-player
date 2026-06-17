@@ -24,10 +24,8 @@ export const Lyrics: React.FC = () => {
   const [lyricsData, setLyricsData] = useState<LyricsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const currentTrackId = usePlayerStore(state => state.currentTrackId);
-  const tracks = usePlayerStore(state => state.tracks);
+  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   const currentTime = usePlayerStore(state => state.currentTime);
-  const currentTrack = tracks.find(t => t.id === currentTrackId);
   const duration = usePlayerStore(state => state.duration);
   
   const scrollRef = useRef<HTMLDivElement>(null);

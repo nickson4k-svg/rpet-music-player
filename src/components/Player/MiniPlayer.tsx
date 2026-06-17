@@ -9,13 +9,12 @@ interface MiniPlayerWindowProps {
 
 export const MiniPlayerWindow: React.FC<MiniPlayerWindowProps> = ({ pipWindow, closePip }) => {
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
-  const tracks = usePlayerStore(state => state.tracks);
+  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
+  
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
   const playNext = usePlayerStore(state => state.playNext);
   const playPrevious = usePlayerStore(state => state.playPrevious);
-
-  const currentTrack = tracks.find(t => t.id === currentTrackId);
 
   useEffect(() => {
     const handleUnload = () => closePip();

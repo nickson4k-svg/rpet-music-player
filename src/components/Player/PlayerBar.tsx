@@ -15,9 +15,8 @@ import { MiniPlayerWindow } from './MiniPlayer';
 
 export const PlayerBar: React.FC = () => {
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
-  const tracks = usePlayerStore(state => state.tracks);
+  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   
-  const currentTrack = tracks.find(t => t.id === currentTrackId);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

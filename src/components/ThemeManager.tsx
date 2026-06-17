@@ -4,7 +4,7 @@ import { usePlayerStore } from '../stores/playerStore';
 
 export const ThemeManager: React.FC = () => {
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
-  const tracks = usePlayerStore(state => state.tracks);
+  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
 
   useEffect(() => {
     const savedColor = localStorage.getItem('rpet-theme-color');
@@ -14,7 +14,6 @@ export const ThemeManager: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const currentTrack = tracks.find(t => t.id === currentTrackId);
     let url: string | null = null;
     if (currentTrack?.coverUrl) {
       url = currentTrack.coverUrl;

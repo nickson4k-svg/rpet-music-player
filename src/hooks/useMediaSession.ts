@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react';
 import { usePlayerStore } from '../stores/playerStore';
 
 export const useMediaSession = () => {
-  const tracks = usePlayerStore(state => state.tracks);
-  const currentTrackId = usePlayerStore(state => state.currentTrackId);
+  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
   const playNext = usePlayerStore(state => state.playNext);
@@ -14,8 +13,6 @@ export const useMediaSession = () => {
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
-
-    const currentTrack = tracks.find(t => t.id === currentTrackId);
 
     if (currentTrack) {
       // Create cover URL if we have a blob and no direct URL
@@ -50,7 +47,7 @@ export const useMediaSession = () => {
         coverUrlRef.current = null;
       }
     };
-  }, [currentTrackId, tracks]);
+  }, [currentTrack]);
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;

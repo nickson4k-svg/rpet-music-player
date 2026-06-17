@@ -62,8 +62,7 @@ export const MainLayout: React.FC = () => {
   }, [setTracks, setPlaylists]);
 
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
-  const tracks = usePlayerStore(state => state.tracks);
-  const currentTrack = tracks.find(t => t.id === currentTrackId);
+  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   
