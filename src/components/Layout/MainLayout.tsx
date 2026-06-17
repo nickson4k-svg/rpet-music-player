@@ -63,7 +63,7 @@ export const MainLayout: React.FC = () => {
 
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   const currentMood = usePlayerStore(state => state.currentMood);
-  const currentPlaylistId = usePlayerStore(state => state.currentPlaylistId);
+
   
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   
