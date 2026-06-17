@@ -35,8 +35,8 @@ export const Visualizer: React.FC = () => {
       
       const barWidth = (canvas.width / bufferLength) * 2.5;
       
-      // Get dynamic accent color from CSS variables
-      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#ffffff';
+      // Use white color for the visualizer
+      const visualizerColor = '#ffffff';
       
       if (theme === 'bars') {
         let x = 0;
@@ -44,7 +44,7 @@ export const Visualizer: React.FC = () => {
           let barHeight = (dataArray[i] / 255) * canvas.height;
           if (!isFullscreen) barHeight *= 0.8; // keep it slightly smaller than the box
           
-          ctx.fillStyle = accentColor;
+          ctx.fillStyle = visualizerColor;
           // Add a slightly rounded top if possible, or just a glassy alpha
           ctx.globalAlpha = 0.8;
           ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
@@ -53,7 +53,7 @@ export const Visualizer: React.FC = () => {
         }
       } else if (theme === 'wave') {
         ctx.lineWidth = isFullscreen ? 4 : 2;
-        ctx.strokeStyle = accentColor;
+        ctx.strokeStyle = visualizerColor;
         ctx.beginPath();
         let x = 0;
         for (let i = 0; i < bufferLength; i++) {
@@ -70,7 +70,7 @@ export const Visualizer: React.FC = () => {
         const centerY = canvas.height / 2;
         const radius = isFullscreen ? 150 : 12;
         ctx.lineWidth = isFullscreen ? 3 : 1;
-        ctx.strokeStyle = accentColor;
+        ctx.strokeStyle = visualizerColor;
         for (let i = 0; i < bufferLength; i++) {
           const rads = Math.PI * 2 / bufferLength;
           let barHeight = (dataArray[i] / 255) * (isFullscreen ? 150 : 15);
