@@ -3,6 +3,8 @@ import { X, Palette, Settings, Upload } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { usePlayerStore } from '../stores/playerStore';
 import { TrackUploader } from './TrackList/TrackUploader';
+import { SpeedControl } from './Player/SpeedControl';
+import { SleepTimer } from './Player/SleepTimer';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -66,6 +68,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 <Upload className="w-4 h-4" /> Локальні аудіофайли
               </h3>
               <TrackUploader />
+            </section>
+
+            {/* Playback Controls Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+                Відтворення
+              </h3>
+              <div className="flex items-center gap-4 bg-bg-tertiary p-3 rounded-xl border border-secondary/50">
+                <SpeedControl />
+                <SleepTimer />
+              </div>
             </section>
 
             {/* Audio Features Section */}

@@ -7,8 +7,7 @@ import { AudioEngine } from './AudioEngine';
 import { Visualizer } from './Visualizer';
 import { Equalizer } from './Equalizer';
 import { Lyrics } from './Lyrics';
-import { SpeedControl } from './SpeedControl';
-import { SleepTimer } from './SleepTimer';
+
 import { PictureInPicture2, MoreVertical, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { MiniPlayerWindow } from './MiniPlayer';
@@ -134,8 +133,6 @@ export const PlayerBar: React.FC = () => {
           </div>
 
           <div className="hidden 2xl:flex items-center gap-1">
-            <SpeedControl />
-            <SleepTimer />
             <Visualizer />
           </div>
           
@@ -167,8 +164,6 @@ export const PlayerBar: React.FC = () => {
                 <PictureInPicture2 className="w-5 h-5" />
               </button>
             )}
-            <SpeedControl />
-            <SleepTimer />
             <Lyrics />
             <Equalizer />
             <Visualizer />
