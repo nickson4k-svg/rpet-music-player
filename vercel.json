@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/soundcloud/:path*",
+      "destination": "/api/soundcloud?path=:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
