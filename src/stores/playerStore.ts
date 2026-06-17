@@ -518,6 +518,24 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   openMood: async (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
     set({ isSearchLoading: true, currentMood: mood, currentPlaylistId: 'mood' });
     try {
+      const cacheKey = `rpet-mood-${provider}-${mood}`;
+      const cachedData = localStorage.getItem(cacheKey);
+      
+      // Cache expires after 24 hours
+      const CACHE_TTL = 24 * 60 * 60 * 1000; 
+
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          if (Date.now() - parsed.timestamp < CACHE_TTL && parsed.tracks?.length > 0) {
+            set({ moodTracks: parsed.tracks, isSearchLoading: false });
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse cached mood", e);
+        }
+      }
+
       let tracks: Track[] = [];
       
       const moodMap: Record<string, string> = {
@@ -555,7 +573,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
             url: transcoding ? 'soundcloud:' + transcoding.url : 'soundcloud:' + t.id
           } as any;
         });
+        
+        // Randomize the resulting list a bit for variety even within the cache
+        tracks.sort(() => 0.5 - Math.random());
       }
+      
+      if (tracks.length > 0) {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          tracks: tracks
+        }));
+      }
+      
       set({ moodTracks: tracks });
     } catch (error) {
       console.error('Error fetching mood tracks:', error);
