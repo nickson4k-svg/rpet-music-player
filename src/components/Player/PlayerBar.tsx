@@ -59,6 +59,8 @@ export const PlayerBar: React.FC = () => {
     }
   };
 
+  const isFullScreenPlayerOpen = usePlayerStore(state => state.isFullScreenPlayerOpen);
+
   useEffect(() => {
     if (currentTrack?.coverUrl) {
       setCoverUrl(currentTrack.coverUrl);
@@ -74,13 +76,16 @@ export const PlayerBar: React.FC = () => {
   return (
     <>
       <AudioEngine />
-      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-black/30 backdrop-blur-3xl border border-white/10 rounded-2xl md:rounded-3xl p-3 px-4 sm:p-4 flex items-center justify-between z-50 gap-4 shadow-2xl transition-all duration-300">
+      <div className={`fixed bottom-4 left-4 right-4 md:bottom-6 md:left-[17rem] md:right-6 lg:left-[18rem] lg:right-8 bg-black/30 backdrop-blur-3xl border border-white/10 rounded-2xl md:rounded-3xl p-3 px-4 sm:p-4 items-center justify-between z-50 gap-4 shadow-2xl transition-all duration-300 ${isFullScreenPlayerOpen ? 'hidden md:flex' : 'flex'}`}>
         {/* Mobile progress bar */}
         <div className="absolute top-0 left-0 right-0 -translate-y-full sm:hidden">
           <ProgressBar mobile />
         </div>
         
-        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 sm:min-w-[150px]">
+        <div 
+          className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 sm:min-w-[150px] cursor-pointer hover:bg-white/5 rounded-xl transition-colors p-1 -m-1"
+          onClick={() => usePlayerStore.getState().toggleFullScreenPlayer()}
+        >
           {currentTrack ? (
             <>
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-bg-secondary rounded-lg shadow-lg overflow-hidden flex-shrink-0">

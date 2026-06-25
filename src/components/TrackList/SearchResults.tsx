@@ -85,7 +85,7 @@ export const SearchResults: React.FC = () => {
 
       {otherResults.length > 0 && (
         <>
-          <h2 className="text-xl font-bold text-white mb-4">Послухати ще раз</h2>
+          <h2 className="text-xl font-bold text-white mb-4">Інші результати</h2>
           <div className="flex flex-col max-w-4xl">
             {otherResults.map((track) => {
               const isActive = currentTrackId === track.id;

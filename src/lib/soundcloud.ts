@@ -62,8 +62,9 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
     
     // Filter out premium/blocked/snipped tracks
     const validTracks = (data.collection || []).filter((t: any) => {
-      // policy can be 'BLOCK', 'SNIP' (Soundcloud Go+ 30s previews)
-      if (t.policy && t.policy !== 'ALLOW') return false;
+      // Removed policy !== ALLOW filter because we want official tracks to appear even if they are 30s previews.
+      // We will handle previews in the UI if needed.
+      if (t.policy === 'BLOCK') return false;
       
       // Removed SUB-HIGH-TIER filter because policy !== 'ALLOW' and isSnipped already catch previews,
       // and SUB-HIGH-TIER was dropping playable tracks on US Vercel nodes.
@@ -111,7 +112,7 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
     
     // Filter out premium/blocked/snipped tracks just like in normal search
     const validTracks = rawTracks.filter((t: any) => {
-      if (t.policy && t.policy !== 'ALLOW') return false;
+      if (t.policy === 'BLOCK') return false;
       // Removed SUB-HIGH-TIER filter
       if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
       const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);

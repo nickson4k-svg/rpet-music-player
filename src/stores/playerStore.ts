@@ -32,6 +32,7 @@ interface PlayerState {
   isSearchLoading: boolean;
   searchResults: Track[];
   isSearchMode: boolean;
+  isFullScreenPlayerOpen: boolean;
   
   // Recommendations
   recommendedTracks: Track[];
@@ -45,6 +46,8 @@ interface PlayerState {
   setViewMode: (mode: 'list' | 'grid') => void;
   setSearchLoading: (isLoading: boolean) => void;
   setSearchMode: (isSearchMode: boolean) => void;
+  toggleFullScreenPlayer: () => void;
+  setFullScreenPlayer: (isOpen: boolean) => void;
   setTracks: (tracks: Track[]) => void;
   setPlaylists: (playlists: Playlist[]) => void;
   playTrack: (id: string) => void;
@@ -101,7 +104,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isSearchLoading: false,
   searchResults: [],
   isSearchMode: false,
-  
+  isFullScreenPlayerOpen: false,
+
   recommendedTracks: [],
   isGeneratingRecommendations: false,
 
@@ -109,9 +113,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   moodTracks: [],
 
   setDominantColor: (color) => set({ dominantColor: color }),
-  setViewMode: (viewMode) => set({ viewMode }),
+  setViewMode: (mode) => set({ viewMode: mode }),
   setSearchLoading: (isLoading) => set({ isSearchLoading: isLoading }),
   setSearchMode: (isSearchMode) => set({ isSearchMode }),
+  toggleFullScreenPlayer: () => set((state) => ({ isFullScreenPlayerOpen: !state.isFullScreenPlayerOpen })),
+  setFullScreenPlayer: (isOpen) => set({ isFullScreenPlayerOpen: isOpen }),
   setTracks: (tracks) => set({ tracks }),
 
   getTrackById: (id) => {
@@ -428,11 +434,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     await addTrackIdb(updatedTrack); // This will save or update it in IDB so it persists
 
     set(state => {
+      const updateList = (list: typeof state.tracks) => list.map(t => t.id === id ? updatedTrack : t);
+      
       if (isNewToLibrary) {
-        return { tracks: [updatedTrack, ...state.tracks] };
+        return { 
+          tracks: [updatedTrack, ...state.tracks],
+          recommendedTracks: updateList(state.recommendedTracks),
+          moodTracks: updateList(state.moodTracks),
+          searchResults: updateList(state.searchResults)
+        };
       }
       return {
-        tracks: state.tracks.map(t => t.id === id ? updatedTrack : t)
+        tracks: updateList(state.tracks),
+        recommendedTracks: updateList(state.recommendedTracks),
+        moodTracks: updateList(state.moodTracks),
+        searchResults: updateList(state.searchResults)
       };
     });
   },

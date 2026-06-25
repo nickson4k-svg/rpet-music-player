@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1> Music Player</h1>
+  <h1>🎵 50 Faces Music Player</h1>
   
   <p>
     <strong>A sleek, modern, web-based music player blending local audio playback, multi-provider API streaming, and P2P social listening.</strong>

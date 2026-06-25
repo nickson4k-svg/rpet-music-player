@@ -16,6 +16,8 @@ import { HomeDashboard } from '../HomeDashboard';
 
 const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
 
+import { FullScreenPlayer } from '../Player/FullScreenPlayer';
+
 export const MainLayout: React.FC = () => {
   useMediaSession();
   
@@ -201,6 +203,7 @@ export const MainLayout: React.FC = () => {
             </div>
           </div>
         </main>
+        <FullScreenPlayer />
       </div>
       <PlayerBar />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
