@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home } from 'lucide-react';
+import { Plus, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
 import { StatsModal } from '../StatsModal';
 import { PartyModeModal } from '../PartyModeModal';
