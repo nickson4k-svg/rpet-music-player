@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, ListMusic, Trash2, Heart, X, Settings, BarChart2, Download, Radio } from 'lucide-react';
+import { Plus, ListMusic, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home } from 'lucide-react';
 import { SettingsModal } from '../SettingsModal';
 import { StatsModal } from '../StatsModal';
 import { PartyModeModal } from '../PartyModeModal';
@@ -92,18 +92,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
       <div className="flex-1 overflow-y-auto p-5 pb-32 sm:pb-36 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
-        {/* All Tracks & Favorites */}
+        {/* Home & Favorites */}
         <div className="space-y-2">
           <button
-            onClick={() => { setCurrentPlaylistId(null); onClose?.(); }}
+            onClick={() => { 
+              setCurrentPlaylistId(null); 
+              usePlayerStore.getState().setSearchMode(false);
+              onClose?.(); 
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${currentPlaylistId === null
                 ? 'bg-accent/10 text-accent'
                 : 'text-gray-400 hover:text-white hover:bg-bg-hover'
               }`}
             style={currentPlaylistId === null && dominantColor ? { backgroundColor: `${dominantColor}33` } : undefined}
           >
-            <ListMusic className="w-5 h-5" />
-            Всі треки
+            <Home className="w-5 h-5" />
+            Головна
           </button>
 
           <button

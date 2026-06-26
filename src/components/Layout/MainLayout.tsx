@@ -41,6 +41,28 @@ export const MainLayout: React.FC = () => {
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchProvider, setSearchProvider] = useState<'audius' | 'apple' | 'jiosaavn' | 'soundcloud'>('soundcloud');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (searchProvider !== 'soundcloud') {
+      setSuggestions([]);
+      return;
+    }
+    
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      const { getSearchSuggestions } = await import('../../lib/soundcloud');
+      const results = await getSearchSuggestions(searchQuery);
+      setSuggestions(results);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchProvider]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +84,13 @@ export const MainLayout: React.FC = () => {
     };
     loadData();
   }, [setTracks, setPlaylists]);
+
+  useEffect(() => {
+    if (!isSearchMode) {
+      setSearchQuery('');
+      setSuggestions([]);
+    }
+  }, [isSearchMode]);
 
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   const currentMood = usePlayerStore(state => state.currentMood);
@@ -137,7 +166,12 @@ export const MainLayout: React.FC = () => {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder={searchProvider === 'soundcloud' ? "Шукати в SoundCloud..." : searchProvider === 'audius' ? "Шукати в Audius..." : searchProvider === 'jiosaavn' ? "Шукати в JioSaavn..." : "Шукати в Apple Music..."}
                     className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
                   />
@@ -147,6 +181,26 @@ export const MainLayout: React.FC = () => {
                   >
                     <Search className="w-4 h-4" />
                   </button>
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full mt-2 w-full bg-[#1a1a1a] border border-secondary/50 rounded-xl overflow-hidden shadow-2xl z-50">
+                      {suggestions.map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-secondary/50 hover:text-white transition-colors flex items-center"
+                          onClick={() => {
+                            setSearchQuery(suggestion);
+                            setShowSuggestions(false);
+                            searchGlobal(suggestion, searchProvider);
+                            setCurrentPlaylistId(null);
+                          }}
+                        >
+                          <Search className="w-3.5 h-3.5 mr-3 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{suggestion}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </form>
             </div>

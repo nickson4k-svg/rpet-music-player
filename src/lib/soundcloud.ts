@@ -76,8 +76,12 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
       const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
       if (isSnipped) return false;
       
+      // Filter out SoundCloud Go+ tracks (they have encrypted protocols)
+      const hasEncrypted = t.media.transcodings.some((tr: any) => tr.format?.protocol?.includes('encrypted'));
+      if (hasEncrypted) return false;
+      
       // MUST have a progressive stream (we cannot play pure HLS streams reliably)
-      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format.protocol === 'progressive');
+      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format?.protocol === 'progressive');
       if (!hasProgressive) return false;
       
       return true;
@@ -86,6 +90,22 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
     return validTracks.slice(0, limit);
   } catch (error) {
     console.error('SoundCloud search error:', error);
+    return [];
+  }
+}
+
+export async function getSearchSuggestions(query: string, limit = 5): Promise<string[]> {
+  try {
+    if (!query.trim()) return [];
+    const clientId = await getSCClientId();
+    const res = await fetch(`/api/soundcloud/search/queries?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
+    
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    return (data.collection || []).map((item: any) => item.output);
+  } catch (error) {
+    console.error('SoundCloud suggestion error:', error);
     return [];
   }
 }
@@ -117,7 +137,11 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
       if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
       const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
       if (isSnipped) return false;
-      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format.protocol === 'progressive');
+      
+      const hasEncrypted = t.media.transcodings.some((tr: any) => tr.format?.protocol?.includes('encrypted'));
+      if (hasEncrypted) return false;
+
+      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format?.protocol === 'progressive');
       if (!hasProgressive) return false;
       return true;
     });
@@ -136,20 +160,39 @@ export async function getSCStreamUrl(trackIdOrUrl: string): Promise<string | nul
     const clientId = await getSCClientId();
     let transcodingUrl = trackIdOrUrl;
     
+    // Helper function to fetch transcodings by track ID
+    const fetchTranscodingByTrackId = async (id: string) => {
+      const res = await fetch(`/api/soundcloud/tracks/${id}?client_id=${clientId}`);
+      if (!res.ok) return null;
+      const track: SCTrack = await res.json();
+      return track.media.transcodings.find(t => t.format.protocol === 'progressive') || track.media.transcodings.find(t => t.format.protocol === 'hls');
+    };
+
     if (!trackIdOrUrl.startsWith('https://')) {
       // It's a track ID, fetch transcodings first
-      const res = await fetch(`/api/soundcloud/tracks/${trackIdOrUrl}?client_id=${clientId}`);
-      if (!res.ok) return null;
-      
-      const track: SCTrack = await res.json();
-      let transcoding = track.media.transcodings.find(t => t.format.protocol === 'progressive') || track.media.transcodings.find(t => t.format.protocol === 'hls');
+      const transcoding = await fetchTranscodingByTrackId(trackIdOrUrl);
       if (!transcoding) return null;
       transcodingUrl = transcoding.url;
     }
     
     // Fetch the actual streaming URL
-    const proxyUrl = transcodingUrl.replace('https://api-v2.soundcloud.com', '/api/soundcloud');
-    const streamInfoRes = await fetch(`${proxyUrl}?client_id=${clientId}`);
+    let proxyUrl = transcodingUrl.replace('https://api-v2.soundcloud.com', '/api/soundcloud');
+    let streamInfoRes = await fetch(`${proxyUrl}?client_id=${clientId}`);
+    
+    // If the cached transcoding URL expired (404/401), extract the track ID and fetch a fresh one
+    if (!streamInfoRes.ok) {
+      const match = transcodingUrl.match(/soundcloud:tracks:(\d+)/);
+      if (match && match[1]) {
+        const realTrackId = match[1];
+        const freshTranscoding = await fetchTranscodingByTrackId(realTrackId);
+        if (freshTranscoding) {
+          transcodingUrl = freshTranscoding.url;
+          proxyUrl = transcodingUrl.replace('https://api-v2.soundcloud.com', '/api/soundcloud');
+          streamInfoRes = await fetch(`${proxyUrl}?client_id=${clientId}`);
+        }
+      }
+    }
+    
     if (!streamInfoRes.ok) return null;
     
     const streamInfo = await streamInfoRes.json();

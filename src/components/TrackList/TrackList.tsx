@@ -42,7 +42,7 @@ export const TrackList: React.FC = () => {
     if (currentPlaylistId === 'favorites') {
       return tracks.filter(t => t.isFavorite);
     }
-    if (!currentPlaylistId) return tracks;
+    if (!currentPlaylistId || currentPlaylistId === 'all') return tracks;
     const playlist = playlists.find(p => p.id === currentPlaylistId);
     if (!playlist) return tracks;
     
@@ -70,13 +70,13 @@ export const TrackList: React.FC = () => {
   };
 
   const onDragEnd = (result: DropResult) => {
-    if (!result.destination || !currentPlaylistId || currentPlaylistId === 'favorites') return;
+    if (!result.destination || !currentPlaylistId || currentPlaylistId === 'favorites' || currentPlaylistId === 'all') return;
     if (result.source.index === result.destination.index) return;
     
     reorderPlaylistTracks(currentPlaylistId, result.source.index, result.destination.index);
   };
 
-  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood';
+  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood' && currentPlaylistId !== 'all';
 
   if (isSearchLoading || isGeneratingRecommendations) {
     return (

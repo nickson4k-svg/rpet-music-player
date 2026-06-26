@@ -122,8 +122,15 @@ export const AudioEngine: React.FC = () => {
       inactiveAudio.addEventListener('loadedmetadata', onLoadedMetadataTrack);
 
       if (isPlaying) {
-        inactiveAudio.play().catch(console.error);
-
+        inactiveAudio.play().catch(err => {
+          console.error('Playback failed on new track:', err);
+          if (!useP2PStore.getState().hostConnection) {
+            setTimeout(() => {
+              usePlayerStore.getState().playNext();
+            }, 500); // slight delay to prevent infinite fast-skipping loops
+          }
+        });
+        
         if (crossfadeEnabled && activeAudio.src && !activeAudio.paused && audioContextState.context) {
           // Perform Crossfade
           const ctx = audioContextState.context;
@@ -176,7 +183,14 @@ export const AudioEngine: React.FC = () => {
       if (audioContextState.context?.state === 'suspended') {
         audioContextState.context.resume();
       }
-      activeAudio.play().catch(console.error);
+      activeAudio.play().catch(err => {
+        console.error('Playback failed on toggle play:', err);
+        if (!useP2PStore.getState().hostConnection) {
+          setTimeout(() => {
+            usePlayerStore.getState().playNext();
+          }, 500);
+        }
+      });
     } else {
       activeAudio.pause();
       // Also pause the other deck if it was crossfading
@@ -274,13 +288,26 @@ export const AudioEngine: React.FC = () => {
         playNext();
       }
     };
+    
+    const handleError = (e: Event) => {
+      console.error('Audio element error:', (e.target as HTMLAudioElement)?.error);
+      if (!useP2PStore.getState().hostConnection) {
+        setTimeout(() => {
+          usePlayerStore.getState().playNext();
+        }, 1000);
+      }
+    };
 
     audioARef.current?.addEventListener('ended', handleEnded);
     audioBRef.current?.addEventListener('ended', handleEnded);
+    audioARef.current?.addEventListener('error', handleError);
+    audioBRef.current?.addEventListener('error', handleError);
 
     return () => {
       audioARef.current?.removeEventListener('ended', handleEnded);
       audioBRef.current?.removeEventListener('ended', handleEnded);
+      audioARef.current?.removeEventListener('error', handleError);
+      audioBRef.current?.removeEventListener('error', handleError);
     };
   }, [playNext]);
 

@@ -534,7 +534,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   openMood: async (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
     set({ isSearchLoading: true, currentMood: mood, currentPlaylistId: 'mood' });
     try {
-      const cacheKey = `rpet-mood-v2-${provider}-${mood}`;
+      const cacheKey = `rpet-mood-v3-${provider}-${mood}`;
       const cachedData = localStorage.getItem(cacheKey);
       
       // Cache expires after 24 hours
