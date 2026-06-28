@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { Plus, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home } from 'lucide-react';
-import { SettingsModal } from '../SettingsModal';
-import { StatsModal } from '../StatsModal';
-import { PartyModeModal } from '../PartyModeModal';
+
+const SettingsModal = React.lazy(() => import('../SettingsModal').then(module => ({ default: module.SettingsModal })));
+const StatsModal = React.lazy(() => import('../StatsModal').then(module => ({ default: module.StatsModal })));
+const PartyModeModal = React.lazy(() => import('../PartyModeModal').then(module => ({ default: module.PartyModeModal })));
+const TakeoutImportModal = React.lazy(() => import('../TakeoutImportModal').then(module => ({ default: module.TakeoutImportModal })));
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 interface SidebarProps {
@@ -22,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isPartyModeOpen, setIsPartyModeOpen] = useState(false);
+  const [isTakeoutModalOpen, setIsTakeoutModalOpen] = useState(false);
 
   const { handleInstall } = useInstallPrompt();
 
@@ -130,6 +133,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
             <Heart className={`w-5 h-5 ${currentPlaylistId === 'favorites' ? 'fill-red-500' : ''}`} />
             Улюблені
           </button>
+          
+          <button
+            onClick={() => { setIsTakeoutModalOpen(true); onClose?.(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-bg-hover"
+          >
+            <Download className="w-5 h-5 text-red-500" />
+            Імпорт з YT Music
+          </button>
         </div>
         {/* Playlists */}
         <div>
@@ -180,9 +191,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           </div>
         </div>
       </div>
-      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
-      {isStatsOpen && <StatsModal onClose={() => setIsStatsOpen(false)} />}
-      {isPartyModeOpen && <PartyModeModal onClose={() => setIsPartyModeOpen(false)} />}
+      <React.Suspense fallback={null}>
+        {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+        {isStatsOpen && <StatsModal onClose={() => setIsStatsOpen(false)} />}
+        {isPartyModeOpen && <PartyModeModal onClose={() => setIsPartyModeOpen(false)} />}
+        {isTakeoutModalOpen && <TakeoutImportModal isOpen={isTakeoutModalOpen} onClose={() => setIsTakeoutModalOpen(false)} />}
+      </React.Suspense>
     </aside>
   );
 };

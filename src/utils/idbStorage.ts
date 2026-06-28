@@ -56,7 +56,42 @@ export const getTrack = async (id: string) => {
 
 export const getAllTracks = async () => {
   const db = await initDB();
-  return await db.getAll('tracks');
+  const tracks = await db.getAll('tracks');
+  
+  // Migration: fix raw SCTrack objects stored by mistake
+  const fixedTracks = [];
+  for (const track of tracks) {
+    if (typeof track.id === 'number' && (track as any).title && !(track as any).name) {
+      const raw = track as any;
+      
+      let transcoding = raw.media?.transcodings?.find((tr: any) => tr.format?.protocol === 'progressive');
+      if (!transcoding && raw.media?.transcodings?.length) transcoding = raw.media.transcodings[0];
+            
+      const fixed: Track = {
+        id: `soundcloud-${raw.id}`,
+        name: raw.title,
+        artist: raw.user?.username || 'Unknown',
+        album: 'SoundCloud',
+        duration: Math.floor(raw.duration / 1000),
+        coverUrl: raw.artwork_url ? raw.artwork_url.replace('-large', '-t500x500') : '',
+        url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${raw.id}`,
+        audioUrl: '',
+        addedAt: Date.now(),
+        hash: crypto.randomUUID()
+      };
+      
+      // Delete old numeric ID and put new string ID
+      await db.delete('tracks', raw.id);
+      await db.put('tracks', fixed);
+      fixedTracks.push(fixed);
+    } else if (typeof track.id === 'string' && track.id.startsWith('soundcloud-undefined')) {
+      await db.delete('tracks', track.id);
+    } else {
+      fixedTracks.push(track);
+    }
+  }
+  
+  return fixedTracks;
 };
 
 export const deleteTrack = async (id: string) => {
@@ -72,7 +107,29 @@ export const addPlaylist = async (playlist: Playlist) => {
 
 export const getAllPlaylists = async () => {
   const db = await initDB();
-  return await db.getAll('playlists');
+  const playlists = await db.getAll('playlists');
+  
+  // Migration: fix numeric IDs in playlists
+  const fixedPlaylists = [];
+  for (const playlist of playlists) {
+    let changed = false;
+    if (playlist.trackIds) {
+      playlist.trackIds = playlist.trackIds.map(id => {
+        if (typeof id === 'number') {
+          changed = true;
+          return `soundcloud-${id}`;
+        }
+        return id;
+      });
+    }
+    
+    if (changed) {
+      await db.put('playlists', playlist);
+    }
+    fixedPlaylists.push(playlist);
+  }
+  
+  return fixedPlaylists;
 };
 
 export const updatePlaylist = async (playlist: Playlist) => {

@@ -8,7 +8,7 @@ import { getAllTracks, getAllPlaylists } from '../../utils/idbStorage';
 import { usePlayerStore } from '../../stores/playerStore';
 
 import { ThemeManager } from '../ThemeManager';
-import { Menu, Search, LayoutGrid, List } from 'lucide-react';
+import { Menu, Search, LayoutGrid, List, History } from 'lucide-react';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useMediaSession } from '../../hooks/useMediaSession';
 import { AudioReactiveBackground } from './AudioReactiveBackground';
@@ -17,6 +17,8 @@ import { HomeDashboard } from '../HomeDashboard';
 const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
 
 import { FullScreenPlayer } from '../Player/FullScreenPlayer';
+
+const LazyHistoryModal = React.lazy(() => import('../HistoryModal').then(module => ({ default: module.HistoryModal })));
 
 export const MainLayout: React.FC = () => {
   useMediaSession();
@@ -33,6 +35,7 @@ export const MainLayout: React.FC = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   useEffect(() => {
     const handleOpenAuth = () => setIsAuthModalOpen(true);
@@ -107,6 +110,12 @@ export const MainLayout: React.FC = () => {
       return () => URL.revokeObjectURL(url);
     } else {
       setCoverUrl(null);
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    if (currentTrack) {
+      usePlayerStore.getState().addToHistory(currentTrack);
     }
   }, [currentTrack]);
 
@@ -203,6 +212,16 @@ export const MainLayout: React.FC = () => {
                   )}
                 </div>
               </form>
+
+              <div className="flex items-center hidden sm:flex">
+                <button
+                  onClick={() => setIsHistoryModalOpen(true)}
+                  className="p-2 text-gray-400 hover:text-accent transition-colors flex items-center gap-2 rounded-full hover:bg-secondary/30"
+                  title="Історія прослуховувань"
+                >
+                  <History className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             {/* Genres & Quick Picks Row */}
@@ -261,6 +280,14 @@ export const MainLayout: React.FC = () => {
       </div>
       <PlayerBar />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      {isHistoryModalOpen && (
+        <React.Suspense fallback={null}>
+          <LazyHistoryModal
+            isOpen={isHistoryModalOpen} 
+            onClose={() => setIsHistoryModalOpen(false)} 
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

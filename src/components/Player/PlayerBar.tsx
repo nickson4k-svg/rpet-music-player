@@ -4,7 +4,7 @@ import { Controls } from './Controls';
 import { ProgressBar } from './ProgressBar';
 import { VolumeControl } from './VolumeControl';
 import { AudioEngine } from './AudioEngine';
-import { Visualizer } from './Visualizer';
+const Visualizer = React.lazy(() => import('./Visualizer').then(module => ({ default: module.Visualizer })));
 import { Equalizer } from './Equalizer';
 import { Lyrics } from './Lyrics';
 
@@ -138,7 +138,9 @@ export const PlayerBar: React.FC = () => {
           </div>
 
           <div className="hidden 2xl:flex items-center gap-1">
-            <Visualizer />
+            <React.Suspense fallback={null}>
+              <Visualizer />
+            </React.Suspense>
           </div>
           
           <button 
@@ -171,7 +173,9 @@ export const PlayerBar: React.FC = () => {
             )}
             <Lyrics />
             <Equalizer />
-            <Visualizer />
+            <React.Suspense fallback={null}>
+              <Visualizer />
+            </React.Suspense>
           </div>
           <div className="mt-4 bg-bg-tertiary p-4 rounded-2xl">
             <VolumeControl />

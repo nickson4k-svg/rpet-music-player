@@ -1,9 +1,8 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Track, Playlist } from '../types';
 import { updatePlaylist as updatePlaylistIdb, deletePlaylist as deletePlaylistIdb, addPlaylist as addPlaylistIdb, addTrack as addTrackIdb } from '../utils/idbStorage';
 import { searchAudiusTracks } from '../utils/audiusApi';
-import { searchJioSaavnTracks } from '../utils/jioSaavnApi';
-import { searchItunesTracks } from '../utils/itunesApi';
 import { fetchMusicBrainzMetadata } from '../utils/musicBrainzApi';
 import { useP2PStore } from './p2pStore';
 import { generateSearchQueries } from '../utils/recommendationEngine';
@@ -33,6 +32,7 @@ interface PlayerState {
   searchResults: Track[];
   isSearchMode: boolean;
   isFullScreenPlayerOpen: boolean;
+  isLibraryLoaded: boolean;
   
   // Recommendations
   recommendedTracks: Track[];
@@ -40,8 +40,11 @@ interface PlayerState {
 
   currentMood: string | null;
   moodTracks: Track[];
+  listeningHistory: Track[];
 
   // Actions
+  addToHistory: (track: Track) => void;
+  setIsLibraryLoaded: (loaded: boolean) => void;
   setDominantColor: (color: string | null) => void;
   setViewMode: (mode: 'list' | 'grid') => void;
   setSearchLoading: (isLoading: boolean) => void;
@@ -81,9 +84,11 @@ interface PlayerState {
   getTrackById: (id: string | null) => Track | undefined;
 }
 
-export const usePlayerStore = create<PlayerState>((set, get) => ({
-  tracks: [],
-  playlists: [],
+export const usePlayerStore = create<PlayerState>()(
+  persist(
+    (set, get) => ({
+      tracks: [],
+      playlists: [],
   currentTrackId: null,
   currentPlaylistId: null,
   queue: [],
@@ -105,13 +110,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   searchResults: [],
   isSearchMode: false,
   isFullScreenPlayerOpen: false,
+  isLibraryLoaded: false,
 
   recommendedTracks: [],
   isGeneratingRecommendations: false,
 
   currentMood: null,
   moodTracks: [],
+  listeningHistory: [],
 
+  addToHistory: (track) => set((state) => {
+    if (state.listeningHistory[0]?.id === track.id) return state;
+    const newHistory = [track, ...state.listeningHistory].slice(0, 40);
+    return { listeningHistory: newHistory };
+  }),
+  setIsLibraryLoaded: (loaded) => set({ isLibraryLoaded: loaded }),
   setDominantColor: (color) => set({ dominantColor: color }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setSearchLoading: (isLoading) => set({ isSearchLoading: isLoading }),
@@ -122,11 +135,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   getTrackById: (id) => {
     if (!id) return undefined;
-    const { tracks, recommendedTracks, moodTracks, searchResults } = get();
+    const { tracks, recommendedTracks, moodTracks, searchResults, listeningHistory } = get();
     return tracks.find(t => t.id === id) || 
            recommendedTracks.find(t => t.id === id) || 
            moodTracks.find(t => t.id === id) ||
-           searchResults.find(t => t.id === id);
+           searchResults.find(t => t.id === id) ||
+           listeningHistory.find(t => t.id === id);
   },
 
   setPlaylists: (playlists) => set({ playlists }),
@@ -387,27 +401,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ isSearchLoading: true });
     try {
       let tracks: Track[] = [];
-      if (provider === 'audius') tracks = await searchAudiusTracks(query);
-      else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
-      else if (provider === 'soundcloud') {
-        const { searchSoundCloud } = await import('../lib/soundcloud');
-        const scTracks = await searchSoundCloud(query);
-        tracks = scTracks.map(t => {
-          let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
-          if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
-          
-          return {
-            id: `soundcloud-${t.id}`,
-            name: t.title,
-            artist: t.user.username,
-            duration: t.duration / 1000,
-            audioUrl: '',
-            coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
-            url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`
-          } as any;
-        });
-      }
-      else tracks = await searchItunesTracks(query);
+      const { fetchMoodTracks } = await import('../services/searchService');
+      // For general search, we map the provider to fetchMoodTracks which just searches if moodMap misses
+      tracks = await fetchMoodTracks(query, provider as 'audius'|'apple'|'jiosaavn'|'soundcloud');
 
       if (tracks.length > 0) {
         set({ searchResults: tracks, isSearchMode: true });
@@ -553,46 +549,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
 
       let tracks: Track[] = [];
-      
-      const moodMap: Record<string, string> = {
-        "Сон": "sleep lofi",
-        "Заряд енергії": "phonk energy",
-        "Тренування": "workout hardstyle",
-        "Релакс": "chillout acoustic",
-        "В дорозі": "synthwave driving",
-        "Весела": "upbeat dance pop",
-        "Сум": "sad piano",
-        "Романтика": "romantic r&b",
-        "Вечірка": "party club edm",
-        "Концентрація": "study ambient"
-      };
-      
-      const query = moodMap[mood] || mood;
-      
-      if (provider === 'audius') tracks = await searchAudiusTracks(query);
-      else if (provider === 'jiosaavn') tracks = await searchJioSaavnTracks(query);
-      else if (provider === 'apple') tracks = await searchItunesTracks(query);
-      else if (provider === 'soundcloud') {
-        const { searchSoundCloudPlaylists } = await import('../lib/soundcloud');
-        const scTracks = await searchSoundCloudPlaylists(query, 30);
-        tracks = scTracks.map(t => {
-          let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
-          if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
-          
-          return {
-            id: 'soundcloud-' + t.id,
-            name: t.title,
-            artist: t.user.username,
-            duration: t.duration / 1000,
-            audioUrl: '',
-            coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
-            url: transcoding ? 'soundcloud:' + transcoding.url : 'soundcloud:' + t.id
-          } as any;
-        });
-        
-        // Randomize the resulting list a bit for variety even within the cache
-        tracks.sort(() => 0.5 - Math.random());
-      }
+      const { fetchMoodTracks } = await import('../services/searchService');
+      tracks = await fetchMoodTracks(mood, provider);
       
       if (tracks.length > 0) {
         localStorage.setItem(cacheKey, JSON.stringify({
@@ -608,4 +566,25 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ isSearchLoading: false });
     }
   },
-}));
+}), {
+  name: 'rpet-player-storage',
+  partialize: (state) => ({
+    volume: state.volume,
+    currentTrackId: state.currentTrackId,
+    currentPlaylistId: state.currentPlaylistId,
+    queue: state.queue,
+    queueIndex: state.queueIndex,
+    repeatMode: state.repeatMode,
+    shuffle: state.shuffle,
+    crossfadeEnabled: state.crossfadeEnabled,
+    crossfadeDuration: state.crossfadeDuration,
+    normalizationEnabled: state.normalizationEnabled,
+    currentTime: state.currentTime,
+    duration: state.duration,
+    viewMode: state.viewMode,
+    playbackRate: state.playbackRate,
+    dominantColor: state.dominantColor,
+    listeningHistory: state.listeningHistory,
+  }),
+}
+));

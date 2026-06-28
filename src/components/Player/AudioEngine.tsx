@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { initAudioContext, audioContextState, updateNormalization } from '../../utils/audioContext';
-import { useP2PStore } from '../../stores/p2pStore';
+import { useP2PStore, streamAudioToGuests } from '../../stores/p2pStore';
+import { addTrack } from '../../utils/idbStorage';
 
 export const AudioEngine: React.FC = () => {
   const audioARef = useRef<HTMLAudioElement>(null);
@@ -14,6 +15,7 @@ export const AudioEngine: React.FC = () => {
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const volume = usePlayerStore(state => state.volume);
   const playbackRate = usePlayerStore(state => state.playbackRate);
+  const isLibraryLoaded = usePlayerStore(state => state.isLibraryLoaded);
   
   const crossfadeEnabled = usePlayerStore(state => state.crossfadeEnabled);
   const crossfadeDuration = usePlayerStore(state => state.crossfadeDuration);
@@ -36,7 +38,7 @@ export const AudioEngine: React.FC = () => {
       
       // If we just initialized and we are the host, start streaming to any guests
       if (isHost) {
-        import('../../stores/p2pStore').then(({ streamAudioToGuests }) => streamAudioToGuests());
+        streamAudioToGuests();
       }
     }
     if (isPlaying && audioContextState.context?.state === 'suspended') {
@@ -50,7 +52,7 @@ export const AudioEngine: React.FC = () => {
       if (state.isHost && !initialized && audioARef.current && audioBRef.current) {
         initAudioContext(audioARef.current, audioBRef.current);
         setInitialized(true);
-        import('../../stores/p2pStore').then(({ streamAudioToGuests }) => streamAudioToGuests());
+        streamAudioToGuests();
       }
     });
   }, [initialized]);
@@ -66,6 +68,13 @@ export const AudioEngine: React.FC = () => {
     
     const state = usePlayerStore.getState();
     const track = state.getTrackById(currentTrackId);
+
+    // Track could be undefined if it's from IDB and hasn't loaded yet.
+    // If we have a trackId but track is undefined, we wait.
+    if (currentTrackId && !track && !isLibraryLoaded) {
+      return; 
+    }
+
     if (!track) {
       audioARef.current.pause();
       audioBRef.current.pause();
@@ -84,7 +93,7 @@ export const AudioEngine: React.FC = () => {
       // Handle Audius dynamically resolving streams
       if (typeof track.url === 'string' && track.url.startsWith('audius:')) {
         const trackId = track.url.split(':')[1];
-        url = `https://discoveryprovider.audius.co/v1/tracks/${trackId}/stream?app_name=Rpet`;
+        url = `/api/audius-proxy?id=${trackId}`;
       }
 
       // Handle SoundCloud dynamically resolving streams
@@ -102,8 +111,9 @@ export const AudioEngine: React.FC = () => {
 
       if (!activeAudio || !inactiveAudio) return;
 
-      // Check if we are already playing this track
-      if (activeAudio.src === url || activeAudio.src === window.location.origin + '/' + url) {
+      // Check if we are already playing this track (prevents reloading on isLibraryLoaded true if already setup)
+      if (activeAudio.src === url || activeAudio.src === window.location.origin + '/' + url || 
+          inactiveAudio.src === url || inactiveAudio.src === window.location.origin + '/' + url) {
         return; 
       }
 
@@ -168,12 +178,12 @@ export const AudioEngine: React.FC = () => {
     return () => {
       // Basic cleanup logic could go here
     };
-  }, [currentTrackId]);
+  }, [currentTrackId, usePlayerStore.getState().isLibraryLoaded]);
 
   // Handle Play/Pause
   useEffect(() => {
     const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
-    if (!activeAudio || !activeAudio.src) return;
+    if (!activeAudio || !activeAudio.getAttribute('src')) return;
 
     if (isPlaying) {
       if (useP2PStore.getState().hostConnection) {
@@ -263,9 +273,7 @@ export const AudioEngine: React.FC = () => {
             updatedTrack.lastPlaybackPosition = activeAudio.currentTime;
           }
           
-          import('../../utils/idbStorage').then(({ addTrack }) => {
-            addTrack(updatedTrack);
-          });
+          addTrack(updatedTrack);
           
           usePlayerStore.getState().setTracks(
             state.tracks.map(t => t.id === currentTrack.id ? updatedTrack : t)

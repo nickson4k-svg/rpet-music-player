@@ -44,10 +44,10 @@ export const TrackList: React.FC = () => {
     }
     if (!currentPlaylistId || currentPlaylistId === 'all') return tracks;
     const playlist = playlists.find(p => p.id === currentPlaylistId);
-    if (!playlist) return tracks;
+    if (!playlist) return [];
     
     // Maintain playlist order and filter out deleted tracks
-    return playlist.trackIds.map(id => tracks.find(t => t.id === id)).filter(t => t !== undefined) as typeof tracks;
+    return (playlist.trackIds || []).map(id => tracks.find(t => t.id === id)).filter(t => t !== undefined) as typeof tracks;
   }, [tracks, playlists, currentPlaylistId, moodTracks, recommendedTracks]);
 
   const handleDelete = async (id: string) => {
@@ -76,7 +76,13 @@ export const TrackList: React.FC = () => {
     reorderPlaylistTracks(currentPlaylistId, result.source.index, result.destination.index);
   };
 
-  const isDraggablePlaylist = currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood' && currentPlaylistId !== 'all';
+  // Disable drag-and-drop for large playlists to prevent lag by using Virtualization instead
+  const isDraggablePlaylist = currentPlaylistId && 
+    currentPlaylistId !== 'favorites' && 
+    currentPlaylistId !== 'recommendations' && 
+    currentPlaylistId !== 'mood' && 
+    currentPlaylistId !== 'all' &&
+    displayedTracks.length <= 100;
 
   if (isSearchLoading || isGeneratingRecommendations) {
     return (

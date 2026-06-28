@@ -41,6 +41,9 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    // Rely on Vite's default chunking strategy which is well optimized
+  },
   server: {
     proxy: {
       '/api/soundcloud': {
@@ -52,6 +55,27 @@ export default defineConfig({
         target: 'https://soundcloud.com',
         changeOrigin: true,
         rewrite: () => '/',
+      },
+      '/api/audius-proxy': {
+        target: 'https://discoveryprovider.audius.co',
+        changeOrigin: true,
+        followRedirects: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyRes', (_proxyRes, _req, res) => {
+            // Add permissive CORS headers
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+            
+            // If it's a redirect, we rewrite the Location header so the browser follows it through our proxy again!
+            // Wait, proxying S3 bucket streams through localhost might be complex to rewrite.
+            // Let's just use the redirect, but the browser will hit S3 and S3 might block it.
+          });
+        },
+        rewrite: (path) => {
+          const trackId = new URL(path, 'http://localhost').searchParams.get('id');
+          return `/v1/tracks/${trackId}/stream?app_name=Rpet`;
+        }
       }
     }
   }

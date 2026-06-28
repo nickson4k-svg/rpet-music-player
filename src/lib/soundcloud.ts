@@ -41,9 +41,11 @@ export interface SCTrack {
   user: { username: string };
   artwork_url: string | null;
   duration: number;
+  policy?: string;
   media: {
     transcodings: Array<{
       url: string;
+      snipped?: boolean;
       format: { protocol: string; mime_type: string };
     }>;
   };
@@ -61,7 +63,7 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
     const data = await res.json();
     
     // Filter out premium/blocked/snipped tracks
-    const validTracks = (data.collection || []).filter((t: any) => {
+    const validTracks = (data.collection || []).filter((t: SCTrack) => {
       // Removed policy !== ALLOW filter because we want official tracks to appear even if they are 30s previews.
       // We will handle previews in the UI if needed.
       if (t.policy === 'BLOCK') return false;
@@ -73,15 +75,15 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
       if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
       
       // Check if any stream is marked as snipped
-      const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
+      const isSnipped = t.media.transcodings.some((tr) => tr.snipped === true);
       if (isSnipped) return false;
       
       // Filter out SoundCloud Go+ tracks (they have encrypted protocols)
-      const hasEncrypted = t.media.transcodings.some((tr: any) => tr.format?.protocol?.includes('encrypted'));
+      const hasEncrypted = t.media.transcodings.some((tr) => tr.format?.protocol?.includes('encrypted'));
       if (hasEncrypted) return false;
       
       // MUST have a progressive stream (we cannot play pure HLS streams reliably)
-      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format?.protocol === 'progressive');
+      const hasProgressive = t.media.transcodings.some((tr) => tr.format?.protocol === 'progressive');
       if (!hasProgressive) return false;
       
       return true;
@@ -123,26 +125,26 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
     if (!data.collection || data.collection.length === 0) return [];
     
     // Combine tracks from the top 3 playlists to get a good mix
-    let rawTracks: any[] = [];
+    let rawTracks: SCTrack[] = [];
     for (const playlist of data.collection) {
       if (playlist.tracks && Array.isArray(playlist.tracks)) {
         rawTracks = [...rawTracks, ...playlist.tracks];
       }
     }
     
-    // Filter out premium/blocked/snipped tracks just like in normal search
-    const validTracks = rawTracks.filter((t: any) => {
+    const validTracks = rawTracks.filter((t) => {
       if (t.policy === 'BLOCK') return false;
-      // Removed SUB-HIGH-TIER filter
       if (!t.media || !t.media.transcodings || t.media.transcodings.length === 0) return false;
-      const isSnipped = t.media.transcodings.some((tr: any) => tr.snipped === true);
+      
+      const isSnipped = t.media.transcodings.some((tr) => tr.snipped === true);
       if (isSnipped) return false;
       
-      const hasEncrypted = t.media.transcodings.some((tr: any) => tr.format?.protocol?.includes('encrypted'));
+      const hasEncrypted = t.media.transcodings.some((tr) => tr.format?.protocol?.includes('encrypted'));
       if (hasEncrypted) return false;
-
-      const hasProgressive = t.media.transcodings.some((tr: any) => tr.format?.protocol === 'progressive');
+      
+      const hasProgressive = t.media.transcodings.some((tr) => tr.format?.protocol === 'progressive');
       if (!hasProgressive) return false;
+      
       return true;
     });
 
