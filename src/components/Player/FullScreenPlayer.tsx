@@ -60,7 +60,9 @@ const QueueTrackItem = ({ track, index, isPlaying, onPlay }: { track: any, index
       </div>
       <div className="flex flex-col min-w-0 flex-1">
         <span className={`truncate font-medium ${index === 0 ? 'text-white' : 'text-gray-200 group-hover:text-white'}`}>{track.name}</span>
-        <span className="truncate text-sm text-gray-400">{track.artist}</span>
+        <span className="truncate text-sm text-gray-400">
+          {track.artist} {track.genre && track.genre !== 'Unknown' ? ` • ${track.genre}` : ' • Невідомий жанр'}
+        </span>
       </div>
     </div>
   );

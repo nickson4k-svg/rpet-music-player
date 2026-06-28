@@ -88,6 +88,29 @@ export const getAllTracks = async () => {
     } else if (typeof track.id === 'string' && track.id.startsWith('soundcloud-undefined')) {
       await db.delete('tracks', track.id);
     } else {
+      // Fix missing genre for existing local tracks
+      if (track.audioBlob && (!track.genre || track.genre === 'Unknown')) {
+        try {
+          const mm = await import('music-metadata');
+          const metadata = await mm.parseBlob(track.audioBlob);
+          const newGenre = metadata.common.genre ? metadata.common.genre.join(', ') : 'Unknown';
+          
+          if (newGenre !== 'Unknown' || track.genre === undefined) {
+            track.genre = newGenre;
+            await db.put('tracks', track);
+          }
+        } catch (e) {
+          console.warn('Failed to parse missing genre for track', track.name, e);
+          if (track.genre === undefined) {
+             track.genre = 'Unknown';
+             await db.put('tracks', track);
+          }
+        }
+      } else if (track.genre === undefined) {
+        track.genre = 'Unknown';
+        await db.put('tracks', track);
+      }
+      
       fixedTracks.push(track);
     }
   }
