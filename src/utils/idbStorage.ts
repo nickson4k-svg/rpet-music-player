@@ -77,7 +77,8 @@ export const getAllTracks = async () => {
         url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${raw.id}`,
         audioUrl: '',
         addedAt: Date.now(),
-        hash: crypto.randomUUID()
+        hash: crypto.randomUUID(),
+        playCount: 0
       };
       
       // Delete old numeric ID and put new string ID
