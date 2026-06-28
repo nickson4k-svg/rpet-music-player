@@ -215,8 +215,6 @@ export const usePlayerStore = create<PlayerState>()(
     set({ queue: newQueue, queueIndex: startIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
 
     // Increment playCount
-    const { tracks } = get();
-    const track = tracks.find(t => t.id === id);
     if (track) {
       const updated = { ...track, playCount: (track.playCount || 0) + 1 };
       addTrackIdb(updated);
