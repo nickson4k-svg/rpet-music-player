@@ -488,8 +488,8 @@ export const usePlayerStore = create<PlayerState>()(
   generateRecommendations: async () => {
     set({ isGeneratingRecommendations: true });
     try {
-      const { tracks } = get();
-      const queries = generateSearchQueries(tracks);
+      const { tracks, playlists } = get();
+      const queries = generateSearchQueries(tracks, playlists);
       
       // Select a random query from the top queries
       const query = queries[Math.floor(Math.random() * queries.length)];
