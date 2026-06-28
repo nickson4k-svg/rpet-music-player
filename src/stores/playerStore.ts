@@ -149,9 +149,30 @@ export const usePlayerStore = create<PlayerState>()(
     const { tracks } = get();
     const track = get().getTrackById(id);
     if (!track) return;
-    const queue = tracks.map(t => t.id);
-    const queueIndex = queue.indexOf(id);
-    set({ currentTrackId: id, isPlaying: true, queue: queueIndex === -1 ? [id] : queue, queueIndex: Math.max(0, queueIndex) });
+    let queue = tracks.map(t => t.id);
+    let queueIndex = queue.indexOf(id);
+    if (queueIndex === -1) {
+      queue = [id];
+      queueIndex = 0;
+    }
+
+    // Auto-sort remaining queue by genre
+    const currentGenre = track.genre?.split(/[,/]/)[0].trim() || 'Unknown';
+    const remainingQueue = [...queue.slice(queueIndex + 1)];
+    remainingQueue.sort((a, b) => {
+      const trackA = tracks.find(t => t.id === a);
+      const trackB = tracks.find(t => t.id === b);
+      const genreA = trackA?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
+      const genreB = trackB?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
+      
+      if (genreA === currentGenre && genreB !== currentGenre) return -1;
+      if (genreB === currentGenre && genreA !== currentGenre) return 1;
+      return genreA.localeCompare(genreB);
+    });
+    
+    queue = [...queue.slice(0, queueIndex + 1), ...remainingQueue];
+
+    set({ currentTrackId: id, isPlaying: true, queue, queueIndex });
 
     // Increment playCount only for local tracks
     if (tracks.find(t => t.id === id)) {
@@ -171,7 +192,27 @@ export const usePlayerStore = create<PlayerState>()(
   playQueue: (queue, startIndex) => {
     if (queue.length === 0) return;
     const id = queue[startIndex];
-    set({ queue, queueIndex: startIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
+    
+    const { tracks } = get();
+    const track = tracks.find(t => t.id === id);
+    
+    // Auto-sort remaining queue by genre
+    const currentGenre = track?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
+    const remainingQueue = [...queue.slice(startIndex + 1)];
+    remainingQueue.sort((a, b) => {
+      const trackA = tracks.find(t => t.id === a);
+      const trackB = tracks.find(t => t.id === b);
+      const genreA = trackA?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
+      const genreB = trackB?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
+      
+      if (genreA === currentGenre && genreB !== currentGenre) return -1;
+      if (genreB === currentGenre && genreA !== currentGenre) return 1;
+      return genreA.localeCompare(genreB);
+    });
+    
+    const newQueue = [...queue.slice(0, startIndex + 1), ...remainingQueue];
+
+    set({ queue: newQueue, queueIndex: startIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
 
     // Increment playCount
     const { tracks } = get();
