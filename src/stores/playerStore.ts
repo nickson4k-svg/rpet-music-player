@@ -149,16 +149,14 @@ export const usePlayerStore = create<PlayerState>()(
     const { tracks } = get();
     const track = get().getTrackById(id);
     if (!track) return;
-    let queue = tracks.map(t => t.id);
-    let queueIndex = queue.indexOf(id);
-    if (queueIndex === -1) {
-      queue = [id];
-      queueIndex = 0;
-    }
+    
+    // The base queue is all tracks in the library
+    let baseQueue = tracks.map(t => t.id);
 
-    // Auto-sort remaining queue by genre
+    // Auto-sort entire queue by genre, placing clicked track at index 0
     const currentGenre = track.genre?.split(/[,/]/)[0].trim() || 'Unknown';
-    const remainingQueue = [...queue.slice(queueIndex + 1)];
+    const remainingQueue = baseQueue.filter(qId => qId !== id);
+    
     remainingQueue.sort((a, b) => {
       const trackA = tracks.find(t => t.id === a);
       const trackB = tracks.find(t => t.id === b);
@@ -170,7 +168,8 @@ export const usePlayerStore = create<PlayerState>()(
       return genreA.localeCompare(genreB);
     });
     
-    queue = [...queue.slice(0, queueIndex + 1), ...remainingQueue];
+    const queue = [id, ...remainingQueue];
+    const queueIndex = 0;
 
     set({ currentTrackId: id, isPlaying: true, queue, queueIndex });
 
@@ -189,16 +188,17 @@ export const usePlayerStore = create<PlayerState>()(
     }
   },
 
-  playQueue: (queue, startIndex) => {
-    if (queue.length === 0) return;
-    const id = queue[startIndex];
+  playQueue: (baseQueue, startIndex) => {
+    if (baseQueue.length === 0) return;
+    const id = baseQueue[startIndex];
     
     const { tracks } = get();
     const track = tracks.find(t => t.id === id);
     
-    // Auto-sort remaining queue by genre
+    // Auto-sort entire queue by genre, placing clicked track at index 0
     const currentGenre = track?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
-    const remainingQueue = [...queue.slice(startIndex + 1)];
+    const remainingQueue = baseQueue.filter(qId => qId !== id);
+    
     remainingQueue.sort((a, b) => {
       const trackA = tracks.find(t => t.id === a);
       const trackB = tracks.find(t => t.id === b);
@@ -210,9 +210,10 @@ export const usePlayerStore = create<PlayerState>()(
       return genreA.localeCompare(genreB);
     });
     
-    const newQueue = [...queue.slice(0, startIndex + 1), ...remainingQueue];
+    const newQueue = [id, ...remainingQueue];
+    const queueIndex = 0;
 
-    set({ queue: newQueue, queueIndex: startIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
+    set({ queue: newQueue, queueIndex, currentTrackId: id, isPlaying: true, currentTime: 0 });
 
     // Increment playCount
     if (track) {
