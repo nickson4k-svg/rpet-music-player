@@ -17,6 +17,7 @@ export async function searchAudiusTracks(query: string): Promise<Track[]> {
       url: `audius:${item.id}`, // We'll resolve this in AudioEngine
       album: '',
       year: item.release_date ? parseInt(item.release_date.split('-')[0]) : undefined,
+      genre: item.genre || 'Unknown',
       hash: `audius-${item.id}`,
       addedAt: Date.now(),
       playCount: 0

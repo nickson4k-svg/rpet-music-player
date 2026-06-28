@@ -17,6 +17,7 @@ export const processAudioFile = async (file: File): Promise<Track> => {
     name: metadata.common.title || file.name.replace(/\.[^/.]+$/, ""),
     artist: metadata.common.artist || 'Unknown Artist',
     album: metadata.common.album || 'Unknown Album',
+    genre: metadata.common.genre ? metadata.common.genre.join(', ') : 'Unknown',
     duration: metadata.format.duration || 0,
     coverBlob,
     audioBlob: file,
