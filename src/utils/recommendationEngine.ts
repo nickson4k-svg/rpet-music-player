@@ -46,8 +46,11 @@ export function generateSearchQueries(tracks: Track[], playlists?: Playlist[]): 
   // Якщо немає статистики (наприклад, всі треки щойно додані і не грались)
   if (Object.keys(artistStats).length === 0 && Object.keys(genreStats).length === 0) {
     const artists = Array.from(new Set(tracks.map(t => t.artist).filter(a => a && a !== 'Unknown Artist')));
-    if (artists.length > 0) {
-      return artists.sort(() => 0.5 - Math.random()).slice(0, 5);
+    const genres = Array.from(new Set(tracks.map(t => t.genre).filter(g => g && g !== 'Unknown').map(g => g!.split(/[,/]/)[0].trim())));
+    
+    const combined = [...artists, ...genres];
+    if (combined.length > 0) {
+      return combined.sort(() => 0.5 - Math.random()).slice(0, 8);
     }
     return ['Lo-fi', 'Pop', 'Phonk', 'Rock', 'Electronic'];
   }

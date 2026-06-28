@@ -591,13 +591,18 @@ export const usePlayerStore = create<PlayerState>()(
       const { tracks, playlists } = get();
       const queries = generateSearchQueries(tracks, playlists);
       
-      // Select a random query from the top queries
-      const query = queries[Math.floor(Math.random() * queries.length)];
+      // Shuffle and pick up to 3 queries to mix recommendations
+      const selectedQueries = queries.sort(() => 0.5 - Math.random()).slice(0, 3);
       
       const { searchSoundCloud } = await import('../lib/soundcloud');
-      const scTracks = await searchSoundCloud(query, 30); // Requesting up to 30 tracks
+      let combinedScTracks: any[] = [];
       
-      const recommended = scTracks.map(t => {
+      for (const query of selectedQueries) {
+        const scTracks = await searchSoundCloud(query, 15);
+        combinedScTracks = [...combinedScTracks, ...scTracks];
+      }
+      
+      const recommended = combinedScTracks.map(t => {
         let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
         if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
         
