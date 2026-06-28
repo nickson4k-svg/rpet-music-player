@@ -240,11 +240,45 @@ export const usePlayerStore = create<PlayerState>()(
         nextIndex = 0;
       } else {
         const currentTrack = getTrackById(currentTrackId);
-        if (currentTrack && currentTrack.artist) {
+        if (currentTrack) {
           try {
-            const audiusTracks = await searchAudiusTracks(currentTrack.artist);
+            // Шукаємо за жанром, якщо немає - за артистом
+            let query = 'Lo-fi';
+            if (currentTrack.genre && currentTrack.genre !== 'Unknown') {
+              query = currentTrack.genre.split(/[,/]/)[0].trim();
+            } else if (currentTrack.artist && currentTrack.artist !== 'Unknown Artist') {
+              query = currentTrack.artist;
+            }
+
+            let newTracks: any[] = [];
+            
+            // Спершу пробуємо Audius
+            const { searchAudiusTracks } = await import('../utils/audiusApi');
+            const audiusTracks = await searchAudiusTracks(query);
             const existingIds = new Set(tracks.map(t => t.id));
-            const newTracks = audiusTracks.filter((t: Track) => !existingIds.has(t.id)).slice(0, 10);
+            
+            newTracks = audiusTracks.filter((t: Track) => !existingIds.has(t.id)).slice(0, 10);
+            
+            // Якщо Audius нічого не знайшов, пробуємо SoundCloud
+            if (newTracks.length === 0) {
+              const { searchSoundCloud } = await import('../lib/soundcloud');
+              const scTracks = await searchSoundCloud(query, 10);
+              newTracks = scTracks.map(t => {
+                let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
+                if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
+                return {
+                  id: `soundcloud-${t.id}`,
+                  name: t.title,
+                  artist: t.user.username,
+                  album: 'SoundCloud',
+                  duration: Math.floor(t.duration / 1000),
+                  audioUrl: '',
+                  coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+                  url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`,
+                  addedAt: Date.now()
+                } as any;
+              }).filter(t => !existingIds.has(t.id));
+            }
 
             if (newTracks.length > 0) {
               const newQueue = [...queue, ...newTracks.map(t => t.id)];
