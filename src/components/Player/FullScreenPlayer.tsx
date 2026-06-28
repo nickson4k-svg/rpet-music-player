@@ -78,9 +78,6 @@ export const FullScreenPlayer: React.FC = () => {
   const queue = usePlayerStore(state => state.queue);
   const {
     queueIndex,
-    playTrack,
-    playNext,
-    playPrevious,
     togglePlayPause,
     jumpToQueueIndex
   } = usePlayerStore();

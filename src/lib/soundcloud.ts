@@ -41,6 +41,7 @@ export interface SCTrack {
   user: { username: string };
   artwork_url: string | null;
   duration: number;
+  genre?: string;
   policy?: string;
   media: {
     transcodings: Array<{
