@@ -25,7 +25,6 @@
     "react-virtuoso": "^4.18.7",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.6.0",
-    "tone": "^15.1.22",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrackList } from '../TrackList/TrackList';
 import { PlayerBar } from '../Player/PlayerBar';
-import { AuthModal } from '../AuthModal';
+const AuthModal = React.lazy(() => import('../AuthModal').then(module => ({ default: module.AuthModal })));
 import { Sidebar } from '../Sidebar/Sidebar';
 import { SearchResults } from '../TrackList/SearchResults';
 import { getAllTracks, getAllPlaylists } from '../../utils/idbStorage';

@@ -1,7 +1,7 @@
-import * as mm from 'music-metadata';
 import type { Track } from '../types';
 
 export const processAudioFile = async (file: File): Promise<Track> => {
+  const mm = await import('music-metadata');
   const metadata = await mm.parseBlob(file);
   
   const hash = await generateHash(`${file.name}-${file.size}-${file.lastModified}`);
