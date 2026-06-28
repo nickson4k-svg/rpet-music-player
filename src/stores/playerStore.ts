@@ -55,6 +55,7 @@ interface PlayerState {
   setPlaylists: (playlists: Playlist[]) => void;
   playTrack: (id: string) => void;
   playQueue: (queue: string[], startIndex: number) => void;
+  jumpToQueueIndex: (index: number) => void;
   togglePlayPause: () => void;
   setVolume: (volume: number) => void;
   setPlaybackRate: (rate: number) => void;
@@ -158,8 +159,8 @@ export const usePlayerStore = create<PlayerState>()(
     const remainingQueue = baseQueue.filter(qId => qId !== id);
     
     remainingQueue.sort((a, b) => {
-      const trackA = tracks.find(t => t.id === a);
-      const trackB = tracks.find(t => t.id === b);
+      const trackA = get().getTrackById(a);
+      const trackB = get().getTrackById(b);
       const genreA = trackA?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
       const genreB = trackB?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
       
@@ -200,8 +201,8 @@ export const usePlayerStore = create<PlayerState>()(
     const remainingQueue = baseQueue.filter(qId => qId !== id);
     
     remainingQueue.sort((a, b) => {
-      const trackA = tracks.find(t => t.id === a);
-      const trackB = tracks.find(t => t.id === b);
+      const trackA = get().getTrackById(a);
+      const trackB = get().getTrackById(b);
       const genreA = trackA?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
       const genreB = trackB?.genre?.split(/[,/]/)[0].trim() || 'Unknown';
       
@@ -227,6 +228,30 @@ export const usePlayerStore = create<PlayerState>()(
         payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
       });
       useP2PStore.getState().broadcast({ type: 'PLAY' });
+    }
+  },
+
+  jumpToQueueIndex: (index: number) => {
+    const { queue } = get();
+    if (index >= 0 && index < queue.length) {
+      const id = queue[index];
+      set({ currentTrackId: id, queueIndex: index, isPlaying: true, currentTime: 0 });
+
+      // Increment playCount
+      const { tracks } = get();
+      const track = tracks.find(t => t.id === id);
+      if (track) {
+        const updated = { ...track, playCount: (track.playCount || 0) + 1 };
+        addTrackIdb(updated);
+        set({ tracks: tracks.map(t => t.id === id ? updated : t) });
+
+        // P2P Broadcast
+        useP2PStore.getState().broadcast({
+          type: 'TRACK_CHANGE',
+          payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
+        });
+        useP2PStore.getState().broadcast({ type: 'PLAY' });
+      }
     }
   },
 
@@ -311,6 +336,7 @@ export const usePlayerStore = create<PlayerState>()(
                   name: t.title,
                   artist: t.user.username,
                   album: 'SoundCloud',
+                  genre: t.genre || 'Unknown',
                   duration: Math.floor(t.duration / 1000),
                   audioUrl: '',
                   coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
@@ -579,6 +605,8 @@ export const usePlayerStore = create<PlayerState>()(
           id: `soundcloud-${t.id}`,
           name: t.title,
           artist: t.user.username,
+          album: 'SoundCloud',
+          genre: t.genre || 'Unknown',
           duration: t.duration / 1000,
           audioUrl: '',
           coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',

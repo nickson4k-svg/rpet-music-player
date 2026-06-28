@@ -121,13 +121,16 @@ export const TakeoutImportModal: React.FC<TakeoutImportModalProps> = ({ isOpen, 
                 return {
                   id: `soundcloud-${t.id}`,
                   name: t.title,
-                  artist: t.user.username,
+                  artist: t.user?.username || 'Unknown Artist',
                   album: 'SoundCloud',
+                  genre: t.genre || 'Unknown',
                   duration: Math.floor(t.duration / 1000),
+                  audioUrl: '',
                   coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
                   url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`,
-                  audioUrl: ''
-                };
+                  addedAt: Date.now(),
+                  playCount: 0
+                } as any;
               });
             }
           } catch (e) {

@@ -76,11 +76,16 @@ export const FullScreenPlayer: React.FC = () => {
   const searchResults = usePlayerStore(state => state.searchResults);
   
   const queue = usePlayerStore(state => state.queue);
-  const queueIndex = usePlayerStore(state => state.queueIndex);
+  const {
+    queueIndex,
+    playTrack,
+    playNext,
+    playPrevious,
+    togglePlayPause,
+    jumpToQueueIndex
+  } = usePlayerStore();
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const currentTime = usePlayerStore(state => state.currentTime);
-  const playTrack = usePlayerStore(state => state.playTrack);
-  const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
 
   const getTrack = (id: string) => tracks.find(t => t.id === id) || 
                                    recommendedTracks.find(t => t.id === id) || 
@@ -243,7 +248,7 @@ export const FullScreenPlayer: React.FC = () => {
                       if (i === 0) {
                         togglePlayPause();
                       } else {
-                        playTrack(track.id);
+                        jumpToQueueIndex(queueIndex + i);
                       }
                     }}
                   />
