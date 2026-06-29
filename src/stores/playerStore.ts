@@ -166,6 +166,13 @@ export const usePlayerStore = create<PlayerState>()(
       
       if (genreA === currentGenre && genreB !== currentGenre) return -1;
       if (genreB === currentGenre && genreA !== currentGenre) return 1;
+      
+      if (genreA === genreB) {
+        const artistA = trackA?.artist || 'Unknown Artist';
+        const artistB = trackB?.artist || 'Unknown Artist';
+        return artistA.localeCompare(artistB);
+      }
+      
       return genreA.localeCompare(genreB);
     });
     
@@ -208,6 +215,13 @@ export const usePlayerStore = create<PlayerState>()(
       
       if (genreA === currentGenre && genreB !== currentGenre) return -1;
       if (genreB === currentGenre && genreA !== currentGenre) return 1;
+      
+      if (genreA === genreB) {
+        const artistA = trackA?.artist || 'Unknown Artist';
+        const artistB = trackB?.artist || 'Unknown Artist';
+        return artistA.localeCompare(artistB);
+      }
+      
       return genreA.localeCompare(genreB);
     });
     
