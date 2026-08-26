@@ -110,7 +110,18 @@ export const getAllTracks = async () => {
         track.genre = 'Unknown';
         await db.put('tracks', track);
       }
-      
+
+      // Auto-repair dead Audius cover URLs stored in IndexedDB
+      if (track.coverUrl && (track.coverUrl.includes('zeogrid.com') || (track.coverUrl.includes('audius') && track.coverUrl.includes('/content/')))) {
+        if (typeof track.id === 'string' && track.id.startsWith('audius-')) {
+          const rawId = track.id.replace('audius-', '');
+          track.coverUrl = `https://discoveryprovider.audius.co/v1/tracks/${rawId}/artwork?app_name=Rpet`;
+        } else {
+          track.coverUrl = track.coverUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
+        }
+        await db.put('tracks', track);
+      }
+
       fixedTracks.push(track);
     }
   }

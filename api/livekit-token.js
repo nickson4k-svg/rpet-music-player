@@ -46,21 +46,26 @@ export default async function handler(req, res) {
     });
   }
 
+  // Sanitized room and identity
+  const cleanRoom = String(roomName).trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  const cleanIdentity = String(participantName).trim().replace(/[^a-zA-Z0-9_ -]/g, '_');
+
   // LiveKit Cloud credentials
-  const apiKey = process.env.LIVEKIT_API_KEY || 'APItqmEse7XhKUH';
-  const apiSecret = process.env.LIVEKIT_API_SECRET || 'dthMlbEFQJeS2Hk7Dflsl6NdbFG6tMc0q2mkiy9js9w';
-  const livekitUrl = process.env.LIVEKIT_URL || 'wss://rpet-music-ayo8mv0c.livekit.cloud';
+  const apiKey = (process.env.LIVEKIT_API_KEY || 'APItqmEse7XhKUH').trim();
+  const apiSecret = (process.env.LIVEKIT_API_SECRET || 'dthMlbEFQJeS2Hk7Dflsl6NdbFG6tMc0q2mkiy9js9w').trim();
+  const livekitUrl = (process.env.LIVEKIT_URL || 'wss://rpet-music-ayo8mv0c.livekit.cloud').trim();
 
   try {
     const at = new AccessToken(apiKey, apiSecret, {
-      identity: participantName,
+      identity: cleanIdentity,
+      name: cleanIdentity,
       ttl: '6h',
     });
 
     at.addGrant({
       roomJoin: true,
-      room: roomName,
-      canPublish: isHost,
+      room: cleanRoom,
+      canPublish: Boolean(isHost),
       canSubscribe: true,
       canPublishData: true,
     });
@@ -69,9 +74,9 @@ export default async function handler(req, res) {
     const result = {
       token,
       livekitUrl,
-      roomName,
-      participantName,
-      isHost,
+      roomName: cleanRoom,
+      participantName: cleanIdentity,
+      isHost: Boolean(isHost),
     };
 
     if (res) {
