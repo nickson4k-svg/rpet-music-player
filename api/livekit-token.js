@@ -46,10 +46,10 @@ export default async function handler(req, res) {
     });
   }
 
-  // LiveKit credentials from environment variables with public cloud sandbox fallback
-  const apiKey = process.env.LIVEKIT_API_KEY || 'APIRpetSandboxKey';
-  const apiSecret = process.env.LIVEKIT_API_SECRET || 'secretRpetListenTogether2026';
-  const livekitUrl = process.env.LIVEKIT_URL || 'wss://rpet-sandbox.livekit.cloud';
+  // LiveKit Cloud credentials
+  const apiKey = process.env.LIVEKIT_API_KEY || 'APItqmEse7XhKUH';
+  const apiSecret = process.env.LIVEKIT_API_SECRET || 'dthMlbEFQJeS2Hk7Dflsl6NdbFG6tMc0q2mkiy9js9w';
+  const livekitUrl = process.env.LIVEKIT_URL || 'wss://rpet-music-ayo8mv0c.livekit.cloud';
 
   try {
     const at = new AccessToken(apiKey, apiSecret, {
