@@ -18,7 +18,7 @@ export async function getSCClientId(): Promise<string> {
       const data = await res.json();
       if (data.clientId) {
         cachedClientId = data.clientId;
-        return cachedClientId;
+        return data.clientId as string;
       }
     }
   } catch (err) {
