@@ -42,7 +42,15 @@ const QueueTrackItem = ({ track, index, isPlaying, onPlay }: { track: any, index
     >
       <div className="relative w-12 h-12 flex-shrink-0 rounded bg-secondary overflow-hidden">
         {coverUrl ? (
-          <img src={coverUrl} alt={track.name} className="w-full h-full object-cover" />
+          <img
+            src={coverUrl}
+            alt={track.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+            }}
+          />
         ) : (
           <Disc3 className="w-full h-full text-gray-500 p-2" />
         )}
@@ -186,6 +194,10 @@ export const FullScreenPlayer: React.FC = () => {
                 src={coverUrl} 
                 alt={currentTrack?.name}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+                }}
               />
             ) : (
               <div className="w-full h-full bg-secondary flex items-center justify-center">

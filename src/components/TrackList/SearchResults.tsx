@@ -45,7 +45,15 @@ export const SearchResults: React.FC = () => {
       >
         <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-secondary">
           {topResult.coverUrl ? (
-            <img src={topResult.coverUrl} alt={topResult.name} className="w-full h-full object-cover" />
+            <img
+              src={topResult.coverUrl}
+              alt={topResult.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+              }}
+            />
           ) : (
             <div className="w-full h-full bg-secondary" />
           )}
@@ -99,7 +107,15 @@ export const SearchResults: React.FC = () => {
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <div className="relative w-12 h-12 flex-shrink-0 rounded bg-secondary overflow-hidden">
                       {track.coverUrl ? (
-                        <img src={track.coverUrl} alt={track.name} className="w-full h-full object-cover" />
+                        <img
+                          src={track.coverUrl}
+                          alt={track.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+                          }}
+                        />
                       ) : null}
                       <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         {isActive && isPlaying ? (

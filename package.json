@@ -16,6 +16,8 @@
     "fast-average-color": "^9.5.2",
     "framer-motion": "^12.40.0",
     "idb": "^8.0.3",
+    "livekit-client": "^2.22.1",
+    "livekit-server-sdk": "^2.18.0",
     "lucide-react": "^1.17.0",
     "music-metadata": "^11.13.0",
     "papaparse": "^5.5.4",

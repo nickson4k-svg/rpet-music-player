@@ -90,7 +90,15 @@ export const PlayerBar: React.FC = () => {
             <>
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-bg-secondary rounded-lg shadow-lg overflow-hidden flex-shrink-0">
                 {coverUrl ? (
-                  <img src={coverUrl} alt={currentTrack.name} className="object-cover w-full h-full" />
+                  <img
+                    src={coverUrl}
+                    alt={currentTrack.name}
+                    className="object-cover w-full h-full"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+                    }}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-bg-secondary text-[8px] sm:text-[10px] text-gray-500 font-medium text-center">
                     No Cover

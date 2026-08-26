@@ -4,9 +4,9 @@ import {
   X, Users, Headphones, Copy, Check, Radio, Music2,
   Send, Wifi, WifiOff, PlusCircle, MessageCircle, SmilePlus,
   LogOut, Crown, Loader2, UserPlus, Link2, Trash2, Search,
-  Play, Sparkles,
+  Play, Sparkles, Activity, ShieldCheck,
 } from 'lucide-react';
-import { useP2PStore, confirmUserGestureAndJoin } from '../stores/p2pStore';
+import { useLiveKitStore } from '../stores/livekitStore';
 import { useAuthStore } from '../stores/authStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { useFriendsStore } from '../stores/friendsStore';
@@ -15,6 +15,7 @@ import type { SharedQueueItem } from '../types';
 // ─── Emoji Reactions ──────────────────────────────────────────────────────────
 
 const EMOJI_LIST = ['🔥', '❤️', '🎵', '😂', '👏', '💯', '🎉', '😍'];
+const FALLBACK_COVER = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
 
 interface FloatingEmoji {
   id: string;
@@ -39,12 +40,12 @@ interface PartyModeModalProps {
 
 export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const {
-    peerId, isHost, status, reconnecting, error,
+    roomName, isHost, status, ping, error,
     sharedQueue, members, chatMessages,
     hostRoom, joinRoom, leaveRoom, addToSharedQueue, removeFromSharedQueue,
     sendChat, sendReaction,
-    autoplayBlocked, awaitingUserGesture,
-  } = useP2PStore();
+    autoplayBlocked, awaitingUserGesture, confirmUserGestureAndJoin,
+  } = useLiveKitStore();
 
   const { user } = useAuthStore();
   const { searchGlobal, searchResults, isSearchLoading, currentTrackId, getTrackById } = usePlayerStore();
@@ -92,7 +93,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
   // Register reaction callback
   useEffect(() => {
-    useP2PStore.setState({
+    useLiveKitStore.setState({
       onReactionReceived: (payload) => {
         const newEmoji: FloatingEmoji = {
           id: crypto.randomUUID(),
@@ -107,14 +108,20 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
       },
     });
     return () => {
-      useP2PStore.setState({ onReactionReceived: null });
+      useLiveKitStore.setState({ onReactionReceived: null });
     };
   }, []);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
+  const getMyCode = () => {
+    if (user?.username) return user.username;
+    if (roomName) return roomName.replace(/^room-/, '');
+    return 'Room';
+  };
+
   const handleCopyCode = () => {
-    const code = user ? user.username : peerId;
+    const code = getMyCode();
     if (code) {
       navigator.clipboard.writeText(code);
       setCopiedCode(true);
@@ -123,7 +130,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   };
 
   const handleCopyLink = () => {
-    const code = user ? user.username : peerId;
+    const code = getMyCode();
     if (code) {
       const link = getInviteLink(code);
       navigator.clipboard.writeText(link);
@@ -136,7 +143,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     try {
       await hostRoom();
     } catch (err) {
-      console.error('Failed to host', err);
+      console.error('Failed to host LiveKit room', err);
     }
   };
 
@@ -146,7 +153,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     try {
       await joinRoom(codeToUse.trim());
     } catch (err) {
-      console.error('Failed to join', err);
+      console.error('Failed to join LiveKit room', err);
     }
   };
 
@@ -208,7 +215,8 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting';
-  const isDisconnected = status === 'disconnected' && !awaitingUserGesture && !reconnecting;
+  const isReconnecting = status === 'reconnecting';
+  const isDisconnected = status === 'disconnected' && !awaitingUserGesture;
 
   return createPortal(
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fade-in">
@@ -235,24 +243,23 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 Спільне прослуховування
-                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-normal border border-violet-500/30">
-                  P2P Party
+                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-normal border border-violet-500/30 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-violet-400" />
+                  LiveKit SFU
                 </span>
               </h2>
-              <p className="text-xs text-zinc-400">Слухайте музику разом із друзями з будь-якої точки світу</p>
+              <p className="text-xs text-zinc-400">Високошвидкісна WebRTC трансляція без затримок та обмежень NAT</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {isConnected && (
-              <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${
-                isHost
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                  : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-              }`}>
-                {isHost ? <Crown className="w-3.5 h-3.5 text-amber-400" /> : <Headphones className="w-3.5 h-3.5 text-emerald-400" />}
-                {isHost ? 'Хост кімнати' : 'Гість'}
-              </span>
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs font-mono">
+                <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-300">{ping > 0 ? `${ping}ms` : 'HQ'}</span>
+                <span className="text-zinc-500">•</span>
+                <span className="text-zinc-300 font-sans">{isHost ? '👑 Хост' : '🎧 Гість'}</span>
+              </div>
             )}
             <button
               onClick={onClose}
@@ -268,7 +275,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
         {error && (
           <div className="mx-6 mt-3 p-3 bg-red-500/15 border border-red-500/40 rounded-xl text-red-300 text-sm flex-shrink-0 flex items-center justify-between">
             <span>⚠️ {error}</span>
-            <button onClick={() => useP2PStore.setState({ error: null })} className="text-xs underline hover:text-white">
+            <button onClick={() => useLiveKitStore.setState({ error: null })} className="text-xs underline hover:text-white">
               Приховати
             </button>
           </div>
@@ -285,7 +292,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               onClick={() => {
                 const audio = document.getElementById('audio-remote') as HTMLAudioElement;
                 if (audio) audio.play().catch(console.error);
-                useP2PStore.setState({ autoplayBlocked: false });
+                useLiveKitStore.setState({ autoplayBlocked: false });
               }}
               className="text-xs font-semibold bg-amber-500/30 hover:bg-amber-500/50 text-amber-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
             >
@@ -333,7 +340,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                 <div>
                   <h3 className="text-base font-bold text-white mb-1">Дозвіл на відтворення звуку</h3>
                   <p className="text-xs text-zinc-400">
-                    Браузер вимагає одного кліку перед початком прямої P2P аудіотрансляції.
+                    Браузер вимагає одного кліку перед початком прямої WebRTC аудіотрансляції.
                   </p>
                 </div>
                 <button
@@ -343,7 +350,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                   🎧 Приєднатися та слухати
                 </button>
                 <button
-                  onClick={() => useP2PStore.setState({ awaitingUserGesture: false, savedRoomId: null })}
+                  onClick={() => useLiveKitStore.setState({ awaitingUserGesture: false, roomName: null })}
                   className="text-xs text-zinc-500 hover:text-zinc-300"
                 >
                   Скасувати
@@ -355,18 +362,18 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
             {isConnecting && (
               <div className="py-12 flex flex-col items-center justify-center gap-3 text-center bg-white/[0.02] rounded-2xl border border-white/5">
                 <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-                <p className="text-sm font-semibold text-white">Встановлення WebRTC з'єднання...</p>
-                <p className="text-xs text-zinc-500">Використовуємо STUN / TURN реле для глобального NAT traversal</p>
+                <p className="text-sm font-semibold text-white">Підключення до LiveKit SFU...</p>
+                <p className="text-xs text-zinc-500">Автоматичний вибір найближчого медіа-сервера</p>
               </div>
             )}
 
             {/* State: Reconnecting */}
-            {reconnecting && (
+            {isReconnecting && (
               <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center gap-3 text-amber-300">
                 <Wifi className="w-6 h-6 animate-pulse flex-shrink-0" />
                 <div className="text-xs">
                   <p className="font-semibold">Перепідключення до кімнати...</p>
-                  <p className="text-zinc-400">З'єднання було перервано. Пробуємо відновити.</p>
+                  <p className="text-zinc-400">З'єднання було перервано. LiveKit відновлює аудіопотік.</p>
                 </div>
               </div>
             )}
@@ -380,7 +387,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                     Створити власну кімнату
                   </div>
                   <p className="text-xs text-zinc-400">
-                    Станьте діджеєм: транслюйте свій мікс, керуйте треками та запрошуйте слухачів.
+                    Станьте діджеєм: транслюйте свій мікс через SFU сервер, керуйте чергою та запрошуйте слухачів.
                   </p>
                   <button
                     onClick={handleHost}
@@ -401,7 +408,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Нікнейм друга або код кімнати..."
+                      placeholder="Нікнейм друга або назва кімнати..."
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value)}
                       className="w-full pl-4 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors"
@@ -425,48 +432,44 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               <div className="space-y-3 bg-white/[0.03] border border-white/10 rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    {isHost ? 'Ваш код кімнати' : 'Підключено до хоста'}
+                    {isHost ? 'Код кімнати' : 'Кімната хоста'}
                   </span>
                   <span className="text-xs text-emerald-400 flex items-center gap-1 font-mono">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Онлайн
+                    LiveKit SFU Connected
                   </span>
                 </div>
 
                 {/* Code display */}
                 <div className="flex items-center justify-between gap-2 p-2.5 bg-black/40 border border-white/10 rounded-xl">
                   <code className="text-sm font-mono text-violet-300 font-bold truncate select-all">
-                    {isHost ? (user ? user.username : peerId) : (useP2PStore.getState().savedRoomId || 'Хост')}
+                    {getMyCode()}
                   </code>
-                  {isHost && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={handleCopyCode}
-                        title="Скопіювати код"
-                        className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors"
-                      >
-                        {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={handleCopyLink}
-                        title="Скопіювати лінк для запрошення"
-                        className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-violet-400 transition-colors"
-                      >
-                        {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={handleCopyCode}
+                      title="Скопіювати код"
+                      className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    >
+                      {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={handleCopyLink}
+                      title="Скопіювати лінк для запрошення"
+                      className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-violet-400 transition-colors"
+                    >
+                      {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
-                {isHost && (
-                  <button
-                    onClick={handleCopyLink}
-                    className="w-full py-2 px-3 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Link2 className="w-3.5 h-3.5" />
-                    {copiedLink ? 'Скопійовано!' : 'Скопіювати пряме посилання'}
-                  </button>
-                )}
+                <button
+                  onClick={handleCopyLink}
+                  className="w-full py-2 px-3 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  {copiedLink ? 'Скопійовано!' : 'Скопіювати пряме посилання'}
+                </button>
               </div>
             )}
 
@@ -578,7 +581,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       <div className="flex items-center gap-1">
                         {/* Quick join friend room */}
                         <button
-                          onClick={() => handleJoin(f.peerId)}
+                          onClick={() => handleJoin(f.username)}
                           title={`Зайти в кімнату ${f.username}`}
                           className="px-2 py-1 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-1"
                         >
@@ -588,7 +591,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                         {/* Copy invite link */}
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(getInviteLink(user?.username || peerId || ''));
+                            navigator.clipboard.writeText(getInviteLink(getMyCode()));
                             setFriendFeedback('Посилання скопійовано!');
                             setTimeout(() => setFriendFeedback(null), 2500);
                           }}
@@ -636,7 +639,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
             </div>
 
             {/* Disconnect button at bottom of left column */}
-            {(isConnected || reconnecting) && (
+            {(isConnected || isReconnecting) && (
               <div className="pt-4 mt-auto border-t border-white/10">
                 <button
                   onClick={leaveRoom}
@@ -715,7 +718,15 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-zinc-800 overflow-hidden flex-shrink-0 border border-white/10 relative">
                     {currentPlayingTrack.coverUrl ? (
-                      <img src={currentPlayingTrack.coverUrl} alt={currentPlayingTrack.name} className="w-full h-full object-cover" />
+                      <img
+                        src={currentPlayingTrack.coverUrl}
+                        alt={currentPlayingTrack.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = FALLBACK_COVER;
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Music2 className="w-5 h-5 text-zinc-500" />
@@ -734,7 +745,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
                 <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-mono flex-shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-ping" />
-                  Прямий ефір
+                  Live Stream
                 </div>
               </div>
             )}
@@ -752,7 +763,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       </div>
                       <p className="text-sm font-semibold text-zinc-300">Спільна черга порожня</p>
                       <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                        Ви або ваші друзі можете знайти будь-яку пісню та додати її сюди.
+                        Ви або ваші друзі можете знайти будь-яку пісню та додати її сюди через SFU Data Channel.
                       </p>
                       <button
                         onClick={() => setActiveTab('search')}
@@ -773,7 +784,15 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                             <span className="text-xs font-bold text-zinc-500 w-5 text-center">{i + 1}</span>
                             <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/10 overflow-hidden flex-shrink-0">
                               {item.coverUrl ? (
-                                <img src={item.coverUrl} alt={item.title} className="w-full h-full object-cover" />
+                                <img
+                                  src={item.coverUrl}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = FALLBACK_COVER;
+                                  }}
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                   <Music2 className="w-4 h-4 text-zinc-500" />
@@ -810,7 +829,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       <div className="py-16 text-center text-zinc-500 space-y-2">
                         <MessageCircle className="w-10 h-10 mx-auto opacity-30" />
                         <p className="text-sm">Тут поки що немає повідомлень.</p>
-                        <p className="text-xs">Напишіть щось приємне вашим друзям!</p>
+                        <p className="text-xs">Напишіть щось у кімнату!</p>
                       </div>
                     ) : (
                       chatMessages.map((msg) => {
@@ -901,7 +920,15 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/10 overflow-hidden flex-shrink-0">
                               {track.coverUrl ? (
-                                <img src={track.coverUrl} alt={track.name} className="w-full h-full object-cover" />
+                                <img
+                                  src={track.coverUrl}
+                                  alt={track.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = FALLBACK_COVER;
+                                  }}
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                   <Music2 className="w-4 h-4 text-zinc-500" />

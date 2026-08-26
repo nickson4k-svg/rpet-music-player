@@ -68,7 +68,16 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
       >
         <div className="relative w-full aspect-square bg-bg-secondary rounded-xl overflow-hidden shadow-md">
           {coverUrl ? (
-            <img src={coverUrl} alt={track.name} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+            <img
+              src={coverUrl}
+              alt={track.name}
+              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+              }}
+            />
           ) : (
             <div className="w-full h-full bg-bg-secondary flex items-center justify-center text-xs text-gray-500 font-medium text-center">
               No Cover
@@ -147,7 +156,16 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
     >
       <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 bg-bg-secondary rounded-lg overflow-hidden shadow-sm">
         {coverUrl ? (
-          <img src={coverUrl} alt={track.name} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+          <img
+            src={coverUrl}
+            alt={track.name}
+            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
+            }}
+          />
         ) : (
           <div className="w-full h-full bg-bg-secondary flex items-center justify-center text-[10px] text-gray-500 font-medium text-center">
             No Cover
