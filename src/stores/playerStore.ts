@@ -187,12 +187,17 @@ export const usePlayerStore = create<PlayerState>()(
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
 
-      // P2P Broadcast
-      useP2PStore.getState().broadcast({
-        type: 'TRACK_CHANGE',
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
+      // P2P Broadcast via unified STATE_SYNC
+      useP2PStore.getState().sendStateSync({
+        trackId: track.id,
+        title: track.name,
+        artist: track.artist,
+        coverUrl: track.coverUrl,
+        isPlaying: true,
+        currentTime: 0,
+        hostTimestamp: performance.now(),
+        duration: track.duration,
       });
-      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
 
@@ -236,12 +241,17 @@ export const usePlayerStore = create<PlayerState>()(
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === id ? updated : t) });
 
-      // P2P Broadcast
-      useP2PStore.getState().broadcast({
-        type: 'TRACK_CHANGE',
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
+      // P2P Broadcast via unified STATE_SYNC
+      useP2PStore.getState().sendStateSync({
+        trackId: track.id,
+        title: track.name,
+        artist: track.artist,
+        coverUrl: track.coverUrl,
+        isPlaying: true,
+        currentTime: 0,
+        hostTimestamp: performance.now(),
+        duration: track.duration,
       });
-      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
 
@@ -259,12 +269,17 @@ export const usePlayerStore = create<PlayerState>()(
         addTrackIdb(updated);
         set({ tracks: tracks.map(t => t.id === id ? updated : t) });
 
-        // P2P Broadcast
-        useP2PStore.getState().broadcast({
-          type: 'TRACK_CHANGE',
-          payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
+        // P2P Broadcast via unified STATE_SYNC
+        useP2PStore.getState().sendStateSync({
+          trackId: track.id,
+          title: track.name,
+          artist: track.artist,
+          coverUrl: track.coverUrl,
+          isPlaying: true,
+          currentTime: 0,
+          hostTimestamp: performance.now(),
+          duration: track.duration,
         });
-        useP2PStore.getState().broadcast({ type: 'PLAY' });
       }
     }
   },
@@ -272,7 +287,20 @@ export const usePlayerStore = create<PlayerState>()(
   togglePlayPause: () => {
     set((state) => {
       const newIsPlaying = !state.isPlaying;
-      useP2PStore.getState().broadcast({ type: newIsPlaying ? 'PLAY' : 'PAUSE' });
+      const track = state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined;
+      if (track) {
+        // Broadcast STATE_SYNC with updated isPlaying
+        useP2PStore.getState().sendStateSync({
+          trackId: track.id,
+          title: track.name,
+          artist: track.artist,
+          coverUrl: track.coverUrl,
+          isPlaying: newIsPlaying,
+          currentTime: state.currentTime,
+          hostTimestamp: performance.now(),
+          duration: state.duration,
+        });
+      }
       return { isPlaying: newIsPlaying };
     });
   },
@@ -294,8 +322,21 @@ export const usePlayerStore = create<PlayerState>()(
   setPlaybackRate: (rate) => set({ playbackRate: rate }),
   setCurrentTime: (currentTime) => {
     const state = get();
+    // Broadcast STATE_SYNC on significant seek (>2 sec jump)
     if (Math.abs(state.currentTime - currentTime) > 2) {
-      useP2PStore.getState().broadcast({ type: 'SEEK', payload: currentTime });
+      const track = state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined;
+      if (track) {
+        useP2PStore.getState().sendStateSync({
+          trackId: track.id,
+          title: track.name,
+          artist: track.artist,
+          coverUrl: track.coverUrl,
+          isPlaying: state.isPlaying,
+          currentTime,
+          hostTimestamp: performance.now(),
+          duration: state.duration,
+        });
+      }
     }
     set({ currentTime });
   },
@@ -390,12 +431,17 @@ export const usePlayerStore = create<PlayerState>()(
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === queue[nextIndex] ? updated : t) });
 
-      // P2P Broadcast
-      useP2PStore.getState().broadcast({
-        type: 'TRACK_CHANGE',
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
+      // P2P Broadcast via unified STATE_SYNC
+      useP2PStore.getState().sendStateSync({
+        trackId: track.id,
+        title: track.name,
+        artist: track.artist,
+        coverUrl: track.coverUrl,
+        isPlaying: true,
+        currentTime: 0,
+        hostTimestamp: performance.now(),
+        duration: track.duration,
       });
-      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
 
@@ -422,12 +468,17 @@ export const usePlayerStore = create<PlayerState>()(
       addTrackIdb(updated);
       set({ tracks: tracks.map(t => t.id === queue[prevIndex] ? updated : t) });
 
-      // P2P Broadcast
-      useP2PStore.getState().broadcast({
-        type: 'TRACK_CHANGE',
-        payload: { id: track.id, title: track.name, artist: track.artist, coverUrl: track.coverUrl }
+      // P2P Broadcast via unified STATE_SYNC
+      useP2PStore.getState().sendStateSync({
+        trackId: track.id,
+        title: track.name,
+        artist: track.artist,
+        coverUrl: track.coverUrl,
+        isPlaying: true,
+        currentTime: 0,
+        hostTimestamp: performance.now(),
+        duration: track.duration,
       });
-      useP2PStore.getState().broadcast({ type: 'PLAY' });
     }
   },
 

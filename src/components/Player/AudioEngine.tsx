@@ -3,24 +3,26 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { initAudioContext, audioContextState, updateNormalization } from '../../utils/audioContext';
 import { useP2PStore, streamAudioToGuests } from '../../stores/p2pStore';
 import { addTrack } from '../../utils/idbStorage';
+import type { StateSyncPayload } from '../../types';
 
 export const AudioEngine: React.FC = () => {
   const audioARef = useRef<HTMLAudioElement>(null);
   const audioBRef = useRef<HTMLAudioElement>(null);
   const activeDeckRef = useRef<'A' | 'B'>('A');
   const fadeTimeoutRef = useRef<number | null>(null);
-  
+  const stateSyncIntervalRef = useRef<number | null>(null);
+
   const getTrackById = usePlayerStore(state => state.getTrackById);
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const volume = usePlayerStore(state => state.volume);
   const playbackRate = usePlayerStore(state => state.playbackRate);
   const isLibraryLoaded = usePlayerStore(state => state.isLibraryLoaded);
-  
+
   const crossfadeEnabled = usePlayerStore(state => state.crossfadeEnabled);
   const crossfadeDuration = usePlayerStore(state => state.crossfadeDuration);
   const normalizationEnabled = usePlayerStore(state => state.normalizationEnabled);
-  
+
   const playNext = usePlayerStore(state => state.playNext);
   const playPrevious = usePlayerStore(state => state.playPrevious);
   const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
@@ -29,14 +31,74 @@ export const AudioEngine: React.FC = () => {
 
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize Audio Context on first play or when hosting
+  // ── Register STATE_SYNC handler in p2pStore ────────────────────────────────
+  // This replaces the old onMessageReceived noop pattern.
+  // The handler lives here (close to audio elements) and is registered once on mount.
+  useEffect(() => {
+    const handleStateSync = (payload: StateSyncPayload) => {
+      const playerState = usePlayerStore.getState();
+
+      // Update metadata: if track isn't known, create a stub
+      if (payload.trackId !== playerState.currentTrackId) {
+        let track = playerState.getTrackById(payload.trackId);
+        if (!track) {
+          // Create lightweight stub so UI renders correctly
+          const stub = {
+            id: payload.trackId,
+            name: payload.title,
+            artist: payload.artist,
+            album: '',
+            coverUrl: payload.coverUrl,
+            audioUrl: '',
+            duration: payload.duration,
+            hash: payload.trackId,
+            addedAt: Date.now(),
+            playCount: 0,
+          };
+          playerState.setTracks([...playerState.tracks, stub as any]);
+          track = stub as any;
+        }
+
+        usePlayerStore.setState({
+          currentTrackId: payload.trackId,
+          queue: [payload.trackId],
+          queueIndex: 0,
+          duration: payload.duration,
+        });
+      }
+
+      // Update duration if changed
+      if (payload.duration && payload.duration !== playerState.duration) {
+        usePlayerStore.setState({ duration: payload.duration });
+      }
+
+      // Sync play/pause state
+      if (payload.isPlaying !== playerState.isPlaying) {
+        usePlayerStore.setState({ isPlaying: payload.isPlaying });
+      }
+
+      // Compute clock-corrected time for UI progress bar
+      const clockOffset = useP2PStore.getState().clockOffset;
+      const elapsed = (performance.now() - payload.hostTimestamp + clockOffset) / 1000;
+      const correctedTime = payload.currentTime + Math.max(0, elapsed);
+      usePlayerStore.setState({ currentTime: correctedTime });
+    };
+
+    // Register handler in p2pStore
+    useP2PStore.setState({ onStateSyncReceived: handleStateSync });
+
+    return () => {
+      useP2PStore.setState({ onStateSyncReceived: null });
+    };
+  }, []);
+
+  // ── Initialize AudioContext ────────────────────────────────────────────────
   useEffect(() => {
     const isHost = useP2PStore.getState().isHost;
     if ((isPlaying || isHost) && !initialized && audioARef.current && audioBRef.current) {
       initAudioContext(audioARef.current, audioBRef.current);
       setInitialized(true);
-      
-      // If we just initialized and we are the host, start streaming to any guests
+
       if (isHost) {
         streamAudioToGuests();
       }
@@ -57,22 +119,59 @@ export const AudioEngine: React.FC = () => {
     });
   }, [initialized]);
 
-  // Handle Normalization Toggle
+  // ── Periodic STATE_SYNC for drift correction (HOST only, every 5s) ────────
+  useEffect(() => {
+    if (stateSyncIntervalRef.current) {
+      clearInterval(stateSyncIntervalRef.current);
+      stateSyncIntervalRef.current = null;
+    }
+
+    return useP2PStore.subscribe((p2pState) => {
+      if (p2pState.isHost && p2pState.status === 'connected') {
+        if (!stateSyncIntervalRef.current) {
+          stateSyncIntervalRef.current = window.setInterval(() => {
+            const ps = usePlayerStore.getState();
+            const track = ps.currentTrackId ? ps.getTrackById(ps.currentTrackId) : null;
+            if (!track) return;
+
+            const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
+            const currentTime = activeAudio?.currentTime ?? ps.currentTime;
+
+            useP2PStore.getState().sendStateSync({
+              trackId: track.id,
+              title: track.name,
+              artist: track.artist,
+              coverUrl: track.coverUrl,
+              isPlaying: ps.isPlaying,
+              currentTime,
+              hostTimestamp: performance.now(),
+              duration: activeAudio?.duration ?? ps.duration,
+            });
+          }, 5000);
+        }
+      } else {
+        if (stateSyncIntervalRef.current) {
+          clearInterval(stateSyncIntervalRef.current);
+          stateSyncIntervalRef.current = null;
+        }
+      }
+    });
+  }, []);
+
+  // ── Normalization ─────────────────────────────────────────────────────────
   useEffect(() => {
     updateNormalization(normalizationEnabled);
   }, [normalizationEnabled]);
 
-  // Main Track Change & Crossfade Logic
+  // ── Main Track Change & Crossfade Logic ───────────────────────────────────
   useEffect(() => {
     if (!audioARef.current || !audioBRef.current) return;
-    
+
     const state = usePlayerStore.getState();
     const track = state.getTrackById(currentTrackId);
 
-    // Track could be undefined if it's from IDB and hasn't loaded yet.
-    // If we have a trackId but track is undefined, we wait.
     if (currentTrackId && !track && !isLibraryLoaded) {
-      return; 
+      return;
     }
 
     if (!track) {
@@ -82,21 +181,19 @@ export const AudioEngine: React.FC = () => {
     }
 
     const setupAudio = async () => {
-      // If we are a guest receiving a remote stream, we don't load local audio.
+      // Guests receive MediaStream — no local audio loading
       const isGuest = !!useP2PStore.getState().hostConnection;
       if (isGuest) {
         return;
       }
-      
+
       let url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
-      
-      // Handle Audius dynamically resolving streams
+
       if (typeof track.url === 'string' && track.url.startsWith('audius:')) {
         const trackId = track.url.split(':')[1];
         url = `/api/audius-proxy?id=${trackId}`;
       }
 
-      // Handle SoundCloud dynamically resolving streams
       if (typeof track.url === 'string' && track.url.startsWith('soundcloud:')) {
         const trackId = track.url.replace('soundcloud:', '');
         const { getSCStreamUrl } = await import('../../lib/soundcloud');
@@ -111,20 +208,25 @@ export const AudioEngine: React.FC = () => {
 
       if (!activeAudio || !inactiveAudio) return;
 
-      // Check if we are already playing this track (prevents reloading on isLibraryLoaded true if already setup)
-      if (activeAudio.src === url || activeAudio.src === window.location.origin + '/' + url || 
-          inactiveAudio.src === url || inactiveAudio.src === window.location.origin + '/' + url) {
-        return; 
+      if (
+        activeAudio.src === url ||
+        activeAudio.src === window.location.origin + '/' + url ||
+        inactiveAudio.src === url ||
+        inactiveAudio.src === window.location.origin + '/' + url
+      ) {
+        return;
       }
 
-      // Load new track into inactive deck
       inactiveAudio.src = url;
       inactiveAudio.load();
       inactiveAudio.playbackRate = playbackRate;
 
-      // Restore position if podcast
       const onLoadedMetadataTrack = () => {
-        if (track.lastPlaybackPosition && track.duration > 300 && track.lastPlaybackPosition < track.duration - 10) {
+        if (
+          track.lastPlaybackPosition &&
+          track.duration > 300 &&
+          track.lastPlaybackPosition < track.duration - 10
+        ) {
           inactiveAudio.currentTime = track.lastPlaybackPosition;
         }
         inactiveAudio.removeEventListener('loadedmetadata', onLoadedMetadataTrack);
@@ -137,15 +239,14 @@ export const AudioEngine: React.FC = () => {
           if (!useP2PStore.getState().hostConnection) {
             setTimeout(() => {
               usePlayerStore.getState().playNext();
-            }, 500); // slight delay to prevent infinite fast-skipping loops
+            }, 500);
           }
         });
-        
+
         if (crossfadeEnabled && activeAudio.src && !activeAudio.paused && audioContextState.context) {
-          // Perform Crossfade
           const ctx = audioContextState.context;
           const currTime = ctx.currentTime;
-          
+
           if (activeGain && inactiveGain) {
             activeGain.gain.cancelScheduledValues(currTime);
             activeGain.gain.setValueAtTime(activeGain.gain.value, currTime);
@@ -159,36 +260,31 @@ export const AudioEngine: React.FC = () => {
           if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
           fadeTimeoutRef.current = window.setTimeout(() => {
             activeAudio.pause();
-            activeAudio.src = ''; // Clear memory
+            activeAudio.src = '';
           }, crossfadeDuration * 1000);
         } else {
-          // Hard cut
           activeAudio.pause();
           if (activeGain) activeGain.gain.value = 0;
           if (inactiveGain) inactiveGain.gain.value = 1;
         }
       }
 
-      // Swap active deck
       activeDeckRef.current = activeDeckRef.current === 'A' ? 'B' : 'A';
     };
 
     setupAudio();
 
-    return () => {
-      // Basic cleanup logic could go here
-    };
+    return () => {};
   }, [currentTrackId, usePlayerStore.getState().isLibraryLoaded]);
 
-  // Handle Play/Pause
+  // ── Handle Play/Pause ─────────────────────────────────────────────────────
   useEffect(() => {
     const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
     if (!activeAudio || !activeAudio.getAttribute('src')) return;
 
     if (isPlaying) {
       if (useP2PStore.getState().hostConnection) {
-         // Guest mode, just rely on remoteAudioRef
-         return;
+        return; // Guest mode: remote audio handled below
       }
       if (audioContextState.context?.state === 'suspended') {
         audioContextState.context.resume();
@@ -203,41 +299,39 @@ export const AudioEngine: React.FC = () => {
       });
     } else {
       activeAudio.pause();
-      // Also pause the other deck if it was crossfading
       const inactiveAudio = activeDeckRef.current === 'A' ? audioBRef.current : audioARef.current;
       if (inactiveAudio) inactiveAudio.pause();
     }
   }, [isPlaying]);
 
-  // Master Volume
+  // ── Master Volume ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (audioARef.current) audioARef.current.volume = volume;
     if (audioBRef.current) audioBRef.current.volume = volume;
     if (remoteAudioRef.current) remoteAudioRef.current.volume = volume;
   }, [volume]);
 
-  // Playback Rate
+  // ── Playback Rate ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (audioARef.current) audioARef.current.playbackRate = playbackRate;
     if (audioBRef.current) audioBRef.current.playbackRate = playbackRate;
   }, [playbackRate]);
 
-  // Time Updates, Auto Crossfade trigger, and Saving Position
+  // ── Time Updates, Auto Crossfade, Position Save ───────────────────────────
   useEffect(() => {
     let rafId: number;
     let lastSave = 0;
-    
+
     const updateTime = (timestamp: number) => {
       const state = usePlayerStore.getState();
       const p2pState = useP2PStore.getState();
-      
+
       if (p2pState.hostConnection && remoteAudioRef.current) {
-        // In guest mode, we don't handle crossfading or playNext locally based on time
-        // Just sync the UI to the host's current time if needed (but host sends SEEK events)
+        // Guest mode: no crossfade/playNext locally; UI time is driven by STATE_SYNC
         rafId = requestAnimationFrame(updateTime);
         return;
       }
-      
+
       const activeAudio = activeDeckRef.current === 'A' ? audioARef.current : audioBRef.current;
       if (!activeAudio) return;
 
@@ -245,38 +339,33 @@ export const AudioEngine: React.FC = () => {
         setCurrentTime(activeAudio.currentTime);
         setDuration(activeAudio.duration);
 
-        // Auto Crossfade / Next Track trigger
         if (state.isPlaying && !activeAudio.paused) {
           const timeLeft = activeAudio.duration - activeAudio.currentTime;
           if (state.crossfadeEnabled) {
             if (timeLeft <= state.crossfadeDuration && timeLeft > 0.1 && state.queue.length > 1) {
               playNext();
             }
-          } else {
-             // Standard end trigger is handled by 'ended' event, but we can do it here for precision
           }
         }
       }
 
-      // Save position and update stats every 10 seconds (only if not guest)
-      if (timestamp - lastSave > 10000 && !p2pState.hostConnection) { 
-        const state = usePlayerStore.getState();
-        const currentTrack = state.getTrackById(state.currentTrackId);
-        
-        if (currentTrack && state.isPlaying && !activeAudio.paused) {
-          const updatedTrack = { 
-            ...currentTrack, 
-            timeListened: (currentTrack.timeListened || 0) + 10 
+      if (timestamp - lastSave > 10000 && !p2pState.hostConnection) {
+        const st = usePlayerStore.getState();
+        const currentTrack = st.getTrackById(st.currentTrackId);
+
+        if (currentTrack && st.isPlaying && !activeAudio.paused) {
+          const updatedTrack = {
+            ...currentTrack,
+            timeListened: (currentTrack.timeListened || 0) + 10,
           };
-          
+
           if (currentTrack.duration > 300) {
             updatedTrack.lastPlaybackPosition = activeAudio.currentTime;
           }
-          
+
           addTrack(updatedTrack);
-          
           usePlayerStore.getState().setTracks(
-            state.tracks.map(t => t.id === currentTrack.id ? updatedTrack : t)
+            st.tracks.map(t => (t.id === currentTrack.id ? updatedTrack : t))
           );
         }
         lastSave = timestamp;
@@ -289,14 +378,14 @@ export const AudioEngine: React.FC = () => {
     return () => cancelAnimationFrame(rafId);
   }, [setCurrentTime, setDuration, playNext]);
 
-  // Event Listeners for Media Session & Fallback ended event
+  // ── Ended / Error Event Listeners ─────────────────────────────────────────
   useEffect(() => {
     const handleEnded = () => {
       if (!usePlayerStore.getState().crossfadeEnabled && !useP2PStore.getState().hostConnection) {
         playNext();
       }
     };
-    
+
     const handleError = (e: Event) => {
       console.error('Audio element error:', (e.target as HTMLAudioElement)?.error);
       if (!useP2PStore.getState().hostConnection) {
@@ -319,7 +408,7 @@ export const AudioEngine: React.FC = () => {
     };
   }, [playNext]);
 
-  // Media Session metadata
+  // ── Media Session ─────────────────────────────────────────────────────────
   useEffect(() => {
     if ('mediaSession' in navigator) {
       const track = getTrackById(currentTrackId);
@@ -342,7 +431,7 @@ export const AudioEngine: React.FC = () => {
     }
   }, [currentTrackId, getTrackById, isPlaying, togglePlayPause, playNext, playPrevious]);
 
-  // Global Hotkeys
+  // ── Global Hotkeys ────────────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
@@ -380,61 +469,55 @@ export const AudioEngine: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlayPause]);
 
+  // ── Remote Stream (Guest) ─────────────────────────────────────────────────
   const { remoteStream } = useP2PStore();
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    useP2PStore.setState({
-      onMessageReceived: (msg) => {
-        const state = usePlayerStore.getState();
-        if (msg.type === 'PLAY') {
-          if (!state.isPlaying) state.togglePlayPause();
-        } else if (msg.type === 'PAUSE') {
-          if (state.isPlaying) state.togglePlayPause();
-        } else if (msg.type === 'SEEK') {
-          state.setCurrentTime(msg.payload);
-          // Assuming remote streaming takes care of actual audio time sync, but we update UI
-        } else if (msg.type === 'TRACK_CHANGE') {
-          // Add dummy track to queue if not exists to display metadata
-          const { id, title, artist, coverUrl } = msg.payload;
-          let track: any = state.getTrackById(id);
-          if (!track) {
-            track = {
-              id, name: title, artist, coverUrl, audioUrl: '', duration: 0
-            };
-            state.setTracks([...state.tracks, track as any]);
-          }
-          usePlayerStore.setState({ 
-            currentTrackId: id,
-            queue: [id],
-            queueIndex: 0
-          });
-        }
-      }
-    });
-  }, []);
+    if (!remoteAudioRef.current) return;
 
-  useEffect(() => {
-    if (remoteAudioRef.current) {
-      if (remoteStream) {
-        remoteAudioRef.current.srcObject = remoteStream;
-        // Explicitly play to prevent autoPlay failures in some browsers
-        remoteAudioRef.current.play().catch(e => {
-          console.error('Guest remote audio play error:', e);
+    if (remoteStream) {
+      remoteAudioRef.current.srcObject = remoteStream;
+      remoteAudioRef.current
+        .play()
+        .then(() => {
+          useP2PStore.setState({ autoplayBlocked: false });
+        })
+        .catch((e) => {
+          console.error('Guest remote audio play error (autoplay blocked):', e);
+          // Signal that user needs to interact to unblock audio
+          useP2PStore.setState({ autoplayBlocked: true });
         });
-      } else {
-        remoteAudioRef.current.srcObject = null;
-      }
+    } else {
+      remoteAudioRef.current.srcObject = null;
     }
   }, [remoteStream]);
 
+  // ── Guest User Gesture: confirmUserGestureAndJoin is called from PartyModeModal ──
+
+  const hasRemoteStream = !!remoteStream;
+
   return (
     <>
-      <audio ref={audioARef} crossOrigin="anonymous" className="opacity-0 w-0 h-0 absolute pointer-events-none" id="audio-deck-a" muted={!!remoteStream} />
-      <audio ref={audioBRef} crossOrigin="anonymous" className="opacity-0 w-0 h-0 absolute pointer-events-none" id="audio-deck-b" muted={!!remoteStream} />
-      <audio ref={remoteAudioRef} autoPlay className="opacity-0 w-0 h-0 absolute pointer-events-none" id="audio-remote" />
+      <audio
+        ref={audioARef}
+        crossOrigin="anonymous"
+        className="opacity-0 w-0 h-0 absolute pointer-events-none"
+        id="audio-deck-a"
+        muted={hasRemoteStream}
+      />
+      <audio
+        ref={audioBRef}
+        crossOrigin="anonymous"
+        className="opacity-0 w-0 h-0 absolute pointer-events-none"
+        id="audio-deck-b"
+        muted={hasRemoteStream}
+      />
+      <audio
+        ref={remoteAudioRef}
+        className="opacity-0 w-0 h-0 absolute pointer-events-none"
+        id="audio-remote"
+      />
     </>
   );
 };
-
-
