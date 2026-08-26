@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { usePlayerStore } from '../stores/playerStore';
 import { TrackCarousel } from './TrackList/TrackCarousel';
 import { Sparkles } from 'lucide-react';
@@ -9,12 +9,15 @@ export const HomeDashboard: React.FC = () => {
   const isGeneratingRecommendations = usePlayerStore(state => state.isGeneratingRecommendations);
   const generateRecommendations = usePlayerStore(state => state.generateRecommendations);
 
-  // Trigger recommendations if empty
+  const hasAttemptedRef = useRef(false);
+
+  // Trigger recommendations ONLY ONCE on mount if empty
   useEffect(() => {
-    if (recommendedTracks.length === 0 && !isGeneratingRecommendations) {
+    if (!hasAttemptedRef.current && recommendedTracks.length === 0 && !isGeneratingRecommendations) {
+      hasAttemptedRef.current = true;
       generateRecommendations();
     }
-  }, [recommendedTracks.length, isGeneratingRecommendations, generateRecommendations]);
+  }, []);
 
   const recentTracks = useMemo(() => {
     return [...tracks]

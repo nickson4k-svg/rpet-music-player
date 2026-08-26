@@ -651,49 +651,64 @@ export const usePlayerStore = create<PlayerState>()(
   },
 
   generateRecommendations: async () => {
+    if (get().isGeneratingRecommendations) return;
     set({ isGeneratingRecommendations: true });
+
     try {
       const { tracks, playlists } = get();
       const queries = generateSearchQueries(tracks, playlists);
-      
-      // Shuffle and pick up to 3 queries to mix recommendations
       const selectedQueries = queries.sort(() => 0.5 - Math.random()).slice(0, 3);
-      
-      const { searchSoundCloud } = await import('../lib/soundcloud');
-      let combinedScTracks: any[] = [];
-      
-      for (const query of selectedQueries) {
-        const scTracks = await searchSoundCloud(query, 15);
-        combinedScTracks = [...combinedScTracks, ...scTracks];
+
+      let freshTracks: Track[] = [];
+
+      // Спроба 1: SoundCloud
+      try {
+        const { searchSoundCloud } = await import('../lib/soundcloud');
+        for (const query of selectedQueries) {
+          const scTracks = await searchSoundCloud(query, 10);
+          const mapped = scTracks.map(t => {
+            let transcoding = t.media?.transcodings?.find((tr: any) => tr.format?.protocol === 'progressive');
+            if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
+            return {
+              id: `soundcloud-${t.id}`,
+              name: t.title,
+              artist: t.user?.username || 'Unknown Artist',
+              album: 'SoundCloud',
+              genre: t.genre || 'Unknown',
+              duration: Math.floor((t.duration || 0) / 1000),
+              audioUrl: '',
+              coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+              url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`,
+              addedAt: Date.now(),
+              playCount: 0,
+              hash: `soundcloud-${t.id}`
+            } as Track;
+          });
+          freshTracks.push(...mapped);
+        }
+      } catch (scErr) {
+        console.warn('SoundCloud recommendation fallback to Audius:', scErr);
       }
-      
-      const recommended = combinedScTracks.map(t => {
-        let transcoding = t.media?.transcodings?.find((tr: any) => tr.format.protocol === 'progressive');
-        if (!transcoding && t.media?.transcodings?.length) transcoding = t.media.transcodings[0];
-        
-        return {
-          id: `soundcloud-${t.id}`,
-          name: t.title,
-          artist: t.user.username,
-          album: 'SoundCloud',
-          genre: t.genre || 'Unknown',
-          duration: t.duration / 1000,
-          audioUrl: '',
-          coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
-          url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`
-        } as any;
-      });
 
-      // Filter out tracks we already have locally
+      // Спроба 2: Якщо SoundCloud повернув 0 треків — беремо з Audius
+      if (freshTracks.length === 0) {
+        try {
+          const { searchAudiusTracks } = await import('../utils/audiusApi');
+          for (const query of selectedQueries) {
+            const audiusTracks = await searchAudiusTracks(query);
+            freshTracks.push(...audiusTracks);
+          }
+        } catch (audErr) {
+          console.warn('Audius recommendation failed:', audErr);
+        }
+      }
+
       const existingIds = new Set(tracks.map(t => t.id));
-      const freshTracks = recommended.filter(t => !existingIds.has(t.id));
-
-      // Randomize the resulting list a bit
-      freshTracks.sort(() => 0.5 - Math.random());
-
-      set({ recommendedTracks: freshTracks });
+      const filtered = freshTracks.filter(t => !existingIds.has(t.id)).sort(() => 0.5 - Math.random());
+      set({ recommendedTracks: filtered.slice(0, 20) });
     } catch (error) {
-      console.error('Failed to generate recommendations', error);
+      console.error('Failed to generate recommendations:', error);
+      set({ recommendedTracks: [] });
     } finally {
       set({ isGeneratingRecommendations: false });
     }
