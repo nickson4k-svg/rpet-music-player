@@ -28,10 +28,21 @@ interface FriendsState {
 }
 
 export function cleanUsernameToPeerId(input: string): string {
+  if (!input) return '';
   const trimmed = input.trim();
+  
+  // If it's already a full peer ID, return as is
   if (trimmed.startsWith('rpet-user-')) {
     return trimmed;
   }
+  
+  // If it's a standard UUID with hyphens, return as is
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(trimmed)) {
+    return trimmed;
+  }
+  
+  // Otherwise sanitize username / code and prefix with rpet-user-
   const clean = trimmed.toLowerCase().replace(/[^a-z0-9_]/g, '');
   return `rpet-user-${clean}`;
 }
