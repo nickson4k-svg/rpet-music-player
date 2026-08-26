@@ -1,20 +1,36 @@
-// Пул активних офіційних Client ID для SoundCloud API v2
+// Active verified fallback Client IDs for SoundCloud API v2
 const SOUNDCLOUD_CLIENT_IDS = [
-  'iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX',
-  '9RxIC6NwiaJEj6SsGAJgmHYOYauqhn9E',
+  'Pb72ranhoyt6gw7hM7TkzUItXlMWSNSo',
   'b4d9a74421b10315263a8549bf261462',
   'fDoItMDbsbZl8YYJnndkgDhWm0LjmmPB',
-  'N2eHz8D7GtLKl6EzrW3w6Gg21pYvV8d1'
+  'N2eHz8D7GtLKl6EzrW3w6Gg21pYvV8d1',
 ];
 
-let currentClientIdIndex = 0;
+let cachedClientId: string | null = null;
+let currentFallbackIndex = 0;
 
 export async function getSCClientId(): Promise<string> {
-  return SOUNDCLOUD_CLIENT_IDS[currentClientIdIndex % SOUNDCLOUD_CLIENT_IDS.length];
+  if (cachedClientId) return cachedClientId;
+
+  try {
+    const res = await fetch('/api/soundcloud-client-id');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.clientId) {
+        cachedClientId = data.clientId;
+        return cachedClientId;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to fetch SC client ID from API, using fallback pool:', err);
+  }
+
+  return SOUNDCLOUD_CLIENT_IDS[currentFallbackIndex % SOUNDCLOUD_CLIENT_IDS.length];
 }
 
 export function rotateSCClientId(): void {
-  currentClientIdIndex = (currentClientIdIndex + 1) % SOUNDCLOUD_CLIENT_IDS.length;
+  cachedClientId = null;
+  currentFallbackIndex = (currentFallbackIndex + 1) % SOUNDCLOUD_CLIENT_IDS.length;
 }
 
 export interface SCTrack {
@@ -66,8 +82,9 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
       const hasEncrypted = t.media.transcodings.some((tr) => tr.format?.protocol?.includes('encrypted'));
       if (hasEncrypted) return false;
 
-      const hasProgressive = t.media.transcodings.some((tr) => tr.format?.protocol === 'progressive');
-      if (!hasProgressive) return false;
+      // MUST have a stream
+      const hasStream = t.media.transcodings.some((tr) => tr.format?.protocol === 'progressive' || tr.format?.protocol === 'hls');
+      if (!hasStream) return false;
 
       return true;
     });
@@ -134,8 +151,8 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
       const hasEncrypted = t.media.transcodings.some((tr) => tr.format?.protocol?.includes('encrypted'));
       if (hasEncrypted) return false;
 
-      const hasProgressive = t.media.transcodings.some((tr) => tr.format?.protocol === 'progressive');
-      if (!hasProgressive) return false;
+      const hasStream = t.media.transcodings.some((tr) => tr.format?.protocol === 'progressive' || tr.format?.protocol === 'hls');
+      if (!hasStream) return false;
 
       return true;
     });
