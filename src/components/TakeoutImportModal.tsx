@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Upload, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import Papa from 'papaparse';
 import { usePlayerStore } from '../stores/playerStore';
@@ -199,7 +200,7 @@ export const TakeoutImportModal: React.FC<TakeoutImportModalProps> = ({ isOpen, 
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-bg-secondary w-full max-w-lg rounded-2xl shadow-2xl border border-secondary/20 overflow-hidden flex flex-col">
         
@@ -325,6 +326,7 @@ export const TakeoutImportModal: React.FC<TakeoutImportModalProps> = ({ isOpen, 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, Users, Headphones, Copy, Check, Radio, Music2,
   Send, Wifi, WifiOff, PlusCircle, MessageCircle, SmilePlus,
@@ -209,7 +210,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const isConnecting = status === 'connecting';
   const isDisconnected = status === 'disconnected' && !awaitingUserGesture && !reconnecting;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fade-in">
       {/* Floating Emoji Bubbles */}
       <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
@@ -953,6 +954,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
