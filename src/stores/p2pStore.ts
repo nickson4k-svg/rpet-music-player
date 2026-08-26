@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import Peer from 'peerjs';
 import { useAuthStore } from './authStore';
+import { useFriendsStore, cleanUsernameToPeerId } from './friendsStore';
 import type { DataConnection } from 'peerjs';
 import { audioContextState } from '../utils/audioContext';
 import type {
@@ -10,33 +11,43 @@ import type {
   StateSyncPayload,
 } from '../types';
 
-// ─── ICE Servers ─────────────────────────────────────────────────────────────
+// ─── Global ICE Configuration (STUN + Metered OpenRelay TURN UDP/TCP 443) ─────
 
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' },
-  { urls: 'stun:global.stun.twilio.com:3478' },
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-];
+export const PEER_ICE_CONFIG = {
+  config: {
+    iceServers: [
+      // STUN servers
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
 
-const PEER_CONFIG = { config: { iceServers: ICE_SERVERS } };
+      // Metered OpenRelay TURN servers (UDP + TCP port 443 for strict NAT/Firewalls)
+      {
+        urls: [
+          'turn:openrelay.metered.ca:80',
+          'turn:openrelay.metered.ca:443',
+          'turn:openrelay.metered.ca:443?transport=tcp',
+        ],
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+      // Standard relay fallback
+      {
+        urls: [
+          'turn:standard.relay.metered.ca:80',
+          'turn:standard.relay.metered.ca:443',
+          'turn:standard.relay.metered.ca:443?transport=tcp',
+        ],
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+    ],
+    iceCandidatePoolSize: 10,
+  },
+};
 
 // ─── Message Types ────────────────────────────────────────────────────────────
 
@@ -45,6 +56,8 @@ export type P2PMessage =
   | { type: 'PING'; payload: { t0: number } }
   | { type: 'PONG'; payload: { t0: number; t1: number } }
   | { type: 'QUEUE_UPDATE'; payload: SharedQueueItem[] }
+  | { type: 'ADD_TO_QUEUE'; payload: SharedQueueItem }
+  | { type: 'REMOVE_FROM_QUEUE'; payload: { trackId: string } }
   | { type: 'CHAT'; payload: ChatMessage }
   | { type: 'REACTION'; payload: { username: string; emoji: string } }
   | { type: 'GUEST_REQUEST_TRACK'; payload: SharedQueueItem }
@@ -61,12 +74,12 @@ interface P2PState {
   status: 'disconnected' | 'connecting' | 'connected';
   /** Чи йде процес перепідключення */
   reconnecting: boolean;
-  /** Кількість спроб перепідключення (для backoff) */
+  /** Кількість спроб перепідключення */
   reconnectAttempts: number;
   /** Збережений roomId для reconnect */
   savedRoomId: string | null;
 
-  /** DataConnection'и для host (один на кожного гостя) */
+  /** DataConnection'и для host */
   connections: DataConnection[];
   /** DataConnection від гостя до хоста */
   hostConnection: DataConnection | null;
@@ -94,9 +107,7 @@ interface P2PState {
   chatMessages: ChatMessage[];
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  /** Зовнішній обробник для STATE_SYNC — прив'язується AudioEngine */
   onStateSyncReceived: ((payload: StateSyncPayload) => void) | null;
-  /** Зовнішній обробник для emoji-реакцій */
   onReactionReceived: ((payload: { username: string; emoji: string }) => void) | null;
 
   // ── Actions ─────────────────────────────────────────────────────────────────
@@ -111,12 +122,14 @@ interface P2PState {
   /** HOST: broadcast будь-якого повідомлення всім гостям */
   broadcast: (msg: P2PMessage) => void;
 
-  /** HOST: додати трек у shared queue і оновити гостей */
+  /** Додати трек до спільної черги (Host або Guest) */
   addToSharedQueue: (item: SharedQueueItem) => void;
+  /** Видалити трек зі спільної черги (Host або Guest) */
+  removeFromSharedQueue: (trackId: string) => void;
 
-  /** Надіслати chat-повідомлення (обидва можуть) */
+  /** Надіслати chat-повідомлення */
   sendChat: (text: string) => void;
-  /** Надіслати emoji-реакцію (обидва можуть) */
+  /** Надіслати emoji-реакцію */
   sendReaction: (emoji: string) => void;
 
   // ── Internal ────────────────────────────────────────────────────────────────
@@ -159,13 +172,13 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       set({ status: 'connecting', error: null, sharedQueue: [], members: [], chatMessages: [] });
 
       const timeoutId = setTimeout(() => {
-        set({ status: 'disconnected', error: 'Час підключення вийшов. Спробуйте ще раз.' });
+        set({ status: 'disconnected', error: 'Час підключення вийшов (15 сек). Спробуйте ще раз.' });
         reject(new Error('Connection timed out'));
-      }, 20000);
+      }, 15000);
 
       try {
         const customId = useAuthStore.getState().user?.peer_id;
-        const peer = customId ? new Peer(customId, PEER_CONFIG) : new Peer(PEER_CONFIG);
+        const peer = customId ? new Peer(customId, PEER_ICE_CONFIG) : new Peer(PEER_ICE_CONFIG);
 
         peer.on('open', (id) => {
           clearTimeout(timeoutId);
@@ -185,6 +198,8 @@ export const useP2PStore = create<P2PState>((set, get) => ({
             savedRoomId: id,
             members: [hostMember],
           });
+
+          get()._startClockSync();
           resolve(id);
         });
 
@@ -193,17 +208,23 @@ export const useP2PStore = create<P2PState>((set, get) => ({
           conn.on('open', () => {
             set((state) => ({ connections: [...state.connections, conn] }));
 
-            // Register new guest as member
+            const guestUsername = conn.metadata?.username ?? conn.peer;
             const newMember: RoomMember = {
               peerId: conn.peer,
-              username: conn.metadata?.username ?? conn.peer,
+              username: guestUsername,
               isHost: false,
               joinedAt: Date.now(),
             };
             set((state) => ({ members: [...state.members, newMember] }));
             get()._updateMembers();
 
-            // Send current state to new guest
+            // Track recent peer in friends store
+            useFriendsStore.getState().addRecentPeer({
+              username: guestUsername,
+              peerId: conn.peer,
+            });
+
+            // Send current shared queue
             const { sharedQueue } = get();
             if (sharedQueue.length > 0) {
               conn.send({ type: 'QUEUE_UPDATE', payload: sharedQueue } satisfies P2PMessage);
@@ -233,7 +254,6 @@ export const useP2PStore = create<P2PState>((set, get) => ({
           });
         });
 
-        // Host answers media calls from itself (shouldn't happen, but safety)
         peer.on('call', (call) => {
           call.answer();
         });
@@ -260,9 +280,8 @@ export const useP2PStore = create<P2PState>((set, get) => ({
 
   // ── joinRoom ────────────────────────────────────────────────────────────────
   joinRoom: async (hostId: string) => {
-    // Request user gesture before connecting (fixes autoplay policy)
-    set({ awaitingUserGesture: true, savedRoomId: hostId });
-    // Actual connection is started after gesture in _doJoinRoom
+    const cleanHostId = cleanUsernameToPeerId(hostId);
+    set({ awaitingUserGesture: true, savedRoomId: cleanHostId });
   },
 
   leaveRoom: () => {
@@ -320,11 +339,30 @@ export const useP2PStore = create<P2PState>((set, get) => ({
     });
   },
 
-  // ── addToSharedQueue (HOST) ─────────────────────────────────────────────────
+  // ── addToSharedQueue ────────────────────────────────────────────────────────
   addToSharedQueue: (item: SharedQueueItem) => {
-    set((state) => ({ sharedQueue: [...state.sharedQueue, item] }));
-    const { sharedQueue } = get();
-    get().broadcast({ type: 'QUEUE_UPDATE', payload: sharedQueue });
+    const { isHost } = get();
+    if (isHost) {
+      set((state) => ({ sharedQueue: [...state.sharedQueue, item] }));
+      const { sharedQueue } = get();
+      get().broadcast({ type: 'QUEUE_UPDATE', payload: sharedQueue });
+    } else {
+      get().sendToHost({ type: 'ADD_TO_QUEUE', payload: item });
+    }
+  },
+
+  // ── removeFromSharedQueue ───────────────────────────────────────────────────
+  removeFromSharedQueue: (trackId: string) => {
+    const { isHost } = get();
+    if (isHost) {
+      set((state) => ({
+        sharedQueue: state.sharedQueue.filter((item) => item.trackId !== trackId),
+      }));
+      const { sharedQueue } = get();
+      get().broadcast({ type: 'QUEUE_UPDATE', payload: sharedQueue });
+    } else {
+      get().sendToHost({ type: 'REMOVE_FROM_QUEUE', payload: { trackId } });
+    }
   },
 
   // ── sendChat ────────────────────────────────────────────────────────────────
@@ -337,7 +375,6 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       timestamp: Date.now(),
     };
 
-    // Add to own state first
     set((state) => ({
       chatMessages: [...state.chatMessages.slice(-49), msg],
     }));
@@ -359,7 +396,6 @@ export const useP2PStore = create<P2PState>((set, get) => ({
     const { isHost } = get();
     if (isHost) {
       get().broadcast(reactionMsg);
-      // Trigger own reaction UI via callback
       get().onReactionReceived?.({ username, emoji });
     } else {
       get().sendToHost(reactionMsg);
@@ -373,7 +409,6 @@ export const useP2PStore = create<P2PState>((set, get) => ({
 
     switch (msg.type) {
       case 'STATE_SYNC': {
-        // Guest receives from host
         if (!isHost) {
           get().onStateSyncReceived?.(msg.payload);
         }
@@ -381,7 +416,6 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       }
 
       case 'PING': {
-        // Guest responds with PONG (only if we're the guest receiving ping from host)
         const { t0 } = msg.payload;
         const t1 = performance.now();
         get().sendToHost({ type: 'PONG', payload: { t0, t1 } });
@@ -389,12 +423,11 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       }
 
       case 'PONG': {
-        // Host receives PONG, calculates RTT and clock offset
         if (!isHost) break;
         const { t0, t1 } = msg.payload;
         const t2 = performance.now();
         const rtt = t2 - t0;
-        const offset = (t1 - t0 + (t1 - t2)) / 2; // NTP-like formula
+        const offset = (t1 - t0 + (t1 - t2)) / 2;
 
         set((state) => {
           const history = [...state._pingHistory, offset].slice(-5);
@@ -406,19 +439,37 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       }
 
       case 'QUEUE_UPDATE': {
-        // Guest receives updated shared queue
         if (!isHost) {
           set({ sharedQueue: msg.payload });
         }
         break;
       }
 
+      case 'ADD_TO_QUEUE':
+      case 'GUEST_REQUEST_TRACK': {
+        if (isHost) {
+          set((state) => ({ sharedQueue: [...state.sharedQueue, msg.payload] }));
+          const { sharedQueue } = get();
+          get().broadcast({ type: 'QUEUE_UPDATE', payload: sharedQueue });
+        }
+        break;
+      }
+
+      case 'REMOVE_FROM_QUEUE': {
+        if (isHost) {
+          set((state) => ({
+            sharedQueue: state.sharedQueue.filter((item) => item.trackId !== msg.payload.trackId),
+          }));
+          const { sharedQueue } = get();
+          get().broadcast({ type: 'QUEUE_UPDATE', payload: sharedQueue });
+        }
+        break;
+      }
+
       case 'CHAT': {
-        // Both host and guest receive chat message
         set((state) => ({
           chatMessages: [...state.chatMessages.slice(-49), msg.payload],
         }));
-        // If host, re-broadcast to everyone else
         if (isHost && fromPeerId) {
           const { connections } = get();
           connections
@@ -430,20 +481,11 @@ export const useP2PStore = create<P2PState>((set, get) => ({
 
       case 'REACTION': {
         get().onReactionReceived?.(msg.payload);
-        // Host re-broadcasts reaction to all other guests
         if (isHost && fromPeerId) {
           const { connections } = get();
           connections
             .filter((c) => c.peer !== fromPeerId && c.open)
             .forEach((c) => c.send(msg));
-        }
-        break;
-      }
-
-      case 'GUEST_REQUEST_TRACK': {
-        // Only host handles this
-        if (isHost) {
-          get().addToSharedQueue(msg.payload);
         }
         break;
       }
@@ -480,13 +522,12 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       return;
     }
 
-    const delay = Math.pow(2, reconnectAttempts) * 2000; // 2s, 4s, 8s
+    const delay = Math.pow(2, reconnectAttempts) * 2000;
     set({ reconnecting: true, reconnectAttempts: reconnectAttempts + 1 });
 
     console.info(`[P2P] Reconnecting in ${delay / 1000}s (attempt ${reconnectAttempts + 1}/${MAX_ATTEMPTS})`);
 
     setTimeout(async () => {
-      // Destroy old peer if exists
       const { peer } = get();
       if (peer && !peer.destroyed) peer.destroy();
       set({ peer: null, hostConnection: null });
@@ -530,17 +571,16 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       set({ status: 'connecting', error: null, awaitingUserGesture: false });
 
       const timeoutId = setTimeout(() => {
-        set({ status: 'disconnected', error: 'Час підключення вийшов. Спробуйте ще раз.' });
+        set({ status: 'disconnected', error: 'Час підключення вийшов (15 сек). Спробуйте ще раз.' });
         reject(new Error('Connection timed out'));
-      }, 20000);
+      }, 15000);
 
       try {
         const customId = useAuthStore.getState().user?.peer_id;
         const username = useAuthStore.getState().user?.username;
 
-        // Guests get a unique peer ID to avoid collision if same user opens 2 tabs
-        const guestId = customId ? `${customId}-guest-${Date.now()}` : undefined;
-        const peer = guestId ? new Peer(guestId, PEER_CONFIG) : new Peer(PEER_CONFIG);
+        const guestId = customId ? `${customId}-guest-${Date.now().toString(36)}` : undefined;
+        const peer = guestId ? new Peer(guestId, PEER_ICE_CONFIG) : new Peer(PEER_ICE_CONFIG);
 
         peer.on('open', (id) => {
           set({ peer, peerId: id, isHost: false });
@@ -553,6 +593,14 @@ export const useP2PStore = create<P2PState>((set, get) => ({
           conn.on('open', () => {
             clearTimeout(timeoutId);
             set({ hostConnection: conn, status: 'connected', reconnectAttempts: 0, reconnecting: false });
+
+            // Record host as recent peer
+            const hostUsername = hostId.replace('rpet-user-', '');
+            useFriendsStore.getState().addRecentPeer({
+              username: hostUsername,
+              peerId: hostId,
+            });
+
             resolve();
           });
 
@@ -605,7 +653,7 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       }
     });
   },
-} as P2PState));
+}));
 
 // ─── Public helper: confirms user gesture and starts actual connection ─────────
 
@@ -621,7 +669,7 @@ export async function confirmUserGestureAndJoin(): Promise<void> {
   await useP2PStore.getState()._doJoinRoom(savedRoomId);
 }
 
-// ─── Legacy helper (kept for AudioEngine compatibility) ───────────────────────
+// ─── Helper for streaming audio to guests ──────────────────────────────────────
 
 export const streamAudioToGuests = () => {
   const { peer, isHost, connections } = useP2PStore.getState();
