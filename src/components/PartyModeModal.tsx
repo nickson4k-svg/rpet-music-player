@@ -43,7 +43,6 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     connections, sharedQueue, members, chatMessages,
     hostRoom, leaveRoom, addToSharedQueue, sendChat, sendReaction,
     autoplayBlocked, awaitingUserGesture,
-    onReactionReceived,
   } = useP2PStore();
   const { user } = useAuthStore();
   const { searchGlobal, searchResults, isSearchLoading } = usePlayerStore();
