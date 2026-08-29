@@ -74,16 +74,16 @@ const fragmentShader = `
     float angle = atan(st.y, st.x);
 
     // Audio-reactive field distortion (morphing waves, expanding ripple pulses)
-    float wave1 = sin(dist * 14.0 - u_time * 2.5) * (0.15 + u_bass * 0.85);
-    float wave2 = cos(angle * 6.0 + u_time * 1.8 + dist * 8.0) * (0.1 + u_mid * 0.6);
-    float n = noise(st * 3.5 + vec2(u_time * 0.2)) * (0.2 + u_high * 0.4);
+    float wave1 = sin(dist * 12.0 - u_time * 1.0) * (0.12 + u_bass * 0.75);
+    float wave2 = cos(angle * 5.0 + u_time * 0.7 + dist * 6.0) * (0.08 + u_mid * 0.5);
+    float n = noise(st * 3.0 + vec2(u_time * 0.08)) * (0.15 + u_high * 0.35);
 
     // Audio field intensity combining harmonic ripples
     float audio_field = clamp(wave1 + wave2 + n + (1.0 - smoothstep(0.0, 0.9, dist)), 0.0, 2.5);
 
-    // Move coordinates and apply subtle rotation
+    // Move coordinates and apply subtle slow rotation
     vec2 pos = gl_FragCoord.xy - 0.5 * u_resolution;
-    pos = rotate(radians(20.0) + u_time * 0.05) * pos;
+    pos = rotate(radians(20.0) + u_time * 0.02) * pos;
 
     // Grid spacing (scales smoothly with bass beats)
     float grid_step = 16.0 + u_bass * 4.0;
@@ -204,18 +204,18 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         for (let i = 16; i < 40; i++) highSum += dataArray[i] || 0;
         const rawHigh = highSum / (24 * 255);
 
-        smoothedBass += (rawBass - smoothedBass) * 0.3;
-        smoothedMid += (rawMid - smoothedMid) * 0.22;
-        smoothedHigh += (rawHigh - smoothedHigh) * 0.22;
+        smoothedBass += (rawBass - smoothedBass) * 0.18;
+        smoothedMid += (rawMid - smoothedMid) * 0.15;
+        smoothedHigh += (rawHigh - smoothedHigh) * 0.15;
       } else {
-        smoothedBass += (0 - smoothedBass) * 0.05;
-        smoothedMid += (0 - smoothedMid) * 0.05;
-        smoothedHigh += (0 - smoothedHigh) * 0.05;
+        smoothedBass += (0 - smoothedBass) * 0.03;
+        smoothedMid += (0 - smoothedMid) * 0.03;
+        smoothedHigh += (0 - smoothedHigh) * 0.03;
       }
 
       // Smooth color transition based on current song
       targetColor = parseColor(dominantColorRef.current);
-      currentColor.lerp(targetColor, 0.05);
+      currentColor.lerp(targetColor, 0.03);
       uniforms.u_color.value.copy(currentColor);
 
       // Update shader uniforms
