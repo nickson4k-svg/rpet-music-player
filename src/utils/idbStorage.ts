@@ -73,7 +73,9 @@ export const getAllTracks = async () => {
         artist: raw.user?.username || 'Unknown',
         album: 'SoundCloud',
         duration: Math.floor(raw.duration / 1000),
-        coverUrl: raw.artwork_url ? raw.artwork_url.replace('-large', '-t500x500') : '',
+        coverUrl: raw.artwork_url
+          ? raw.artwork_url.replace('-large', '-t500x500')
+          : (raw.user?.avatar_url ? raw.user.avatar_url.replace('-large', '-t500x500') : ''),
         url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${raw.id}`,
         audioUrl: '',
         addedAt: Date.now(),
@@ -111,15 +113,30 @@ export const getAllTracks = async () => {
         await db.put('tracks', track);
       }
 
-      // Auto-repair dead Audius cover URLs stored in IndexedDB
-      if (track.coverUrl && (track.coverUrl.includes('zeogrid.com') || (track.coverUrl.includes('audius') && track.coverUrl.includes('/content/')))) {
-        if (typeof track.id === 'string' && track.id.startsWith('audius-')) {
-          const rawId = track.id.replace('audius-', '');
-          track.coverUrl = `https://discoveryprovider.audius.co/v1/tracks/${rawId}/artwork?app_name=Rpet`;
-        } else {
-          track.coverUrl = track.coverUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
+      // Auto-repair dead/broken Audius cover URLs stored in IndexedDB
+      if (track.coverUrl) {
+        let needsFix = false;
+        
+        // 1. Clear the broken non-existent /artwork endpoint URLs
+        if (track.coverUrl.includes('/artwork?app_name=')) {
+          track.coverUrl = '';
+          needsFix = true;
         }
-        await db.put('tracks', track);
+        // 2. Fix dead nodes (zeogrid etc.) by routing through main gateway
+        else if (track.coverUrl.includes('zeogrid.com/content/') || 
+                 (track.coverUrl.includes('/content/') && !track.coverUrl.includes('creatornode.audius.co'))) {
+          const match = track.coverUrl.match(/\/content\/([a-zA-Z0-9_-]+)\/(480x480|150x150|1000x1000)\.jpg/);
+          if (match) {
+            track.coverUrl = `https://creatornode.audius.co/content/${match[1]}/${match[2]}.jpg`;
+          } else {
+            track.coverUrl = track.coverUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
+          }
+          needsFix = true;
+        }
+        
+        if (needsFix) {
+          await db.put('tracks', track);
+        }
       }
 
       fixedTracks.push(track);

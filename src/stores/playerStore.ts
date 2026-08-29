@@ -394,7 +394,9 @@ export const usePlayerStore = create<PlayerState>()(
                   genre: t.genre || 'Unknown',
                   duration: Math.floor(t.duration / 1000),
                   audioUrl: '',
-                  coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+                  coverUrl: t.artwork_url
+                    ? t.artwork_url.replace('-large', '-t500x500')
+                    : (t.user?.avatar_url ? t.user.avatar_url.replace('-large', '-t500x500') : ''),
                   url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`,
                   addedAt: Date.now()
                 } as any;
@@ -677,7 +679,9 @@ export const usePlayerStore = create<PlayerState>()(
               genre: t.genre || 'Unknown',
               duration: Math.floor((t.duration || 0) / 1000),
               audioUrl: '',
-              coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+              coverUrl: t.artwork_url
+                ? t.artwork_url.replace('-large', '-t500x500')
+                : (t.user?.avatar_url ? t.user.avatar_url.replace('-large', '-t500x500') : ''),
               url: transcoding ? `soundcloud:${transcoding.url}` : `soundcloud:${t.id}`,
               addedAt: Date.now(),
               playCount: 0,

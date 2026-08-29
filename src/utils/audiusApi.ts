@@ -1,13 +1,25 @@
 import type { Track } from '../types';
 
+/**
+ * Extracts a reliable artwork URL from an Audius API track object.
+ * Replaces dead decentralized nodes (zeogrid etc.) with the main active gateway creatornode.audius.co
+ */
 export function getSafeAudiusArtwork(item: any): string {
-  if (item?.id) {
-    // Official CDN redirect Audius API, automatically selects healthy online gateway node:
-    return `https://discoveryprovider.audius.co/v1/tracks/${item.id}/artwork?app_name=Rpet`;
-  }
-  const rawUrl = item?.artwork ? item.artwork['480x480'] || item.artwork['150x150'] : '';
+  const rawUrl = item?.artwork
+    ? item.artwork['480x480'] || item.artwork['1000x1000'] || item.artwork['150x150']
+    : '';
+
   if (!rawUrl) return '';
-  // If URL points to offline node like zeogrid, fallback to main gateway
+
+  // Extract the unique CID hash from the artwork URL
+  const match = rawUrl.match(/\/content\/([a-zA-Z0-9_-]+)\/(480x480|150x150|1000x1000)\.jpg/);
+  if (match) {
+    const cid = match[1];
+    const size = match[2] || '480x480';
+    return `https://creatornode.audius.co/content/${cid}/${size}.jpg`;
+  }
+
+  // Generic fallback: replace any dead node hostname with main gateway
   return rawUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
 }
 

@@ -36,7 +36,7 @@ export function rotateSCClientId(): void {
 export interface SCTrack {
   id: number;
   title: string;
-  user: { username: string };
+  user: { username: string; avatar_url?: string };
   artwork_url: string | null;
   duration: number;
   genre?: string;

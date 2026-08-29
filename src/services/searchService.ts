@@ -36,7 +36,9 @@ export const fetchMoodTracks = async (mood: string, provider: 'audius' | 'apple'
         artist: t.user.username,
         duration: t.duration / 1000,
         audioUrl: '',
-        coverUrl: t.artwork_url ? t.artwork_url.replace('-large', '-t500x500') : '',
+        coverUrl: t.artwork_url
+          ? t.artwork_url.replace('-large', '-t500x500')
+          : (t.user?.avatar_url ? t.user.avatar_url.replace('-large', '-t500x500') : ''),
         url: transcoding ? 'soundcloud:' + transcoding.url : 'soundcloud:' + t.id
       } as any;
     });
