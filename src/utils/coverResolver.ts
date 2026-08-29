@@ -16,8 +16,10 @@ function sanitizeTitle(title: string): string {
 }
 
 /**
- * Searches iTunes API for the official HD album artwork of a song.
- * Fast, free, CORS-enabled and has virtually 100% coverage of modern & classic music.
+ * Resolves the official HD cover artwork for a track:
+ * 1. Queries iTunes API for high-resolution 600x600 studio covers.
+ * 2. Queries SoundCloud API for remixes, underground, indie, or platform-exclusive covers (500x500).
+ * 3. Caches results persistently in localStorage and memory.
  */
 export async function resolveTrackCover(title: string, artist?: string): Promise<string | null> {
   const cleanTitle = sanitizeTitle(title);
@@ -41,15 +43,15 @@ export async function resolveTrackCover(title: string, artist?: string): Promise
 
   const query = [cleanArtist, cleanTitle].filter(Boolean).join(' ');
 
+  // 1. Try iTunes API (Studio HD 600x600)
   try {
     const res = await fetch(
       `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=1`,
-      { signal: AbortSignal.timeout(4000) }
+      { signal: AbortSignal.timeout(3500) }
     );
     if (res.ok) {
       const data = await res.json();
       if (data.results && data.results.length > 0 && data.results[0].artworkUrl100) {
-        // Upgrade from 100x100 to 600x600 HD cover
         const hdCover = data.results[0].artworkUrl100.replace('100x100bb', '600x600bb');
         coverCache.set(cacheKey, hdCover);
         try {
@@ -58,11 +60,29 @@ export async function resolveTrackCover(title: string, artist?: string): Promise
         return hdCover;
       }
     }
-  } catch (err) {
-    // Timeout or network error
-  }
+  } catch {}
 
-  // Fallback: search with just the clean title if artist + title yielded no results
+  // 2. Try SoundCloud API (High-res 500x500)
+  try {
+    const { searchSoundCloud } = await import('../lib/soundcloud');
+    const scResults = await searchSoundCloud(query, 3);
+    if (scResults && scResults.length > 0) {
+      const match = scResults.find(t => t.artwork_url || t.user?.avatar_url) || scResults[0];
+      const scCover = match.artwork_url
+        ? match.artwork_url.replace('-large', '-t500x500')
+        : (match.user?.avatar_url ? match.user.avatar_url.replace('-large', '-t500x500') : null);
+
+      if (scCover) {
+        coverCache.set(cacheKey, scCover);
+        try {
+          localStorage.setItem(`rpet_cover_${cacheKey}`, scCover);
+        } catch {}
+        return scCover;
+      }
+    }
+  } catch {}
+
+  // 3. Fallback: search iTunes with just the title
   if (cleanArtist) {
     try {
       const res = await fetch(
