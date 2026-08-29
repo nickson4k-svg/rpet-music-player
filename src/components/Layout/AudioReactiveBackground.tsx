@@ -8,102 +8,102 @@ interface AudioReactiveBackgroundProps {
   defaultBg: string;
 }
 
-// ── Vertex Shader with Common Varyings & Audio Reactivity ────────────────────
+// ── Fullscreen Quad Vertex Shader ────────────────────────────────────────────
 const vertexShader = `
-  #define GLSLIFY 1
-
-  uniform float u_time;
-  uniform float u_bass;
-  uniform float u_mid;
-
-  varying vec3 v_position;
-  varying vec3 v_normal;
+  varying vec2 vUv;
 
   void main() {
-    v_position = position;
-    v_normal = normalize(normalMatrix * normal);
-
-    // Audio-reactive wave pulsation along normals
-    float wave = sin(position.x * 0.35 + u_time * 1.6) * cos(position.y * 0.35 + u_time * 1.4);
-    float displacement = wave * (u_bass * 1.6 + u_mid * 0.4);
-    vec3 newPos = position + normal * displacement;
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+    vUv = uv;
+    gl_Position = vec4(position.xy, 0.0, 1.0);
   }
 `;
 
-// ── Fragment Shader with Halftone Dots Reacting to Music & Mouse ─────────────
+// ── Pure Audio-Reactive Halftone Dots Fragment Shader (No 3D Mesh, No Mouse) ──
 const fragmentShader = `
   #define GLSLIFY 1
 
   uniform vec2 u_resolution;
-  uniform vec2 u_mouse;
   uniform float u_time;
-  uniform float u_frame;
   uniform float u_bass;
   uniform float u_mid;
   uniform float u_high;
   uniform vec3 u_color;
 
-  varying vec3 v_position;
-  varying vec3 v_normal;
+  varying vec2 vUv;
 
   /*
    * Returns a value between 1 and 0 that indicates if the pixel is inside the circle
    */
   float circle(vec2 pixel, vec2 center, float radius) {
-    return 1.0 - smoothstep(radius - 1.0, radius + 1.0, length(pixel - center));
+    return 1.0 - smoothstep(radius - 0.8, radius + 0.8, length(pixel - center));
   }
 
   /*
-   * Returns a rotation matrix for the given angle
+   * 2D Rotation Matrix
    */
   mat2 rotate(float angle) {
     return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
   }
 
   /*
-   * Calculates the diffuse factor produced by the light illumination
+   * Pseudo-random hash & noise for organic audio fluid morphing
    */
-  float diffuseFactor(vec3 normal, vec3 light_direction) {
-    float df = dot(normalize(normal), normalize(light_direction));
+  float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
 
-    if (gl_FrontFacing) {
-      df = -df;
-    }
-
-    return max(0.0, df);
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
   }
 
   void main() {
-    // Use the mouse position to define the light direction
-    float min_resolution = min(u_resolution.x, u_resolution.y);
-    vec3 light_direction = -vec3((u_mouse - 0.5 * u_resolution) / min_resolution, 0.5);
+    float min_res = min(u_resolution.x, u_resolution.y);
+    vec2 st = (gl_FragCoord.xy - 0.5 * u_resolution) / min_res;
 
-    // Calculate the light diffusion factor
-    float df = diffuseFactor(v_normal, light_direction);
+    // Distance and angle from screen center
+    float dist = length(st);
+    float angle = atan(st.y, st.x);
 
-    // Move the pixel coordinates origin to the center of the screen
+    // Audio-reactive field distortion (morphing waves, expanding ripple pulses)
+    float wave1 = sin(dist * 14.0 - u_time * 2.5) * (0.15 + u_bass * 0.85);
+    float wave2 = cos(angle * 6.0 + u_time * 1.8 + dist * 8.0) * (0.1 + u_mid * 0.6);
+    float n = noise(st * 3.5 + vec2(u_time * 0.2)) * (0.2 + u_high * 0.4);
+
+    // Audio field intensity combining harmonic ripples
+    float audio_field = clamp(wave1 + wave2 + n + (1.0 - smoothstep(0.0, 0.9, dist)), 0.0, 2.5);
+
+    // Move coordinates and apply subtle rotation
     vec2 pos = gl_FragCoord.xy - 0.5 * u_resolution;
+    pos = rotate(radians(20.0) + u_time * 0.05) * pos;
 
-    // Rotate the coordinates 20 degrees
-    pos = rotate(radians(20.0)) * pos;
-
-    // Define the grid (dynamically scales with music bass)
-    float grid_step = 12.0 + u_bass * 5.0;
+    // Grid spacing (scales smoothly with bass beats)
+    float grid_step = 16.0 + u_bass * 4.0;
     vec2 grid_pos = mod(pos, grid_step);
 
-    // Calculate the dot radius dynamically reacting to audio frequencies
-    float dot_radius = 0.8 * grid_step * pow(1.0 - df, 2.0) * (0.8 + u_bass * 0.8);
-    float dot_val = circle(grid_pos, vec2(grid_step / 2.0), dot_radius);
-
-    // Dynamic dot color blended with track dominant color and audio brightness
-    vec3 dot_color = mix(u_color, vec3(1.0), 0.25 + u_high * 0.5);
+    // Calculate the halftone dot radius driven solely by audio field & bass punch
+    float max_radius = grid_step * 0.48;
+    float dot_radius = clamp(audio_field * 0.42 * grid_step * (0.35 + u_bass * 0.95), 0.5, max_radius);
     
-    // Transparent background, glowing halftone dots
-    float alpha = dot_val * (0.35 + u_bass * 0.45);
+    // Render the smooth round dot
+    float dot_val = circle(grid_pos, vec2(grid_step * 0.5), dot_radius);
 
-    gl_FragColor = vec4(dot_color, clamp(alpha, 0.0, 0.85));
+    // Dynamic dot color blended with the current song's dominant color & high treble sparkle
+    vec3 dot_color = mix(u_color, vec3(1.0), 0.2 + u_high * 0.6);
+    
+    // Edge fade so background remains comfortable for UI
+    float vignette = smoothstep(1.4, 0.2, dist);
+    float alpha = dot_val * (0.25 + u_bass * 0.55) * vignette;
+
+    gl_FragColor = vec4(dot_color, clamp(alpha, 0.0, 0.9));
   }
 `;
 
@@ -129,10 +129,9 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       return new THREE.Vector3(color.r, color.g, color.b);
     };
 
-    // 1. Scene & Camera Setup
+    // 1. Orthographic Scene Setup for Fullscreen Quad
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-    camera.position.z = 26;
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
     // 2. WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -146,30 +145,28 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // 3. Shader Uniforms
+    // 3. Shader Uniforms (Audio & Screen only — No Mouse)
     const uniforms = {
       u_time: { value: 0.0 },
-      u_frame: { value: 0.0 },
       u_bass: { value: 0.0 },
       u_mid: { value: 0.0 },
       u_high: { value: 0.0 },
       u_color: { value: parseColor(dominantColor) },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
-      u_mouse: { value: new THREE.Vector2(0.7 * window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
     };
 
-    // 4. Shader Material & 3D Torus Knot Geometry
+    // 4. Fullscreen Quad Mesh with Shader Material
     const material = new THREE.ShaderMaterial({
       uniforms,
       vertexShader,
       fragmentShader,
-      side: THREE.DoubleSide,
       transparent: true,
+      depthWrite: false,
     });
 
-    const geometry = new THREE.TorusKnotGeometry(6.5, 2.3, 256, 32);
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const quad = new THREE.Mesh(geometry, material);
+    scene.add(quad);
 
     // 5. Audio Reactive Loop
     let smoothedBass = 0;
@@ -189,7 +186,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
 
       const elapsed = clock.getElapsedTime();
 
-      // Audio Frequency Analysis
+      // Audio Frequency Analysis from AudioContext
       const { analyser } = audioContextState;
       if (analyser && isPlaying) {
         const bufferLength = analyser.frequencyBinCount;
@@ -216,46 +213,28 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         smoothedHigh += (0 - smoothedHigh) * 0.05;
       }
 
-      // Smooth color transition
+      // Smooth color transition based on current song
       targetColor = parseColor(dominantColorRef.current);
       currentColor.lerp(targetColor, 0.05);
       uniforms.u_color.value.copy(currentColor);
 
       // Update shader uniforms
       uniforms.u_time.value = elapsed;
-      uniforms.u_frame.value += 1.0;
       uniforms.u_bass.value = smoothedBass;
       uniforms.u_mid.value = smoothedMid;
       uniforms.u_high.value = smoothedHigh;
-
-      // 3D smooth rotation + music reactivity
-      mesh.rotation.x = elapsed * 0.2 + smoothedBass * 0.15;
-      mesh.rotation.y = elapsed * 0.3 + smoothedMid * 0.25;
-      mesh.rotation.z = elapsed * 0.08;
 
       renderer.render(scene, camera);
     };
 
     animationFrameId = requestAnimationFrame(animate);
 
-    // 6. Interactive Event Handlers (Resize, Mouse, Touch, Visibility)
+    // 6. Resize & Tab Visibility
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
       renderer.setSize(w, h);
       uniforms.u_resolution.value.set(w, h).multiplyScalar(window.devicePixelRatio);
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-      uniforms.u_mouse.value.set(event.pageX, window.innerHeight - event.pageY).multiplyScalar(window.devicePixelRatio);
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (event.touches[0]) {
-        uniforms.u_mouse.value.set(event.touches[0].pageX, window.innerHeight - event.touches[0].pageY).multiplyScalar(window.devicePixelRatio);
-      }
     };
 
     const handleVisibility = () => {
@@ -263,17 +242,11 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     };
 
     window.addEventListener('resize', handleResize, false);
-    window.addEventListener('mousemove', handleMouseMove, false);
-    window.addEventListener('touchstart', handleTouchMove, false);
-    window.addEventListener('touchmove', handleTouchMove, false);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchstart', handleTouchMove);
-      window.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('visibilitychange', handleVisibility);
 
       geometry.dispose();
