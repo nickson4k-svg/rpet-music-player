@@ -11,6 +11,7 @@ export const audioContextState = {
   trebleNode: null as BiquadFilterNode | null,
   reverbGainNode: null as GainNode | null,
   dryGainNode: null as GainNode | null,
+  localMasterGain: null as GainNode | null,
   mediaStreamDestination: null as MediaStreamAudioDestinationNode | null,
 };
 
@@ -98,10 +99,16 @@ export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElem
     dryGain.connect(compressor);
     reverbGain.connect(compressor);
     
+    // Stream Destination (always full 100% volume for LiveKit guests)
     const streamDest = ctx.createMediaStreamDestination();
     compressor.connect(analyser);
-    analyser.connect(ctx.destination);
     analyser.connect(streamDest);
+
+    // Local Master Gain Node (only controls the host's speakers)
+    const localMasterGain = ctx.createGain();
+    localMasterGain.gain.value = 1.0;
+    analyser.connect(localMasterGain);
+    localMasterGain.connect(ctx.destination);
 
     audioContextState.context = ctx;
     audioContextState.analyser = analyser;
@@ -115,6 +122,7 @@ export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElem
     audioContextState.trebleNode = treble;
     audioContextState.reverbGainNode = reverbGain;
     audioContextState.dryGainNode = dryGain;
+    audioContextState.localMasterGain = localMasterGain;
     audioContextState.mediaStreamDestination = streamDest;
   }
   return audioContextState;

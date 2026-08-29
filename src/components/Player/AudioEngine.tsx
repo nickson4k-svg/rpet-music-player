@@ -299,11 +299,23 @@ export const AudioEngine: React.FC = () => {
     }
   }, [isPlaying, isGuest]);
 
-  // ── Master Volume ─────────────────────────────────────────────────────────
+  // ── Master Volume (Full isolation: host and guest have independent volume) ─
   useEffect(() => {
-    if (audioARef.current) audioARef.current.volume = volume;
-    if (audioBRef.current) audioBRef.current.volume = volume;
-    if (remoteAudioRef.current) remoteAudioRef.current.volume = volume;
+    // 1. Audio decks ALWAYS stay at 1.0 so LiveKit captures full-volume signal
+    if (audioARef.current) audioARef.current.volume = 1.0;
+    if (audioBRef.current) audioBRef.current.volume = 1.0;
+
+    // 2. Host's local speakers: volume controlled via Web Audio localMasterGain node
+    if (audioContextState.localMasterGain && audioContextState.context) {
+      const currTime = audioContextState.context.currentTime;
+      audioContextState.localMasterGain.gain.cancelScheduledValues(currTime);
+      audioContextState.localMasterGain.gain.setValueAtTime(volume, currTime);
+    }
+
+    // 3. Guest's volume: controlled locally on the remote audio element
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.volume = volume;
+    }
   }, [volume]);
 
   // ── Playback Rate ─────────────────────────────────────────────────────────
