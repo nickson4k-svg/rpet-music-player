@@ -18,25 +18,27 @@ const vertexShader = `
   }
 `;
 
-// ── Smooth, Sound-Only Audio Ripple Wave (Strict Track Color, Calming Pace) ───
+// ── Subwoofer Vibration & Concentric Shockwave Ripple Fragment Shader ───────
 const fragmentShader = `
   #define GLSLIFY 1
 
   uniform vec2 u_resolution;
+  uniform float u_time;
   uniform float u_wave_phase;
-  uniform float u_audio[8];
-  uniform float u_bass;
-  uniform float u_overall_energy;
-  uniform vec3 u_color;
+  uniform float u_bass;          // Deep sub-bass punch (0.0 to 1.5)
+  uniform float u_mid;           // Melodic mid frequencies
+  uniform float u_high;          // Treble sparkle & crispness
+  uniform float u_beat_pulse;    // Instant beat trigger (shockwave spike)
+  uniform vec3 u_color;          // Exact track artwork dominant color
 
   varying vec2 vUv;
 
   /*
-   * Smooth circle antialiased
+   * Antialiased round circle with soft glow edge
    */
   float circle(vec2 pixel, vec2 center, float radius) {
-    if (radius <= 0.1) return 0.0;
-    return 1.0 - smoothstep(radius - 0.7, radius + 0.7, length(pixel - center));
+    if (radius <= 0.2) return 0.0;
+    return 1.0 - smoothstep(radius - 0.75, radius + 0.75, length(pixel - center));
   }
 
   void main() {
@@ -44,53 +46,51 @@ const fragmentShader = `
     vec2 st = (gl_FragCoord.xy - 0.5 * u_resolution) / min_res;
 
     float dist = length(st);
+    float angle = atan(st.y, st.x);
 
-    // 1. Gentle, wide concentric wave (Active ONLY when sound plays)
-    float wave_freq = 6.5;
+    // 1. Concentric Audio Shockwave Waves propagating outward on beat
+    float wave_freq = 8.0;
     float ripple = sin(dist * wave_freq - u_wave_phase);
-    float wave_crest = (ripple + 1.0) * 0.5; // Smooth 0.0 -> 1.0 curve
+    float wave_crest = pow((ripple + 1.0) * 0.5, 2.0); // Sharp defined wave crest
 
-    // Sound-only wave amplitude (strictly 0 when silent/paused)
-    float wave_intensity = wave_crest * (u_bass * 0.75 + u_overall_energy * 0.45);
+    // Wave amplitude strongly boosted by live bass + beat kicks
+    float wave_energy = wave_crest * (u_bass * 1.2 + u_beat_pulse * 1.5);
 
-    // 2. Frequency mapping across radial distance
-    float band_idx = clamp(dist * 7.5, 0.0, 7.0);
-    int idx_low = int(floor(band_idx));
-    int idx_high = int(min(float(idx_low) + 1.0, 7.0));
-    float band_frac = fract(band_idx);
+    // 2. High-Frequency Subwoofer Micro-Vibrations (Jitter effect on heavy bass)
+    float vibration = sin(dist * 40.0 + u_time * 25.0) * (u_bass * 0.4);
 
-    float freq_val = 0.0;
-    for (int i = 0; i < 8; i++) {
-      if (i == idx_low) freq_val += u_audio[i] * (1.0 - band_frac);
-      if (i == idx_high) freq_val += u_audio[i] * band_frac;
-    }
-
-    // Combined sound energy for this point
-    float local_sound_power = clamp(freq_val * 0.55 + wave_intensity * 0.65, 0.0, 1.5);
-
-    // 3. Grid coordinates for halftone bubbles
+    // 3. Grid setup for the equalizer bubbles
     float grid_step = 22.0;
     vec2 grid_pos = mod(gl_FragCoord.xy, grid_step);
     vec2 grid_center = vec2(grid_step * 0.5);
 
-    // Calm resting radius + sound-driven expansion
-    float base_radius = 1.2;
-    float max_radius = grid_step * 0.42;
-    float dynamic_radius = base_radius + local_sound_power * (max_radius - base_radius);
+    // Dynamic bubble radius driven strongly by bass punch and shockwave
+    float base_radius = 1.4;
+    float max_radius = grid_step * 0.45;
+    
+    // Core radial bass falloff (huge pulsating subwoofer in the center)
+    float center_bass_boost = max(0.0, 1.0 - dist * 1.5) * (u_bass * 1.4 + u_beat_pulse * 1.2);
+    
+    // Overall dynamic radius for this bubble
+    float sound_power = clamp(center_bass_boost + wave_energy * 0.8 + u_mid * 0.5 + vibration, 0.0, 2.0);
+    float dynamic_radius = base_radius + sound_power * (max_radius - base_radius);
+    dynamic_radius = clamp(dynamic_radius, 1.2, max_radius);
 
     // Draw the bubble
     float dot_val = circle(grid_pos, grid_center, dynamic_radius);
 
-    // 4. Color Palette strictly derived from current track artwork (u_color)
+    // 4. Artwork Color Palette & Neon Crest Highlights
     vec3 base_color = u_color;
-    // Bright luminous crest of the wave using pure tints of the artwork color
-    vec3 wave_color = mix(u_color * 1.15, vec3(1.0), 0.28 + wave_crest * 0.25);
+    // Luminous bright white-gold highlight on wave crests
+    vec3 wave_glow_color = mix(u_color * 1.3, vec3(1.0, 1.0, 1.0), 0.45);
+    vec3 dot_color = mix(base_color * 0.75, wave_glow_color, clamp(wave_energy + center_bass_boost * 0.7, 0.0, 1.0));
+    
+    // Treble sparkle on outer bubbles
+    dot_color += vec3(0.25) * (u_high * smoothstep(0.3, 1.0, dist));
 
-    vec3 dot_color = mix(base_color * 0.85, wave_color, clamp(local_sound_power, 0.0, 1.0));
-
-    // 5. Pleasant, eye-friendly opacity without harsh strobing
-    float alpha = dot_val * (0.12 + local_sound_power * 0.48);
-    alpha = clamp(alpha, 0.0, 0.65);
+    // 5. Rich, punchy, responsive opacity
+    float alpha = dot_val * (0.15 + sound_power * 0.65);
+    alpha = clamp(alpha, 0.0, 0.85);
 
     gl_FragColor = vec4(dot_color, alpha);
   }
@@ -112,13 +112,14 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     let animationFrameId: number;
     let isVisible = true;
     let wavePhase = 0;
+    const clock = new THREE.Clock();
 
     const parseColor = (hex: string | null): THREE.Vector3 => {
       const color = new THREE.Color(hex || '#6366f1');
       return new THREE.Vector3(color.r, color.g, color.b);
     };
 
-    // 1. Orthographic Scene
+    // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -135,17 +136,18 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     container.appendChild(renderer.domElement);
 
     // 3. Shader Uniforms
-    const audioBands = new Float32Array(8);
     const uniforms = {
+      u_time: { value: 0.0 },
       u_wave_phase: { value: 0.0 },
-      u_audio: { value: audioBands },
       u_bass: { value: 0.0 },
-      u_overall_energy: { value: 0.0 },
+      u_mid: { value: 0.0 },
+      u_high: { value: 0.0 },
+      u_beat_pulse: { value: 0.0 },
       u_color: { value: parseColor(dominantColor) },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
     };
 
-    // 4. Shader Material & Quad
+    // 4. Fullscreen Quad
     const material = new THREE.ShaderMaterial({
       uniforms,
       vertexShader,
@@ -158,23 +160,16 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     const quad = new THREE.Mesh(geometry, material);
     scene.add(quad);
 
-    // 5. Sound-Only Slow & Relaxing Wave Propagation
-    const smoothedBands = new Float32Array(8);
+    // 5. High-Impact Beat Detection & Live Frequency Normalizer
     let smoothedBass = 0;
+    let smoothedMid = 0;
+    let smoothedHigh = 0;
+    let beatPulse = 0;
+    let prevBass = 0;
+
     let targetColor = parseColor(dominantColor);
     let currentColor = parseColor(dominantColor);
     let lastTime = 0;
-
-    const binRanges = [
-      [0, 2],    // Sub-bass
-      [2, 5],    // Bass
-      [5, 10],   // Low-mids
-      [10, 20],  // Mids
-      [20, 35],  // Upper-mids
-      [35, 60],  // Presence
-      [60, 95],  // Brilliance
-      [95, 128], // Highs
-    ];
 
     const animate = (time: number) => {
       animationFrameId = requestAnimationFrame(animate);
@@ -184,64 +179,77 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       const dt = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
 
-      const { analyser } = audioContextState;
-      let totalEnergy = 0;
+      const elapsed = clock.getElapsedTime();
+      const { analyser, context } = audioContextState;
+
+      // Auto-resume audio context if browser paused it
+      if (isPlaying && context && context.state === 'suspended') {
+        context.resume();
+      }
 
       if (analyser && isPlaying) {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         analyser.getByteFrequencyData(dataArray);
 
-        for (let b = 0; b < 8; b++) {
-          const [start, end] = binRanges[b];
-          let sum = 0;
-          let count = 0;
-          for (let i = start; i < Math.min(end, bufferLength); i++) {
-            sum += dataArray[i];
-            count++;
-          }
-          const rawEnergy = count > 0 ? sum / (count * 255.0) : 0;
-          const boosted = Math.pow(rawEnergy, 1.2) * 1.3;
-          
-          // Smooth, non-jittery filter
-          const smoothing = boosted > smoothedBands[b] ? 0.28 : 0.08;
-          smoothedBands[b] += (boosted - smoothedBands[b]) * smoothing;
-          totalEnergy += smoothedBands[b];
+        // 1. Sub-bass & Bass Kick (Bins 0 to 6)
+        let bassSum = 0;
+        for (let i = 0; i < 6; i++) bassSum += dataArray[i] || 0;
+        const rawBass = Math.min(Math.pow(bassSum / (6 * 200.0), 1.3) * 1.6, 2.0);
+
+        // 2. Mids (Bins 7 to 25)
+        let midSum = 0;
+        for (let i = 7; i < 25; i++) midSum += dataArray[i] || 0;
+        const rawMid = Math.min(Math.pow(midSum / (18 * 200.0), 1.2) * 1.4, 1.8);
+
+        // 3. Highs (Bins 26 to 64)
+        let highSum = 0;
+        for (let i = 26; i < 64; i++) highSum += dataArray[i] || 0;
+        const rawHigh = Math.min(Math.pow(highSum / (38 * 200.0), 1.2) * 1.4, 1.8);
+
+        // Responsive attack / smooth decay
+        smoothedBass += (rawBass - smoothedBass) * (rawBass > smoothedBass ? 0.55 : 0.15);
+        smoothedMid += (rawMid - smoothedMid) * (rawMid > smoothedMid ? 0.45 : 0.12);
+        smoothedHigh += (rawHigh - smoothedHigh) * (rawHigh > smoothedHigh ? 0.45 : 0.12);
+
+        // Beat Kick Transient Detection (Instant shockwave trigger)
+        const bassDiff = rawBass - prevBass;
+        if (bassDiff > 0.35) {
+          beatPulse = Math.min(beatPulse + bassDiff * 1.5, 1.8);
         }
+        prevBass = rawBass;
+        beatPulse *= 0.88; // Fast decay for snappy kick drums
 
-        const rawBass = (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / (4 * 255);
-        smoothedBass += (rawBass - smoothedBass) * 0.22;
-
-        // Wave ONLY moves forward with sound energy at a calm, soothing speed
-        const waveSpeed = (smoothedBass * 1.2 + (totalEnergy / 8.0) * 0.8);
+        // Wave travels forward proportionally to live music power
+        const waveSpeed = 1.0 + smoothedBass * 2.5 + beatPulse * 2.0;
         wavePhase += dt * waveSpeed;
       } else {
-        // Idle state: Wave stays completely still, no movement
-        for (let b = 0; b < 8; b++) {
-          smoothedBands[b] += (0 - smoothedBands[b]) * 0.05;
-        }
-        smoothedBass += (0 - smoothedBass) * 0.05;
+        // Idle calm
+        smoothedBass += (0 - smoothedBass) * 0.06;
+        smoothedMid += (0 - smoothedMid) * 0.06;
+        smoothedHigh += (0 - smoothedHigh) * 0.06;
+        beatPulse *= 0.8;
       }
 
-      // Smooth color transition adapting strictly to current track cover
+      // Smooth color transition adapting to the track's cover
       targetColor = parseColor(dominantColorRef.current);
-      currentColor.lerp(targetColor, 0.04);
+      currentColor.lerp(targetColor, 0.05);
       uniforms.u_color.value.copy(currentColor);
 
       // Update shader uniforms
-      for (let b = 0; b < 8; b++) {
-        audioBands[b] = Math.min(smoothedBands[b], 1.2);
-      }
+      uniforms.u_time.value = elapsed;
       uniforms.u_wave_phase.value = wavePhase;
       uniforms.u_bass.value = smoothedBass;
-      uniforms.u_overall_energy.value = totalEnergy / 8.0;
+      uniforms.u_mid.value = smoothedMid;
+      uniforms.u_high.value = smoothedHigh;
+      uniforms.u_beat_pulse.value = beatPulse;
 
       renderer.render(scene, camera);
     };
 
     animationFrameId = requestAnimationFrame(animate);
 
-    // 6. Resize & Visibility
+    // 6. Resize & Visibility Handlers
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;

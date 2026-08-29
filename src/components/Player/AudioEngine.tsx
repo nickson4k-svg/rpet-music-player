@@ -282,11 +282,8 @@ export const AudioEngine: React.FC = () => {
         audioContextState.context.resume();
       }
       activeAudio.play().catch(err => {
-        console.error('Playback failed on toggle play:', err);
-        if (!isGuest) {
-          setTimeout(() => {
-            usePlayerStore.getState().playNext();
-          }, 500);
+        if (err.name !== 'AbortError' && err.name !== 'NotSupportedError') {
+          console.warn('Playback interrupted on toggle play:', err.message);
         }
       });
     } else {
