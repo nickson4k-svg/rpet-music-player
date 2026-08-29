@@ -33,6 +33,8 @@ export const MainLayout: React.FC = () => {
   const setViewMode = usePlayerStore(state => state.setViewMode);
   const setDominantColor = usePlayerStore(state => state.setDominantColor);
   const isSearchMode = usePlayerStore(state => state.isSearchMode);
+  const isLibraryLoaded = usePlayerStore(state => state.isLibraryLoaded);
+  const setIsLibraryLoaded = usePlayerStore(state => state.setIsLibraryLoaded);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -85,9 +87,10 @@ export const MainLayout: React.FC = () => {
       ]);
       setTracks(tracks);
       setPlaylists(playlists);
+      setIsLibraryLoaded(true);
     };
     loadData();
-  }, [setTracks, setPlaylists]);
+  }, [setTracks, setPlaylists, setIsLibraryLoaded]);
 
   useEffect(() => {
     if (!isSearchMode) {
@@ -162,6 +165,7 @@ export const MainLayout: React.FC = () => {
                   </button>
                   <FacesShaderLogo
                     onClick={() => setCurrentPlaylistId(null)}
+                    isReady={isLibraryLoaded}
                   />
                 </div>
 

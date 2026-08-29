@@ -4,10 +4,16 @@ import * as THREE from 'three';
 interface FacesShaderLogoProps {
   className?: string;
   onClick?: () => void;
+  isReady?: boolean;
 }
 
-export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = '', onClick }) => {
+export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = '', onClick, isReady = true }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isReadyRef = useRef(isReady);
+
+  useEffect(() => {
+    isReadyRef.current = isReady;
+  }, [isReady]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -221,8 +227,8 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
       const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
 
-      // Slower, majestic entrance (0.4 speed instead of 0.9)
-      if (entranceProgress < 1.0) {
+      // Slower, majestic entrance ONLY after app and tracks are ready
+      if (isReadyRef.current && entranceProgress < 1.0) {
         entranceProgress = Math.min(1.0, entranceProgress + delta * 0.45);
       }
 
