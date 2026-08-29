@@ -13,9 +13,11 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     const container = containerRef.current;
     if (!container) return;
 
-    const width = 160;
-    const height = 40;
+    // Slightly larger dimensions for great readability
+    const width = 205;
+    const height = 48;
     let animationFrameId: number;
+    let isVisible = true;
 
     // 1. Offscreen Canvas for Sampling Text Pixels ("50 Faces")
     const textCanvas = document.createElement('canvas');
@@ -28,7 +30,7 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, textCanvas.width, textCanvas.height);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 44px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '900 52px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('50 Faces', textCanvas.width / 2, textCanvas.height / 2);
@@ -36,15 +38,14 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     const imgData = ctx.getImageData(0, 0, textCanvas.width, textCanvas.height);
     const textPoints: { x: number; y: number }[] = [];
 
-    // Sample pixels that belong to the text
-    const step = 2; // sample resolution
+    // Optimized sampling step to keep particle count light (~1800 points)
+    const step = 2;
     for (let y = 0; y < textCanvas.height; y += step) {
       for (let x = 0; x < textCanvas.width; x += step) {
         const index = (y * textCanvas.width + x) * 4;
-        if (imgData.data[index] > 120) {
-          // Normalize to WebGL coordinates centered at (0,0)
-          const normX = (x / textCanvas.width - 0.5) * (width / height) * 2.2;
-          const normY = -(y / textCanvas.height - 0.5) * 2.2;
+        if (imgData.data[index] > 115) {
+          const normX = (x / textCanvas.width - 0.5) * (width / height) * 2.25;
+          const normY = -(y / textCanvas.height - 0.5) * 2.25;
           textPoints.push({ x: normX, y: normY });
         }
       }
@@ -53,18 +54,21 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     const particleCount = textPoints.length;
     if (particleCount === 0) return;
 
-    // 2. Three.js Scene Setup
+    // 2. Three.js Scene Setup (Low-power GPU profile)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.z = 3.2;
+    const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 50);
+    camera.position.z = 3.4;
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      powerPreference: 'high-performance',
+      powerPreference: 'low-power',
+      precision: 'mediump',
+      stencil: false,
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Limit pixel ratio to 1.5 max for massive GPU fill-rate savings
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
@@ -80,12 +84,12 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
       targetPositions[i * 3 + 1] = pt.y;
       targetPositions[i * 3 + 2] = 0;
 
-      // Initial random cloud / disk
+      // Initial swirling disk / cosmic dust
       const angle = Math.random() * Math.PI * 2;
-      const radius = 1.2 + Math.random() * 2.5;
+      const radius = 1.4 + Math.random() * 2.8;
       const initX = Math.cos(angle) * radius;
       const initY = Math.sin(angle) * radius;
-      const initZ = (Math.random() - 0.5) * 1.5;
+      const initZ = (Math.random() - 0.5) * 1.6;
 
       initialPositions[i * 3] = initX;
       initialPositions[i * 3 + 1] = initY;
@@ -104,7 +108,7 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     geometry.setAttribute('aInitial', new THREE.BufferAttribute(initialPositions, 3));
     geometry.setAttribute('aOffset', new THREE.BufferAttribute(randomOffsets, 1));
 
-    // 4. Custom GLSL Shader Material
+    // 4. Optimized GLSL Shaders (Slower, majestic, smooth motion)
     const vertexShader = `
       attribute vec3 aTarget;
       attribute vec3 aInitial;
@@ -117,40 +121,40 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
       varying vec3 vColor;
       varying float vAlpha;
 
+      // Gentle, smooth curl noise
       vec3 curl(vec3 p) {
-        float x = sin(p.y * 3.0 + uTime * 2.0) * cos(p.z * 2.5);
-        float y = sin(p.z * 3.0 + uTime * 2.0) * cos(p.x * 2.5);
-        float z = sin(p.x * 3.0 + uTime * 2.0) * cos(p.y * 2.5);
+        float x = sin(p.y * 2.2 + uTime * 0.8) * cos(p.z * 1.8);
+        float y = sin(p.z * 2.2 + uTime * 0.8) * cos(p.x * 1.8);
+        float z = sin(p.x * 2.2 + uTime * 0.8) * cos(p.y * 1.8);
         return vec3(x, y, z);
       }
 
       void main() {
-        // Assembling progress with individual particle delay
-        float p = clamp((uProgress - aOffset * 0.25) / 0.75, 0.0, 1.0);
+        // Individual particle delay during entrance
+        float p = clamp((uProgress - aOffset * 0.3) / 0.7, 0.0, 1.0);
         p = smoothstep(0.0, 1.0, p);
 
-        // Mix between chaos position and text shape
         vec3 pos = mix(aInitial, aTarget, p);
 
-        // Turbulence noise on hover or entrance
-        float turbulence = (1.0 - p) * 0.4 + uHover * 0.25;
-        pos += curl(pos * 2.2) * turbulence;
+        // Smooth turbulence (low intensity for elegant feel)
+        float turbulence = (1.0 - p) * 0.35 + uHover * 0.22;
+        pos += curl(pos * 1.8) * turbulence;
 
-        // Subtle gentle alive wave
-        pos.y += sin(uTime * 2.0 + pos.x * 4.0) * 0.018 * p;
+        // Slow, gentle ambient breath
+        pos.y += sin(uTime * 0.9 + pos.x * 2.5) * 0.012 * p;
 
         vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-        gl_PointSize = (4.0 + uHover * 2.0) * (3.0 / -mvPosition.z);
+        gl_PointSize = (4.5 + uHover * 2.0) * (3.2 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
 
-        // Gradient coloring: vibrant violet/magenta to electric cyan
-        float colorFactor = (aTarget.x + 3.0) / 6.0;
-        vec3 colA = vec3(0.65, 0.35, 1.0); // Neon Violet
-        vec3 colB = vec3(0.2, 0.85, 1.0);  // Electric Cyan
+        // Rich neon gradient: violet-magenta into electric cyan
+        float colorFactor = (aTarget.x + 3.2) / 6.4;
+        vec3 colA = vec3(0.68, 0.32, 1.0); // Neon Violet
+        vec3 colB = vec3(0.2, 0.88, 1.0);  // Electric Cyan
         vColor = mix(colA, colB, clamp(colorFactor, 0.0, 1.0));
 
         if (p > 0.85) {
-          vColor = mix(vColor, vec3(1.0, 1.0, 1.0), 0.35); // Crisp bright highlight
+          vColor = mix(vColor, vec3(1.0, 1.0, 1.0), 0.38); // High contrast glow
         }
 
         vAlpha = 0.3 + 0.7 * p;
@@ -183,13 +187,14 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
       uniforms,
       transparent: true,
       depthTest: false,
+      depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
 
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // 5. Interactivity: Hover & Entrance
+    // 5. Interactivity: Hover with smooth easing
     let targetHover = 0;
     const onMouseEnter = () => { targetHover = 1.0; };
     const onMouseLeave = () => { targetHover = 0.0; };
@@ -197,34 +202,45 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     container.addEventListener('mouseenter', onMouseEnter);
     container.addEventListener('mouseleave', onMouseLeave);
 
-    // 6. Animation Loop
+    // 6. GPU Optimization: Pause when tab is inactive or hidden
+    const onVisibilityChange = () => {
+      isVisible = !document.hidden;
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // 7. Slower, elegant Animation Loop
     const clock = new THREE.Clock();
     let entranceProgress = 0;
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
+
+      // Do nothing if tab is hidden (saves 100% GPU when minimized or tab switched)
+      if (!isVisible) return;
+
+      const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
 
-      // Smooth entrance to form the text
+      // Slower, majestic entrance (0.4 speed instead of 0.9)
       if (entranceProgress < 1.0) {
-        entranceProgress = Math.min(1.0, entranceProgress + delta * 0.9);
+        entranceProgress = Math.min(1.0, entranceProgress + delta * 0.45);
       }
 
       uniforms.uProgress.value = entranceProgress;
       uniforms.uTime.value = time;
-      uniforms.uHover.value += (targetHover - uniforms.uHover.value) * 0.1;
+      uniforms.uHover.value += (targetHover - uniforms.uHover.value) * (delta * 4.0);
 
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // 7. Cleanup
+    // 8. Cleanup
     return () => {
       cancelAnimationFrame(animationFrameId);
       container.removeEventListener('mouseenter', onMouseEnter);
       container.removeEventListener('mouseleave', onMouseLeave);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       if (renderer.domElement.parentNode === container) {
         container.removeChild(renderer.domElement);
       }
@@ -238,7 +254,7 @@ export const FacesShaderLogo: React.FC<FacesShaderLogoProps> = ({ className = ''
     <div
       ref={containerRef}
       onClick={onClick}
-      style={{ width: 160, height: 40 }}
+      style={{ width: 205, height: 48 }}
       className={`relative inline-flex items-center justify-center flex-shrink-0 cursor-pointer select-none group transition-transform duration-300 hover:scale-105 active:scale-95 ${className}`}
       title="50 Faces"
     />
