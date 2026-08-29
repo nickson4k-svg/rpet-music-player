@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect } from 'react';
-import { RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw, Sparkles, Heart, Library, Music } from 'lucide-react';
 import { Virtuoso, VirtuosoGrid } from 'react-virtuoso';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { TrackItem } from './TrackItem';
+import { TrackUploader } from './TrackUploader';
 import { usePlayerStore } from '../../stores/playerStore';
 import { deleteTrack } from '../../utils/idbStorage';
 
@@ -32,6 +33,13 @@ export const TrackList: React.FC = () => {
     }
   }, [currentPlaylistId, recommendedTracks.length, isGeneratingRecommendations, generateRecommendations]);
 
+  const currentPlaylist = useMemo(() => {
+    if (currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood' && currentPlaylistId !== 'all') {
+      return playlists.find(p => p.id === currentPlaylistId);
+    }
+    return null;
+  }, [playlists, currentPlaylistId]);
+
   const displayedTracks = useMemo(() => {
     if (currentPlaylistId === 'recommendations') {
       return recommendedTracks;
@@ -43,15 +51,14 @@ export const TrackList: React.FC = () => {
       return tracks.filter(t => t.isFavorite);
     }
     if (!currentPlaylistId || currentPlaylistId === 'all') return tracks;
-    const playlist = playlists.find(p => p.id === currentPlaylistId);
-    if (!playlist) return [];
+    if (!currentPlaylist) return [];
     
     // Maintain playlist order and filter out deleted tracks
-    return (playlist.trackIds || []).map(id => tracks.find(t => t.id === id)).filter(t => t !== undefined) as typeof tracks;
-  }, [tracks, playlists, currentPlaylistId, moodTracks, recommendedTracks]);
+    return (currentPlaylist.trackIds || []).map(id => tracks.find(t => t.id === id)).filter(t => t !== undefined) as typeof tracks;
+  }, [tracks, currentPlaylist, currentPlaylistId, moodTracks, recommendedTracks]);
 
   const handleDelete = async (id: string) => {
-    if (currentPlaylistId) {
+    if (currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'all' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood') {
       if (window.confirm('Видалити трек з плейлиста?')) {
         removeTrackFromPlaylist(currentPlaylistId, id);
       }
@@ -70,7 +77,7 @@ export const TrackList: React.FC = () => {
   };
 
   const onDragEnd = (result: DropResult) => {
-    if (!result.destination || !currentPlaylistId || currentPlaylistId === 'favorites' || currentPlaylistId === 'all') return;
+    if (!result.destination || !currentPlaylistId || currentPlaylistId === 'favorites' || currentPlaylistId === 'all' || currentPlaylistId === 'recommendations' || currentPlaylistId === 'mood') return;
     if (result.source.index === result.destination.index) return;
     
     reorderPlaylistTracks(currentPlaylistId, result.source.index, result.destination.index);
@@ -120,22 +127,15 @@ export const TrackList: React.FC = () => {
     );
   }
 
-  if (displayedTracks.length === 0) {
-    return (
-      <div className="mt-8 flex items-center justify-center h-64 border border-border rounded-xl bg-bg-secondary/50 backdrop-blur-xl text-foreground-muted font-medium">
-        Немає треків
-      </div>
-    );
-  }
-
   return (
     <div className="h-full border border-border rounded-xl bg-bg-secondary/50 backdrop-blur-xl overflow-hidden flex flex-col">
+      {/* Header section based on view mode */}
       {currentPlaylistId === 'recommendations' && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-border bg-bg-tertiary/50">
           <div className="flex items-center gap-2 text-accent">
             <Sparkles className="w-5 h-5" />
             <h2 className="text-lg font-bold">Радіо Рекомендацій</h2>
-            <span className="text-sm text-foreground-muted ml-2 font-medium">на основі ваших улюблених треків</span>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">({displayedTracks.length} треків)</span>
           </div>
           <button
             onClick={() => generateRecommendations()}
@@ -148,85 +148,157 @@ export const TrackList: React.FC = () => {
         </div>
       )}
 
-
-      {viewMode === 'list' && (
-        <div className="flex items-center gap-3 sm:gap-4 p-3 border-b border-border bg-bg-tertiary/50 text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider shrink-0">
-          <div className="w-10 sm:w-12 pl-1 sm:pl-2 shrink-0"></div>
-          <div className="flex-1">Назва</div>
-          <div className="hidden sm:block w-32 px-4 shrink-0">Альбом</div>
-          <div className="hidden sm:block w-12 text-right shrink-0">Час</div>
-          <div className="w-20 sm:w-28 shrink-0"></div>
+      {currentPlaylistId === 'favorites' && (
+        <div className="flex items-center justify-between p-4 border-b border-border bg-bg-tertiary/50">
+          <div className="flex items-center gap-2.5 text-red-500">
+            <Heart className="w-5 h-5 fill-current" />
+            <h2 className="text-lg font-bold text-white">Улюблені треки</h2>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">({displayedTracks.length})</span>
+          </div>
         </div>
       )}
-      
-      {isDraggablePlaylist ? (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="playlist-tracks">
-            {(provided) => (
-              <div 
-                className={viewMode === 'grid' 
-                  ? "flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                  : "flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                }
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
-                {displayedTracks.map((track, index) => (
-                  <Draggable key={`${track.id}-${index}`} draggableId={`${track.id}-${index}`} index={index}>
-                    {(provided, snapshot) => (
-                      <TrackItem
-                        track={track}
-                        isPlaying={isPlaying}
-                        isCurrentTrack={currentTrackId === track.id}
-                        onPlay={handlePlay}
-                        onTogglePlayPause={togglePlayPause}
-                        onDelete={handleDelete}
-                        innerRef={provided.innerRef}
-                        draggableProps={provided.draggableProps}
-                        dragHandleProps={provided.dragHandleProps}
-                        isDragging={snapshot.isDragging}
-                      />
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
+
+      {currentPlaylistId === 'all' && (
+        <div className="flex items-center justify-between p-4 border-b border-border bg-bg-tertiary/50">
+          <div className="flex items-center gap-2.5 text-accent">
+            <Library className="w-5 h-5" />
+            <h2 className="text-lg font-bold text-white">Моя бібліотека</h2>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">({displayedTracks.length} треків)</span>
+          </div>
+        </div>
+      )}
+
+      {currentPlaylistId === 'mood' && currentMood && (
+        <div className="flex items-center justify-between p-4 border-b border-border bg-bg-tertiary/50">
+          <div className="flex items-center gap-2.5 text-accent">
+            <Sparkles className="w-5 h-5" />
+            <h2 className="text-lg font-bold text-white">Настрій: {currentMood}</h2>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">({displayedTracks.length} треків)</span>
+          </div>
+        </div>
+      )}
+
+      {currentPlaylist && (
+        <div className="flex items-center justify-between p-4 border-b border-border bg-bg-tertiary/50">
+          <div className="flex items-center gap-2.5 text-accent">
+            <Music className="w-5 h-5" />
+            <h2 className="text-lg font-bold text-white">{currentPlaylist.name}</h2>
+            <span className="text-sm text-foreground-muted ml-2 font-medium">({displayedTracks.length} треків)</span>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {displayedTracks.length === 0 && (
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
+          {currentPlaylistId === 'favorites' ? (
+            <div className="flex flex-col items-center max-w-sm">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-4">
+                <Heart className="w-8 h-8" />
               </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      ) : viewMode === 'grid' ? (
-        <VirtuosoGrid
-          className="flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 p-4 sm:p-6"
-          data={displayedTracks}
-          itemContent={(_, track) => (
-            <TrackItem
-              key={track.id}
-              track={track}
-              isPlaying={isPlaying}
-              isCurrentTrack={currentTrackId === track.id}
-              onPlay={handlePlay}
-              onTogglePlayPause={togglePlayPause}
-              onDelete={handleDelete}
-            />
+              <h3 className="text-lg font-bold text-white mb-1">Немає улюблених треків</h3>
+              <p className="text-sm text-foreground-muted">Натисніть на іконку серця ❤️ біля будь-якої пісні, щоб додати її до улюблених.</p>
+            </div>
+          ) : currentPlaylistId === 'all' ? (
+            <div className="w-full max-w-md space-y-4">
+              <TrackUploader />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center max-w-sm">
+              <div className="w-16 h-16 rounded-full bg-bg-tertiary flex items-center justify-center text-foreground-muted mb-4">
+                <Music className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-1">Треків не знайдено</h3>
+              <p className="text-sm text-foreground-muted">Спробуйте додати пісні або вибрати іншу категорію.</p>
+            </div>
           )}
-        />
-      ) : (
-        <Virtuoso
-          className="flex-1 p-2 sm:p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          data={displayedTracks}
-          itemContent={(_, track) => (
-            <TrackItem
-              key={track.id}
-              track={track}
-              isPlaying={isPlaying}
-              isCurrentTrack={currentTrackId === track.id}
-              onPlay={handlePlay}
-              onTogglePlayPause={togglePlayPause}
-              onDelete={handleDelete}
-            />
+        </div>
+      )}
+
+      {/* List / Grid view of tracks */}
+      {displayedTracks.length > 0 && (
+        <>
+          {viewMode === 'list' && (
+            <div className="flex items-center gap-3 sm:gap-4 p-3 border-b border-border bg-bg-tertiary/50 text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider shrink-0">
+              <div className="w-10 sm:w-12 pl-1 sm:pl-2 shrink-0"></div>
+              <div className="flex-1">Назва</div>
+              <div className="hidden sm:block w-32 px-4 shrink-0">Альбом</div>
+              <div className="hidden sm:block w-12 text-right shrink-0">Час</div>
+              <div className="w-20 sm:w-28 shrink-0"></div>
+            </div>
           )}
-        />
+          
+          {isDraggablePlaylist ? (
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="playlist-tracks">
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="flex-1 overflow-y-auto p-2 sm:p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  >
+                    {displayedTracks.map((track, index) => (
+                      <Draggable key={track.id} draggableId={track.id} index={index}>
+                        {(provided, snapshot) => (
+                          <TrackItem
+                            track={track}
+                            isCurrentTrack={track.id === currentTrackId}
+                            isPlaying={isPlaying}
+                            onPlay={handlePlay}
+                            onTogglePlayPause={togglePlayPause}
+                            onDelete={handleDelete}
+                            innerRef={provided.innerRef}
+                            draggableProps={provided.draggableProps}
+                            dragHandleProps={provided.dragHandleProps}
+                            isDragging={snapshot.isDragging}
+                          />
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          ) : viewMode === 'grid' ? (
+            <div className="flex-1 overflow-hidden p-2 sm:p-4">
+              <VirtuosoGrid
+                data={displayedTracks}
+                totalCount={displayedTracks.length}
+                listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6"
+                itemContent={(_, track) => (
+                  <TrackItem
+                    key={track.id}
+                    track={track}
+                    isCurrentTrack={track.id === currentTrackId}
+                    isPlaying={isPlaying}
+                    onPlay={handlePlay}
+                    onTogglePlayPause={togglePlayPause}
+                    onDelete={handleDelete}
+                  />
+                )}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden">
+              <Virtuoso
+                data={displayedTracks}
+                totalCount={displayedTracks.length}
+                itemContent={(_, track) => (
+                  <TrackItem
+                    key={track.id}
+                    track={track}
+                    isCurrentTrack={track.id === currentTrackId}
+                    isPlaying={isPlaying}
+                    onPlay={handlePlay}
+                    onTogglePlayPause={togglePlayPause}
+                    onDelete={handleDelete}
+                  />
+                )}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
