@@ -18,51 +18,23 @@ const vertexShader = `
   }
 `;
 
-// ── Pure Audio-Reactive Halftone Dots Fragment Shader (No 3D Mesh, No Mouse) ──
+// ── Direct Multi-Band Audio-Reactive Bubbles/Dots Fragment Shader ────────────
 const fragmentShader = `
   #define GLSLIFY 1
 
   uniform vec2 u_resolution;
-  uniform float u_time;
-  uniform float u_bass;
-  uniform float u_mid;
-  uniform float u_high;
+  uniform float u_audio[8]; // 8-band live audio spectrum (0: SubBass -> 7: Highs)
+  uniform float u_overall_energy;
   uniform vec3 u_color;
 
   varying vec2 vUv;
 
   /*
-   * Returns a value between 1 and 0 that indicates if the pixel is inside the circle
+   * Returns smooth circle intensity between 1.0 (center) and 0.0 (edge)
    */
   float circle(vec2 pixel, vec2 center, float radius) {
-    return 1.0 - smoothstep(radius - 0.8, radius + 0.8, length(pixel - center));
-  }
-
-  /*
-   * 2D Rotation Matrix
-   */
-  mat2 rotate(float angle) {
-    return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
-  }
-
-  /*
-   * Pseudo-random hash & noise for organic audio fluid morphing
-   */
-  float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
-  }
-
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    if (radius <= 0.05) return 0.0;
+    return 1.0 - smoothstep(radius - 0.75, radius + 0.75, length(pixel - center));
   }
 
   void main() {
@@ -73,37 +45,47 @@ const fragmentShader = `
     float dist = length(st);
     float angle = atan(st.y, st.x);
 
-    // Audio-reactive field distortion (morphing waves, expanding ripple pulses)
-    float wave1 = sin(dist * 12.0 - u_time * 1.0) * (0.12 + u_bass * 0.75);
-    float wave2 = cos(angle * 5.0 + u_time * 0.7 + dist * 6.0) * (0.08 + u_mid * 0.5);
-    float n = noise(st * 3.0 + vec2(u_time * 0.08)) * (0.15 + u_high * 0.35);
+    // Map distance into 8 concentric frequency zones (SubBass in center -> Highs on edges)
+    float band_idx = clamp(dist * 7.5, 0.0, 7.0);
+    int idx_low = int(floor(band_idx));
+    int idx_high = int(min(float(idx_low) + 1.0, 7.0));
+    float band_frac = fract(band_idx);
 
-    // Audio field intensity combining harmonic ripples
-    float audio_field = clamp(wave1 + wave2 + n + (1.0 - smoothstep(0.0, 0.9, dist)), 0.0, 2.5);
+    // Sample audio energy for this specific dot position
+    float freq_val = 0.0;
+    for (int i = 0; i < 8; i++) {
+      if (i == idx_low) freq_val += u_audio[i] * (1.0 - band_frac);
+      if (i == idx_high) freq_val += u_audio[i] * band_frac;
+    }
 
-    // Move coordinates and apply subtle slow rotation
-    vec2 pos = gl_FragCoord.xy - 0.5 * u_resolution;
-    pos = rotate(radians(20.0) + u_time * 0.02) * pos;
+    // Grid spacing for the dots across the screen
+    float grid_step = 18.0;
+    vec2 grid_pos = mod(gl_FragCoord.xy, grid_step);
+    vec2 grid_center = vec2(grid_step * 0.5);
 
-    // Grid spacing (scales smoothly with bass beats)
-    float grid_step = 16.0 + u_bass * 4.0;
-    vec2 grid_pos = mod(pos, grid_step);
-
-    // Calculate the halftone dot radius driven solely by audio field & bass punch
-    float max_radius = grid_step * 0.48;
-    float dot_radius = clamp(audio_field * 0.42 * grid_step * (0.35 + u_bass * 0.95), 0.5, max_radius);
+    // Base resting dot radius (very small and subtle when quiet)
+    float base_radius = 1.0;
     
-    // Render the smooth round dot
-    float dot_val = circle(grid_pos, vec2(grid_step * 0.5), dot_radius);
+    // Each bubble directly expands in size proportionally to its local frequency energy
+    float max_bubble_radius = grid_step * 0.44;
+    float dynamic_radius = base_radius + freq_val * (max_bubble_radius - base_radius);
 
-    // Dynamic dot color blended with the current song's dominant color & high treble sparkle
-    vec3 dot_color = mix(u_color, vec3(1.0), 0.2 + u_high * 0.6);
+    // Render the smooth round bubble
+    float dot_val = circle(grid_pos, grid_center, dynamic_radius);
+
+    // Color gradient: Center warms with bass, edges sparkle with treble and track dominant color
+    vec3 sub_bass_color = mix(u_color, vec3(1.0, 0.35, 0.65), u_audio[0] * 0.7);
+    vec3 treble_color = mix(u_color, vec3(0.5, 0.85, 1.0), u_audio[6] * 0.6);
+    vec3 dot_color = mix(sub_bass_color, treble_color, clamp(dist * 1.2, 0.0, 1.0));
     
-    // Edge fade so background remains comfortable for UI
-    float vignette = smoothstep(1.4, 0.2, dist);
-    float alpha = dot_val * (0.25 + u_bass * 0.55) * vignette;
+    // Extra brightness pulse on peak beats
+    dot_color += vec3(0.3) * (freq_val * freq_val);
 
-    gl_FragColor = vec4(dot_color, clamp(alpha, 0.0, 0.9));
+    // Soft opacity that breathes with the music
+    float alpha = dot_val * (0.15 + freq_val * 0.65);
+    alpha = clamp(alpha, 0.0, 0.85);
+
+    gl_FragColor = vec4(dot_color, alpha);
   }
 `;
 
@@ -122,14 +104,13 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
 
     let animationFrameId: number;
     let isVisible = true;
-    const clock = new THREE.Clock();
 
     const parseColor = (hex: string | null): THREE.Vector3 => {
       const color = new THREE.Color(hex || '#6366f1');
       return new THREE.Vector3(color.r, color.g, color.b);
     };
 
-    // 1. Orthographic Scene Setup for Fullscreen Quad
+    // 1. Orthographic Scene for Pixel-Perfect Fullscreen Quad
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -145,17 +126,16 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // 3. Shader Uniforms (Audio & Screen only — No Mouse)
+    // 3. Shader Uniforms (8 audio bands)
+    const audioBands = new Float32Array(8);
     const uniforms = {
-      u_time: { value: 0.0 },
-      u_bass: { value: 0.0 },
-      u_mid: { value: 0.0 },
-      u_high: { value: 0.0 },
+      u_audio: { value: audioBands },
+      u_overall_energy: { value: 0.0 },
       u_color: { value: parseColor(dominantColor) },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
     };
 
-    // 4. Fullscreen Quad Mesh with Shader Material
+    // 4. Shader Material & Fullscreen Quad
     const material = new THREE.ShaderMaterial({
       uniforms,
       vertexShader,
@@ -168,68 +148,81 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     const quad = new THREE.Mesh(geometry, material);
     scene.add(quad);
 
-    // 5. Audio Reactive Loop
-    let smoothedBass = 0;
-    let smoothedMid = 0;
-    let smoothedHigh = 0;
-    let lastTime = 0;
-
+    // 5. High-Precision Audio Spectrum Analysis & Smooth Easing
+    const smoothedBands = new Float32Array(8);
     let targetColor = parseColor(dominantColor);
     let currentColor = parseColor(dominantColor);
+    let lastTime = 0;
+
+    // Frequency bin boundaries for 8 perceptual audio bands (from 128/256 FFT size)
+    const binRanges = [
+      [0, 2],    // 0: Sub-bass (20-60 Hz)
+      [2, 5],    // 1: Bass (60-150 Hz)
+      [5, 10],   // 2: Low-mids (150-350 Hz)
+      [10, 20],  // 3: Mids (350-800 Hz)
+      [20, 35],  // 4: Upper-mids (800-2000 Hz)
+      [35, 60],  // 5: Presence (2-5 kHz)
+      [60, 95],  // 6: Brilliance (5-10 kHz)
+      [95, 128], // 7: High air (10-20 kHz)
+    ];
 
     const animate = (time: number) => {
       animationFrameId = requestAnimationFrame(animate);
 
       if (!isVisible) return;
-      if (time - lastTime < 16) return; // ~60fps
+      if (time - lastTime < 16) return; // 60 FPS
       lastTime = time;
 
-      const elapsed = clock.getElapsedTime();
-
-      // Audio Frequency Analysis from AudioContext
       const { analyser } = audioContextState;
+      let totalEnergy = 0;
+
       if (analyser && isPlaying) {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         analyser.getByteFrequencyData(dataArray);
 
-        // Bass range (bins 0-3)
-        const rawBass = (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / (4 * 255);
-        // Mid range (bins 4-15)
-        let midSum = 0;
-        for (let i = 4; i < 16; i++) midSum += dataArray[i] || 0;
-        const rawMid = midSum / (12 * 255);
-        // High range (bins 16-40)
-        let highSum = 0;
-        for (let i = 16; i < 40; i++) highSum += dataArray[i] || 0;
-        const rawHigh = highSum / (24 * 255);
-
-        smoothedBass += (rawBass - smoothedBass) * 0.18;
-        smoothedMid += (rawMid - smoothedMid) * 0.15;
-        smoothedHigh += (rawHigh - smoothedHigh) * 0.15;
+        for (let b = 0; b < 8; b++) {
+          const [start, end] = binRanges[b];
+          let sum = 0;
+          let count = 0;
+          for (let i = start; i < Math.min(end, bufferLength); i++) {
+            sum += dataArray[i];
+            count++;
+          }
+          const rawBandEnergy = count > 0 ? (sum / (count * 255.0)) : 0;
+          
+          // Exponential sensitivity boost for crystal clear visual reactivity
+          const boosted = Math.pow(rawBandEnergy, 1.4) * 1.35;
+          
+          // Ultra-smooth attack / decay filter
+          const smoothing = boosted > smoothedBands[b] ? 0.35 : 0.12;
+          smoothedBands[b] += (boosted - smoothedBands[b]) * smoothing;
+          totalEnergy += smoothedBands[b];
+        }
       } else {
-        smoothedBass += (0 - smoothedBass) * 0.03;
-        smoothedMid += (0 - smoothedMid) * 0.03;
-        smoothedHigh += (0 - smoothedHigh) * 0.03;
+        // Smoothly fade to idle rest state
+        for (let b = 0; b < 8; b++) {
+          smoothedBands[b] += (0 - smoothedBands[b]) * 0.08;
+        }
       }
 
-      // Smooth color transition based on current song
+      // Smooth color transition based on current track
       targetColor = parseColor(dominantColorRef.current);
-      currentColor.lerp(targetColor, 0.03);
+      currentColor.lerp(targetColor, 0.04);
       uniforms.u_color.value.copy(currentColor);
 
       // Update shader uniforms
-      uniforms.u_time.value = elapsed;
-      uniforms.u_bass.value = smoothedBass;
-      uniforms.u_mid.value = smoothedMid;
-      uniforms.u_high.value = smoothedHigh;
+      for (let b = 0; b < 8; b++) {
+        audioBands[b] = Math.min(smoothedBands[b], 1.2);
+      }
+      uniforms.u_overall_energy.value = totalEnergy / 8.0;
 
       renderer.render(scene, camera);
     };
 
     animationFrameId = requestAnimationFrame(animate);
 
-    // 6. Resize & Tab Visibility
+    // 6. Resize & Tab Visibility Listeners
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
