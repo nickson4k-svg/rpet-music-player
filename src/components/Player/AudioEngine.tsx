@@ -186,7 +186,7 @@ export const AudioEngine: React.FC = () => {
 
       if (typeof track.url === 'string' && track.url.startsWith('audius:')) {
         const trackId = track.url.split(':')[1];
-        url = `/api/audius-proxy?id=${trackId}`;
+        url = `https://discoveryprovider.audius.co/v1/tracks/${trackId}/stream?app_name=Rpet`;
       }
 
       if (typeof track.url === 'string' && track.url.startsWith('soundcloud:')) {
