@@ -149,18 +149,36 @@ export const MainLayout: React.FC = () => {
 
         <main className="flex-1 p-3 sm:p-6 pb-32 sm:pb-40 overflow-hidden flex flex-col w-full">
           <div className="max-w-[1600px] mx-auto w-full flex flex-col h-full space-y-4 sm:space-y-6">
-            <div className="flex items-center gap-3 mb-2 flex-col sm:flex-row">
-              <div className="flex items-center gap-3 md:hidden w-full sm:w-auto">
-                <button 
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors flex-shrink-0"
+            <div className="flex items-center justify-between gap-3 mb-2 flex-col sm:flex-row w-full">
+              {/* Left Logo Section - Pinned to the Left */}
+              <div className="flex items-center gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors flex-shrink-0 md:hidden"
+                  >
+                    <Menu className="w-6 h-6" />
+                  </button>
+                  <h1 
+                    onClick={() => setCurrentPlaylistId(null)}
+                    className="text-xl sm:text-2xl font-bold text-white tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.6)] cursor-pointer select-none hover:opacity-90 transition-opacity"
+                  >
+                    50 Faces
+                  </h1>
+                </div>
+
+                {/* Mobile History icon */}
+                <button
+                  onClick={() => setIsHistoryModalOpen(true)}
+                  className="p-2 text-gray-400 hover:text-accent transition-colors flex items-center gap-2 rounded-full hover:bg-secondary/30 sm:hidden"
+                  title="Історія прослуховувань"
                 >
-                  <Menu className="w-6 h-6" />
+                  <History className="w-5 h-5" />
                 </button>
-                <h1 className="text-xl font-bold text-white mr-2 flex-grow sm:flex-grow-0 drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">50 Faces</h1>
               </div>
               
-              <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2">
+              {/* Center Search Bar */}
+              <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2 flex-1">
                 <select
                   value={searchProvider}
                   onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'apple' | 'jiosaavn' | 'soundcloud')}
@@ -213,7 +231,8 @@ export const MainLayout: React.FC = () => {
                 </div>
               </form>
 
-              <div className="flex items-center hidden sm:flex">
+              {/* Right Action Icons (Desktop) */}
+              <div className="flex items-center hidden sm:flex flex-shrink-0 justify-end min-w-[40px]">
                 <button
                   onClick={() => setIsHistoryModalOpen(true)}
                   className="p-2 text-gray-400 hover:text-accent transition-colors flex items-center gap-2 rounded-full hover:bg-secondary/30"
