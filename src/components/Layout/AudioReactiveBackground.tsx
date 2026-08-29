@@ -8,104 +8,113 @@ interface AudioReactiveBackgroundProps {
   defaultBg: string;
 }
 
-// ── Vertex Shader with Audio-Reactive Mesh Displacement ──────────────────────
+// ── Vertex Shader with Common Varyings & Audio Reactivity ────────────────────
 const vertexShader = `
+  #define GLSLIFY 1
+
   uniform float u_time;
   uniform float u_bass;
   uniform float u_mid;
-  uniform vec2 u_mouse;
 
-  varying vec3 vNormal;
-  varying vec3 vPosition;
-  varying vec2 vUv;
-  varying float vDisplacement;
-
-  // Simple pseudo 3D noise for organic surface waves
-  float hash(vec3 p) {
-    p = fract(p * 0.3183099 + 0.1);
-    p *= 17.0;
-    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-  }
-
-  float noise(vec3 x) {
-    vec3 p = floor(x);
-    vec3 f = fract(x);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(
-      mix(mix(hash(p + vec3(0,0,0)), hash(p + vec3(1,0,0)), f.x),
-          mix(hash(p + vec3(0,1,0)), hash(p + vec3(1,1,0)), f.x), f.y),
-      mix(mix(hash(p + vec3(0,0,1)), hash(p + vec3(1,0,1)), f.x),
-          mix(hash(p + vec3(0,1,1)), hash(p + vec3(1,1,1)), f.x), f.y), f.z
-    );
-  }
+  varying vec3 v_position;
+  varying vec3 v_normal;
 
   void main() {
-    vUv = uv;
-    vNormal = normalize(normalMatrix * normal);
+    v_position = position;
+    v_normal = normalize(normalMatrix * normal);
 
-    // Audio-reactive displacement on vertices
-    float wave = sin(position.x * 0.4 + u_time * 1.5) * cos(position.y * 0.4 + u_time * 1.2);
-    float n = noise(position * 0.25 + vec3(u_time * 0.3));
-    
-    float displacement = (wave * 0.6 + n * 1.2) * (0.3 + u_bass * 1.8) + (u_mid * 0.4);
-    vDisplacement = displacement;
+    // Audio-reactive wave pulsation along normals
+    float wave = sin(position.x * 0.35 + u_time * 1.6) * cos(position.y * 0.35 + u_time * 1.4);
+    float displacement = wave * (u_bass * 1.6 + u_mid * 0.4);
+    vec3 newPos = position + normal * displacement;
 
-    vec3 newPosition = position + normal * displacement;
-    vPosition = (modelViewMatrix * vec4(newPosition, 1.0)).xyz;
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
   }
 `;
 
-// ── Fragment Shader with Iridescent Audio Energy and Ambient Rim Glow ────────
+// ── Fragment Shader with Halftone Dots Reacting to Music & Mouse ─────────────
 const fragmentShader = `
+  #define GLSLIFY 1
+
+  uniform vec2 u_resolution;
+  uniform vec2 u_mouse;
   uniform float u_time;
+  uniform float u_frame;
   uniform float u_bass;
   uniform float u_mid;
   uniform float u_high;
   uniform vec3 u_color;
-  uniform vec2 u_resolution;
-  uniform vec2 u_mouse;
 
-  varying vec3 vNormal;
-  varying vec3 vPosition;
-  varying vec2 vUv;
-  varying float vDisplacement;
+  varying vec3 v_position;
+  varying vec3 v_normal;
+
+  /*
+   * Returns a value between 1 and 0 that indicates if the pixel is inside the circle
+   */
+  float circle(vec2 pixel, vec2 center, float radius) {
+    return 1.0 - smoothstep(radius - 1.0, radius + 1.0, length(pixel - center));
+  }
+
+  /*
+   * Returns a rotation matrix for the given angle
+   */
+  mat2 rotate(float angle) {
+    return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+  }
+
+  /*
+   * Calculates the diffuse factor produced by the light illumination
+   */
+  float diffuseFactor(vec3 normal, vec3 light_direction) {
+    float df = dot(normalize(normal), normalize(light_direction));
+
+    if (gl_FrontFacing) {
+      df = -df;
+    }
+
+    return max(0.0, df);
+  }
 
   void main() {
-    vec3 viewDir = normalize(-vPosition);
-    vec3 normal = normalize(vNormal);
+    // Use the mouse position to define the light direction
+    float min_resolution = min(u_resolution.x, u_resolution.y);
+    vec3 light_direction = -vec3((u_mouse - 0.5 * u_resolution) / min_resolution, 0.5);
 
-    // Fresnel glow on edges
-    float fresnel = pow(1.0 - max(dot(viewDir, normal), 0.0), 2.5);
+    // Calculate the light diffusion factor
+    float df = diffuseFactor(v_normal, light_direction);
 
-    // Color palette based on track dominant color and audio frequencies
-    vec3 baseColor = u_color;
-    vec3 accentColor = vec3(0.12, 0.45, 0.95); // Deep cyan/blue
-    vec3 energyColor = vec3(0.95, 0.25, 0.65); // Neon magenta
+    // Move the pixel coordinates origin to the center of the screen
+    vec2 pos = gl_FragCoord.xy - 0.5 * u_resolution;
 
-    // Dynamic blend across UV and displacement
-    float colorMix = sin(vUv.x * 6.28 + u_time * 0.5 + vDisplacement) * 0.5 + 0.5;
-    vec3 surfaceColor = mix(baseColor * 0.6, accentColor, colorMix);
-    surfaceColor = mix(surfaceColor, energyColor, u_bass * 0.6 + u_high * 0.3);
+    // Rotate the coordinates 20 degrees
+    pos = rotate(radians(20.0)) * pos;
 
-    // Rim lighting & specular highlights
-    vec3 lightDir = normalize(vec3(sin(u_time * 0.4), cos(u_time * 0.3), 1.0));
-    float diff = max(dot(normal, lightDir), 0.0);
-    float spec = pow(max(dot(reflect(-lightDir, normal), viewDir), 0.0), 16.0);
+    // Define the grid (dynamically scales with music bass)
+    float grid_step = 12.0 + u_bass * 5.0;
+    vec2 grid_pos = mod(pos, grid_step);
 
-    vec3 finalColor = surfaceColor * (diff * 0.7 + 0.2) + (fresnel * surfaceColor * 1.5) + (spec * 0.4);
+    // Calculate the dot radius dynamically reacting to audio frequencies
+    float dot_radius = 0.8 * grid_step * pow(1.0 - df, 2.0) * (0.8 + u_bass * 0.8);
+    float dot_val = circle(grid_pos, vec2(grid_step / 2.0), dot_radius);
 
-    // Soft opacity for ambient background blending (0.20 - 0.45)
-    float alpha = (0.18 + fresnel * 0.45 + u_bass * 0.25);
+    // Dynamic dot color blended with track dominant color and audio brightness
+    vec3 dot_color = mix(u_color, vec3(1.0), 0.25 + u_high * 0.5);
+    
+    // Transparent background, glowing halftone dots
+    float alpha = dot_val * (0.35 + u_bass * 0.45);
 
-    gl_FragColor = vec4(finalColor, clamp(alpha, 0.0, 0.65));
+    gl_FragColor = vec4(dot_color, clamp(alpha, 0.0, 0.85));
   }
 `;
 
 export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = ({ dominantColor }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isPlaying = usePlayerStore(state => state.isPlaying);
+  const dominantColorRef = useRef(dominantColor);
+
+  useEffect(() => {
+    dominantColorRef.current = dominantColor;
+  }, [dominantColor]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -115,16 +124,15 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     let isVisible = true;
     const clock = new THREE.Clock();
 
-    // Parse hex or fallback to violet/indigo
     const parseColor = (hex: string | null): THREE.Vector3 => {
       const color = new THREE.Color(hex || '#6366f1');
       return new THREE.Vector3(color.r, color.g, color.b);
     };
 
-    // 1. Scene & Camera
+    // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 24;
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+    camera.position.z = 26;
 
     // 2. WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -133,7 +141,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       powerPreference: 'low-power',
       stencil: false,
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
@@ -146,26 +154,24 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       u_mid: { value: 0.0 },
       u_high: { value: 0.0 },
       u_color: { value: parseColor(dominantColor) },
-      u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-      u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
+      u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
+      u_mouse: { value: new THREE.Vector2(0.7 * window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
     };
 
-    // 4. Shader Material & 3D Geometry
+    // 4. Shader Material & 3D Torus Knot Geometry
     const material = new THREE.ShaderMaterial({
+      uniforms,
       vertexShader,
       fragmentShader,
-      uniforms,
-      transparent: true,
       side: THREE.DoubleSide,
-      depthWrite: false,
+      transparent: true,
     });
 
-    // 3D Torus Knot Geometry
-    const geometry = new THREE.TorusKnotGeometry(7.5, 2.4, 180, 28);
+    const geometry = new THREE.TorusKnotGeometry(6.5, 2.3, 256, 32);
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    // 5. Audio Reactive Animation Loop
+    // 5. Audio Reactive Loop
     let smoothedBass = 0;
     let smoothedMid = 0;
     let smoothedHigh = 0;
@@ -178,8 +184,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       animationFrameId = requestAnimationFrame(animate);
 
       if (!isVisible) return;
-      // 40-60 FPS throttle for background
-      if (time - lastTime < 18) return;
+      if (time - lastTime < 16) return; // ~60fps
       lastTime = time;
 
       const elapsed = clock.getElapsedTime();
@@ -191,7 +196,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         const dataArray = new Uint8Array(bufferLength);
         analyser.getByteFrequencyData(dataArray);
 
-        // Low Bass (bins 0-3)
+        // Bass range (bins 0-3)
         const rawBass = (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / (4 * 255);
         // Mid range (bins 4-15)
         let midSum = 0;
@@ -202,9 +207,9 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         for (let i = 16; i < 40; i++) highSum += dataArray[i] || 0;
         const rawHigh = highSum / (24 * 255);
 
-        smoothedBass += (rawBass - smoothedBass) * 0.25;
-        smoothedMid += (rawMid - smoothedMid) * 0.2;
-        smoothedHigh += (rawHigh - smoothedHigh) * 0.2;
+        smoothedBass += (rawBass - smoothedBass) * 0.3;
+        smoothedMid += (rawMid - smoothedMid) * 0.22;
+        smoothedHigh += (rawHigh - smoothedHigh) * 0.22;
       } else {
         smoothedBass += (0 - smoothedBass) * 0.05;
         smoothedMid += (0 - smoothedMid) * 0.05;
@@ -213,19 +218,19 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
 
       // Smooth color transition
       targetColor = parseColor(dominantColorRef.current);
-      currentColor.lerp(targetColor, 0.04);
+      currentColor.lerp(targetColor, 0.05);
       uniforms.u_color.value.copy(currentColor);
 
-      // Update uniforms
+      // Update shader uniforms
       uniforms.u_time.value = elapsed;
       uniforms.u_frame.value += 1.0;
       uniforms.u_bass.value = smoothedBass;
       uniforms.u_mid.value = smoothedMid;
       uniforms.u_high.value = smoothedHigh;
 
-      // Smooth mesh 3D rotation driven by time and music energy
-      mesh.rotation.x = elapsed * 0.15 + smoothedBass * 0.2;
-      mesh.rotation.y = elapsed * 0.22 + smoothedMid * 0.3;
+      // 3D smooth rotation + music reactivity
+      mesh.rotation.x = elapsed * 0.2 + smoothedBass * 0.15;
+      mesh.rotation.y = elapsed * 0.3 + smoothedMid * 0.25;
       mesh.rotation.z = elapsed * 0.08;
 
       renderer.render(scene, camera);
@@ -233,33 +238,42 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
 
     animationFrameId = requestAnimationFrame(animate);
 
-    // 6. Event Listeners (Resize, Mouse, Visibility)
+    // 6. Interactive Event Handlers (Resize, Mouse, Touch, Visibility)
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-      uniforms.u_resolution.value.set(w, h);
+      uniforms.u_resolution.value.set(w, h).multiplyScalar(window.devicePixelRatio);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
-      uniforms.u_mouse.value.set(e.clientX / window.innerWidth, 1.0 - e.clientY / window.innerHeight);
+    const handleMouseMove = (event: MouseEvent) => {
+      uniforms.u_mouse.value.set(event.pageX, window.innerHeight - event.pageY).multiplyScalar(window.devicePixelRatio);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches[0]) {
+        uniforms.u_mouse.value.set(event.touches[0].pageX, window.innerHeight - event.touches[0].pageY).multiplyScalar(window.devicePixelRatio);
+      }
     };
 
     const handleVisibility = () => {
       isVisible = !document.hidden;
     };
 
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('resize', handleResize, false);
+    window.addEventListener('mousemove', handleMouseMove, false);
+    window.addEventListener('touchstart', handleTouchMove, false);
+    window.addEventListener('touchmove', handleTouchMove, false);
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Cleanup
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleTouchMove);
+      window.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('visibilitychange', handleVisibility);
 
       geometry.dispose();
@@ -271,15 +285,10 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     };
   }, [isPlaying]);
 
-  const dominantColorRef = useRef(dominantColor);
-  useEffect(() => {
-    dominantColorRef.current = dominantColor;
-  }, [dominantColor]);
-
   return (
     <div 
       ref={containerRef} 
-      className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict transition-opacity duration-1000" 
+      className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict" 
     />
   );
 };
