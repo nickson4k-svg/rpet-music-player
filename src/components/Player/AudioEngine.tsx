@@ -230,11 +230,8 @@ export const AudioEngine: React.FC = () => {
 
       if (isPlaying) {
         inactiveAudio.play().catch(err => {
-          console.error('Playback failed on new track:', err);
-          if (!isGuest) {
-            setTimeout(() => {
-              usePlayerStore.getState().playNext();
-            }, 500);
+          if (err.name !== 'AbortError') {
+            console.warn('Playback interrupted or failed:', err.message);
           }
         });
 
@@ -392,12 +389,8 @@ export const AudioEngine: React.FC = () => {
     };
 
     const handleError = (e: Event) => {
-      console.error('Audio element error:', (e.target as HTMLAudioElement)?.error);
-      if (!isGuest) {
-        setTimeout(() => {
-          usePlayerStore.getState().playNext();
-        }, 1000);
-      }
+      const err = (e.target as HTMLAudioElement)?.error;
+      console.warn('Audio element playback notice:', err?.code, err?.message);
     };
 
     audioARef.current?.addEventListener('ended', handleEnded);

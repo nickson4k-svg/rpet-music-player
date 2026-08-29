@@ -1,36 +1,14 @@
-// Active verified fallback Client IDs for SoundCloud API v2
-const SOUNDCLOUD_CLIENT_IDS = [
-  'Pb72ranhoyt6gw7hM7TkzUItXlMWSNSo',
-  'b4d9a74421b10315263a8549bf261462',
-  'fDoItMDbsbZl8YYJnndkgDhWm0LjmmPB',
-  'N2eHz8D7GtLKl6EzrW3w6Gg21pYvV8d1',
-];
+// Verified active Client ID for SoundCloud API v2
+const SOUNDCLOUD_CLIENT_ID = 'Pb72ranhoyt6gw7hM7TkzUItXlMWSNSo';
 
-let cachedClientId: string | null = null;
-let currentFallbackIndex = 0;
+let cachedClientId: string = SOUNDCLOUD_CLIENT_ID;
 
 export async function getSCClientId(): Promise<string> {
-  if (cachedClientId) return cachedClientId;
-
-  try {
-    const res = await fetch('/api/soundcloud-client-id');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.clientId) {
-        cachedClientId = data.clientId;
-        return data.clientId as string;
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to fetch SC client ID from API, using fallback pool:', err);
-  }
-
-  return SOUNDCLOUD_CLIENT_IDS[currentFallbackIndex % SOUNDCLOUD_CLIENT_IDS.length];
+  return cachedClientId;
 }
 
 export function rotateSCClientId(): void {
-  cachedClientId = null;
-  currentFallbackIndex = (currentFallbackIndex + 1) % SOUNDCLOUD_CLIENT_IDS.length;
+  cachedClientId = SOUNDCLOUD_CLIENT_ID;
 }
 
 export interface SCTrack {
@@ -51,21 +29,10 @@ export interface SCTrack {
 }
 
 export async function searchSoundCloud(query: string, limit = 20): Promise<SCTrack[]> {
-  const trySearch = async (clientId: string) => {
+  try {
+    const clientId = await getSCClientId();
     const fetchLimit = Math.max(limit * 3, 100);
     const res = await fetch(`/api/soundcloud/search/tracks?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${fetchLimit}`);
-    return res;
-  };
-
-  try {
-    let clientId = await getSCClientId();
-    let res = await trySearch(clientId);
-
-    if (res.status === 401 || res.status === 403) {
-      rotateSCClientId();
-      clientId = await getSCClientId();
-      res = await trySearch(clientId);
-    }
 
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 
@@ -99,14 +66,8 @@ export async function searchSoundCloud(query: string, limit = 20): Promise<SCTra
 export async function getSearchSuggestions(query: string, limit = 5): Promise<string[]> {
   try {
     if (!query.trim()) return [];
-    let clientId = await getSCClientId();
-    let res = await fetch(`/api/soundcloud/search/queries?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
-
-    if (res.status === 401 || res.status === 403) {
-      rotateSCClientId();
-      clientId = await getSCClientId();
-      res = await fetch(`/api/soundcloud/search/queries?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
-    }
+    const clientId = await getSCClientId();
+    const res = await fetch(`/api/soundcloud/search/queries?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=${limit}`);
 
     if (!res.ok) return [];
 
@@ -120,14 +81,8 @@ export async function getSearchSuggestions(query: string, limit = 5): Promise<st
 
 export async function searchSoundCloudPlaylists(query: string, limit = 20): Promise<SCTrack[]> {
   try {
-    let clientId = await getSCClientId();
-    let res = await fetch(`/api/soundcloud/search/playlists?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=10`);
-
-    if (res.status === 401 || res.status === 403) {
-      rotateSCClientId();
-      clientId = await getSCClientId();
-      res = await fetch(`/api/soundcloud/search/playlists?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=10`);
-    }
+    const clientId = await getSCClientId();
+    const res = await fetch(`/api/soundcloud/search/playlists?q=${encodeURIComponent(query)}&client_id=${clientId}&limit=10`);
 
     if (!res.ok) throw new Error(`Playlist search failed: ${res.status}`);
 
@@ -166,7 +121,8 @@ export async function searchSoundCloudPlaylists(query: string, limit = 20): Prom
 }
 
 export async function getSCStreamUrl(trackIdOrUrl: string): Promise<string | null> {
-  const tryGetStream = async (clientId: string) => {
+  try {
+    const clientId = await getSCClientId();
     let transcodingUrl = trackIdOrUrl;
 
     const fetchTranscodingByTrackId = async (id: string) => {
@@ -201,20 +157,7 @@ export async function getSCStreamUrl(trackIdOrUrl: string): Promise<string | nul
     if (!streamInfoRes.ok) return null;
 
     const streamInfo = await streamInfoRes.json();
-    return streamInfo.url;
-  };
-
-  try {
-    let clientId = await getSCClientId();
-    let url = await tryGetStream(clientId);
-
-    if (!url) {
-      rotateSCClientId();
-      clientId = await getSCClientId();
-      url = await tryGetStream(clientId);
-    }
-
-    return url;
+    return streamInfo.url || null;
   } catch (error) {
     console.error('Failed to get SC stream URL:', error);
     return null;

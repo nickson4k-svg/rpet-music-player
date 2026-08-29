@@ -46,7 +46,7 @@ export const MainLayout: React.FC = () => {
     return () => window.removeEventListener('open-auth-modal', handleOpenAuth);
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchProvider, setSearchProvider] = useState<'audius' | 'apple' | 'jiosaavn' | 'soundcloud'>('soundcloud');
+  const [searchProvider, setSearchProvider] = useState<'audius' | 'jiosaavn' | 'soundcloud'>('soundcloud');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -61,22 +61,30 @@ export const MainLayout: React.FC = () => {
       return;
     }
 
-    const timer = setTimeout(async () => {
+    let isMounted = true;
+    const fetchSuggestions = async () => {
       const { getSearchSuggestions } = await import('../../lib/soundcloud');
       const results = await getSearchSuggestions(searchQuery);
-      setSuggestions(results);
-    }, 300);
+      if (isMounted) {
+        setSuggestions(results);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    const debounce = setTimeout(fetchSuggestions, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(debounce);
+    };
   }, [searchQuery, searchProvider]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      searchGlobal(searchQuery.trim(), searchProvider);
-      setSearchQuery('');
-      setCurrentPlaylistId(null);
-    }
+    if (!searchQuery.trim()) return;
+    
+    usePlayerStore.getState().setSearchMode(true);
+    usePlayerStore.getState().searchGlobal(searchQuery, searchProvider);
+    setSearchQuery('');
+    setCurrentPlaylistId(null);
   };
 
   useEffect(() => {
@@ -183,13 +191,12 @@ export const MainLayout: React.FC = () => {
               <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2 flex-1">
                 <select
                   value={searchProvider}
-                  onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'apple' | 'jiosaavn' | 'soundcloud')}
+                  onChange={(e) => setSearchProvider(e.target.value as 'audius' | 'jiosaavn' | 'soundcloud')}
                   className="bg-secondary/30 text-white text-sm rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm cursor-pointer appearance-none"
                 >
                   <option value="soundcloud">SoundCloud</option>
                   <option value="jiosaavn">JioSaavn</option>
                   <option value="audius">Audius</option>
-                  <option value="apple">Apple Music</option>
                 </select>
                 <div className="relative flex-1">
                   <input
@@ -201,7 +208,7 @@ export const MainLayout: React.FC = () => {
                     }}
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder={searchProvider === 'soundcloud' ? "Шукати в SoundCloud..." : searchProvider === 'audius' ? "Шукати в Audius..." : searchProvider === 'jiosaavn' ? "Шукати в JioSaavn..." : "Шукати в Apple Music..."}
+                    placeholder={searchProvider === 'soundcloud' ? "Шукати в SoundCloud..." : searchProvider === 'audius' ? "Шукати в Audius..." : "Шукати в JioSaavn..."}
                     className="w-full bg-secondary/30 text-white text-sm rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-primary border border-secondary/50 transition-colors backdrop-blur-sm"
                   />
                   <button

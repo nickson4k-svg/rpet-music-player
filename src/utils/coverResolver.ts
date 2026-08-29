@@ -1,7 +1,7 @@
 const coverCache = new Map<string, string>();
 const pendingRequests = new Map<string, Promise<string | null>>();
 
-// Request throttling queue to prevent 429 Too Many Requests
+// Request throttling queue
 interface QueueItem {
   fn: () => Promise<string | null>;
   resolve: (val: string | null) => void;
@@ -10,8 +10,8 @@ interface QueueItem {
 
 const queue: QueueItem[] = [];
 let activeCount = 0;
-const MAX_CONCURRENT = 2;
-const DELAY_BETWEEN_REQUESTS = 180; // ms
+const MAX_CONCURRENT = 3;
+const DELAY_BETWEEN_REQUESTS = 100; // ms
 
 function processQueue() {
   if (activeCount >= MAX_CONCURRENT || queue.length === 0) return;
@@ -54,11 +54,10 @@ function sanitizeTitle(title: string): string {
 }
 
 /**
- * Resolves the official HD cover artwork for a track:
+ * Resolves high-definition artwork for a track from SoundCloud:
  * 1. Checks memory & localStorage cache.
  * 2. Deduplicates concurrent requests for the same track.
- * 3. Enqueues throttled fetch to prevent 429 rate limits.
- * 4. Tries iTunes API -> SoundCloud API.
+ * 3. Enqueues throttled fetch to prevent rate limits.
  */
 export async function resolveTrackCover(title: string, artist?: string): Promise<string | null> {
   const cleanTitle = sanitizeTitle(title);
@@ -89,26 +88,7 @@ export async function resolveTrackCover(title: string, artist?: string): Promise
   const query = [cleanArtist, cleanTitle].filter(Boolean).join(' ');
 
   const fetchPromise = enqueue(async () => {
-    // A. Try iTunes API (Studio HD 600x600)
-    try {
-      const res = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=1`,
-        { signal: AbortSignal.timeout(3000) }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results && data.results.length > 0 && data.results[0].artworkUrl100) {
-          const hdCover = data.results[0].artworkUrl100.replace('100x100bb', '600x600bb');
-          coverCache.set(cacheKey, hdCover);
-          try {
-            localStorage.setItem(`rpet_cover_${cacheKey}`, hdCover);
-          } catch {}
-          return hdCover;
-        }
-      }
-    } catch {}
-
-    // B. Try SoundCloud API (High-res 500x500 for remixes, indie, underground)
+    // Resolve from SoundCloud API (High-res 500x500 artwork)
     try {
       const { searchSoundCloud } = await import('../lib/soundcloud');
       const scResults = await searchSoundCloud(query, 3);

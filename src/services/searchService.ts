@@ -1,6 +1,5 @@
 import { searchAudiusTracks } from '../utils/audiusApi';
 import { searchJioSaavnTracks } from '../utils/jioSaavnApi';
-import { searchItunesTracks } from '../utils/itunesApi';
 import { searchSoundCloudPlaylists, searchSoundCloud } from '../lib/soundcloud';
 import type { Track } from '../types';
 
@@ -17,7 +16,7 @@ const moodMap: Record<string, string> = {
   "Концентрація": "study ambient"
 };
 
-export const fetchMoodTracks = async (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud'): Promise<Track[]> => {
+export const fetchMoodTracks = async (mood: string, provider: 'audius' | 'jiosaavn' | 'soundcloud'): Promise<Track[]> => {
   const query = moodMap[mood] || mood;
   let tracks: Track[] = [];
 
@@ -25,8 +24,6 @@ export const fetchMoodTracks = async (mood: string, provider: 'audius' | 'apple'
     tracks = await searchAudiusTracks(query);
   } else if (provider === 'jiosaavn') {
     tracks = await searchJioSaavnTracks(query);
-  } else if (provider === 'apple') {
-    tracks = await searchItunesTracks(query);
   } else if (provider === 'soundcloud') {
     let scTracks = await searchSoundCloudPlaylists(query, 30);
     if (!scTracks || scTracks.length === 0) {

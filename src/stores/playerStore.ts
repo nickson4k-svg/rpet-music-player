@@ -75,13 +75,13 @@ interface PlayerState {
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   reorderPlaylistTracks: (playlistId: string, startIndex: number, endIndex: number) => void;
   loadJamendoTracks: () => Promise<void>;
-  searchGlobal: (query: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => Promise<void>;
+  searchGlobal: (query: string, provider: 'audius' | 'jiosaavn' | 'soundcloud') => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   toggleCrossfade: () => void;
   toggleNormalization: () => void;
   autoTagTrack: (id: string) => Promise<boolean>;
   generateRecommendations: () => Promise<void>;
-  openMood: (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => Promise<void>;
+  openMood: (mood: string, provider: 'audius' | 'jiosaavn' | 'soundcloud') => Promise<void>;
   getTrackById: (id: string | null) => Track | undefined;
 }
 
@@ -564,13 +564,13 @@ export const usePlayerStore = create<PlayerState>()(
     }
   },
 
-  searchGlobal: async (query: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
+  searchGlobal: async (query: string, provider: 'audius' | 'jiosaavn' | 'soundcloud') => {
     set({ isSearchLoading: true });
     try {
       let tracks: Track[] = [];
       const { fetchMoodTracks } = await import('../services/searchService');
       // For general search, we map the provider to fetchMoodTracks which just searches if moodMap misses
-      tracks = await fetchMoodTracks(query, provider as 'audius'|'apple'|'jiosaavn'|'soundcloud');
+      tracks = await fetchMoodTracks(query, provider as 'audius'|'jiosaavn'|'soundcloud');
 
       if (tracks.length > 0) {
         set({ searchResults: tracks, isSearchMode: true });
@@ -718,7 +718,7 @@ export const usePlayerStore = create<PlayerState>()(
     }
   },
 
-  openMood: async (mood: string, provider: 'audius' | 'apple' | 'jiosaavn' | 'soundcloud') => {
+  openMood: async (mood: string, provider: 'audius' | 'jiosaavn' | 'soundcloud') => {
     set({ isSearchLoading: true, currentMood: mood, currentPlaylistId: 'mood' });
     try {
       const cacheKey = `rpet-mood-v3-${provider}-${mood}`;
