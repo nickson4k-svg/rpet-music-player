@@ -22,7 +22,7 @@ const LazyHistoryModal = React.lazy(() => import('../HistoryModal').then(module 
 
 export const MainLayout: React.FC = () => {
   useMediaSession();
-  
+
   const setTracks = usePlayerStore(state => state.setTracks);
   const setPlaylists = usePlayerStore(state => state.setPlaylists);
   const searchGlobal = usePlayerStore(state => state.searchGlobal);
@@ -52,7 +52,7 @@ export const MainLayout: React.FC = () => {
       setSuggestions([]);
       return;
     }
-    
+
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setSuggestions([]);
       return;
@@ -98,9 +98,9 @@ export const MainLayout: React.FC = () => {
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   const currentMood = usePlayerStore(state => state.currentMood);
 
-  
+
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (currentTrack?.coverUrl) {
       setCoverUrl(currentTrack.coverUrl);
@@ -129,19 +129,19 @@ export const MainLayout: React.FC = () => {
   return (
     <div className="h-[100dvh] bg-transparent flex flex-col overflow-hidden relative z-0">
       <ThemeManager />
-      
+
       {/* Animated Mesh Gradient Background (Ambient Canvas) */}
       <AudioReactiveBackground dominantColor={dominantColor} defaultBg={defaultBg} />
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm" 
-            onClick={() => setIsSidebarOpen(false)} 
+          <div
+            className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+            onClick={() => setIsSidebarOpen(false)}
           />
         )}
-        
+
         {/* Sidebar container */}
         <div className={`absolute md:relative z-50 h-full transform transition-transform duration-300 md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar onClose={() => setIsSidebarOpen(false)} />
@@ -153,13 +153,13 @@ export const MainLayout: React.FC = () => {
               {/* Left Logo Section - Pinned to the Left */}
               <div className="flex items-center gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
                 <div className="flex items-center gap-3">
-                  <button 
+                  <button
                     onClick={() => setIsSidebarOpen(true)}
                     className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors flex-shrink-0 md:hidden"
                   >
                     <Menu className="w-6 h-6" />
                   </button>
-                  <h1 
+                  <h1
                     onClick={() => setCurrentPlaylistId(null)}
                     className="text-xl sm:text-2xl font-bold text-white tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.6)] cursor-pointer select-none hover:opacity-90 transition-opacity"
                   >
@@ -176,7 +176,7 @@ export const MainLayout: React.FC = () => {
                   <History className="w-5 h-5" />
                 </button>
               </div>
-              
+
               {/* Center Search Bar */}
               <form onSubmit={handleSearch} className="relative w-full max-w-md mx-auto flex items-center gap-2 flex-1">
                 <select
@@ -242,7 +242,7 @@ export const MainLayout: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Genres & Quick Picks Row */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -255,11 +255,10 @@ export const MainLayout: React.FC = () => {
                         setSearchQuery('');
                         usePlayerStore.getState().openMood(category, searchProvider);
                       }}
-                      className={`whitespace-nowrap px-5 py-2 border rounded-full text-sm font-bold transition-all duration-300 ${
-                        isActive 
-                          ? 'bg-accent/20 text-accent border-accent shadow-[0_0_15px_rgba(250,204,21,0.3)]' 
+                      className={`whitespace-nowrap px-5 py-2 border rounded-full text-sm font-bold transition-all duration-300 ${isActive
+                          ? 'bg-accent/20 text-accent border-accent shadow-[0_0_15px_rgba(250,204,21,0.3)]'
                           : 'bg-bg-tertiary text-foreground-muted hover:text-accent border-transparent hover:bg-accent/10 hover:border-accent/30'
-                      }`}
+                        }`}
                       style={{ borderColor: !isActive && dominantColor ? `${dominantColor}40` : undefined }}
                     >
                       {category}
@@ -267,7 +266,7 @@ export const MainLayout: React.FC = () => {
                   );
                 })}
               </div>
-              
+
               <div className="flex items-center bg-secondary/30 rounded-full p-1 border border-secondary/50 shrink-0">
                 <button
                   onClick={() => setViewMode('list')}
@@ -285,13 +284,13 @@ export const MainLayout: React.FC = () => {
             </div>
 
             <div className="flex-1 min-h-0">
-               {isSearchMode ? (
-                 <SearchResults />
-               ) : (!searchQuery && !currentPlaylistId) ? (
-                 <HomeDashboard />
-               ) : (
-                 <TrackList />
-               )}
+              {isSearchMode ? (
+                <SearchResults />
+              ) : (!searchQuery && !currentPlaylistId) ? (
+                <HomeDashboard />
+              ) : (
+                <TrackList />
+              )}
             </div>
           </div>
         </main>
@@ -302,8 +301,8 @@ export const MainLayout: React.FC = () => {
       {isHistoryModalOpen && (
         <React.Suspense fallback={null}>
           <LazyHistoryModal
-            isOpen={isHistoryModalOpen} 
-            onClose={() => setIsHistoryModalOpen(false)} 
+            isOpen={isHistoryModalOpen}
+            onClose={() => setIsHistoryModalOpen(false)}
           />
         </React.Suspense>
       )}

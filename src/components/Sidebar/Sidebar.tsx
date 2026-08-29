@@ -49,47 +49,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   return (
     <aside className="w-64 border-r border-border bg-bg-secondary/80 md:bg-bg-secondary/60 backdrop-blur-xl flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
-      <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <div className="flex w-full justify-between items-center">
-          <h2 className="text-2xl font-bold flex items-center gap-2 tracking-tight text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">
-
-            50 Faces
-          </h2>
+      <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-1 w-full justify-between">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsPartyModeOpen(true)}
+              className="p-2 text-purple-400 hover:text-purple-300 hover:bg-white/5 rounded-full transition-all"
+              title="Спільне прослуховування"
+            >
+              <Radio className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleInstall}
+              className="p-2 text-green-400 hover:text-green-300 hover:bg-white/5 rounded-full transition-all"
+              title="Встановити додаток (Офлайн доступ)"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsStatsOpen(true)}
+              className="p-2 text-blue-400 hover:text-blue-300 hover:bg-white/5 rounded-full transition-all"
+              title="Статистика"
+            >
+              <BarChart2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
+              title="Налаштування"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
           {onClose && (
             <button onClick={onClose} className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
               <X className="w-6 h-6" />
             </button>
           )}
-        </div>
-        <div className="flex items-center gap-0.5 w-full justify-around sm:justify-end">
-          <button
-            onClick={() => setIsPartyModeOpen(true)}
-            className="p-2 text-purple-400 hover:text-purple-300 hover:bg-white/5 rounded-full transition-all"
-            title="Спільне прослуховування"
-          >
-            <Radio className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleInstall}
-            className="p-2 text-green-400 hover:text-green-300 hover:bg-white/5 rounded-full transition-all"
-            title="Встановити додаток (Офлайн доступ)"
-          >
-            <Download className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsStatsOpen(true)}
-            className="p-2 text-blue-400 hover:text-blue-300 hover:bg-white/5 rounded-full transition-all"
-            title="Статистика"
-          >
-            <BarChart2 className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all"
-            title="Налаштування"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
