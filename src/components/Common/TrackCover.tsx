@@ -114,6 +114,7 @@ export const TrackCover: React.FC<TrackCoverProps> = ({ track, className = '', s
       alt=""
       className={`w-full h-full object-cover ${className}`}
       loading="lazy"
+      decoding="async"
       onError={handleError}
     />
   );
