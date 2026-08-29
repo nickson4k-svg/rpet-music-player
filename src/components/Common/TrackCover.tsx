@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Music2 } from 'lucide-react';
+import { resolveTrackCover } from '../../utils/coverResolver';
 
 interface TrackCoverProps {
   track: { name: string; artist?: string; coverUrl?: string; coverBlob?: Blob | null };
@@ -10,6 +11,7 @@ interface TrackCoverProps {
 export const TrackCover: React.FC<TrackCoverProps> = ({ track, className = '', size = 'md' }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
 
   useEffect(() => {
     setHasError(false);
@@ -20,12 +22,45 @@ export const TrackCover: React.FC<TrackCoverProps> = ({ track, className = '', s
       const url = URL.createObjectURL(track.coverBlob);
       setImgUrl(url);
       return () => URL.revokeObjectURL(url);
+    } else if (track.name) {
+      // Auto-resolve real cover art from metadata service
+      let cancelled = false;
+      setIsResolving(true);
+      resolveTrackCover(track.name, track.artist).then(resolved => {
+        if (!cancelled && resolved) {
+          setImgUrl(resolved);
+        }
+        if (!cancelled) {
+          setIsResolving(false);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
     } else {
       setImgUrl(null);
     }
-  }, [track.coverUrl, track.coverBlob]);
+  }, [track.coverUrl, track.coverBlob, track.name, track.artist]);
 
-  // Generate a stable color gradient based on track name
+  const handleError = () => {
+    // If the provided cover URL failed, try auto-resolving from iTunes/web as fallback
+    if (!isResolving && track.name) {
+      setIsResolving(true);
+      resolveTrackCover(track.name, track.artist).then(fallbackUrl => {
+        setIsResolving(false);
+        if (fallbackUrl && fallbackUrl !== imgUrl) {
+          setImgUrl(fallbackUrl);
+          setHasError(false);
+        } else {
+          setHasError(true);
+        }
+      });
+    } else {
+      setHasError(true);
+    }
+  };
+
+  // Generate a stable color gradient based on track name (only as last resort)
   const getGradient = (str: string) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -79,7 +114,7 @@ export const TrackCover: React.FC<TrackCoverProps> = ({ track, className = '', s
       alt=""
       className={`w-full h-full object-cover ${className}`}
       loading="lazy"
-      onError={() => setHasError(true)}
+      onError={handleError}
     />
   );
 };

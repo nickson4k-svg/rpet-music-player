@@ -1,4 +1,5 @@
 import type { Track } from '../types';
+import { resolveTrackCover } from './coverResolver';
 
 export const processAudioFile = async (file: File): Promise<Track> => {
   const mm = await import('music-metadata');
@@ -12,14 +13,27 @@ export const processAudioFile = async (file: File): Promise<Track> => {
     coverBlob = new Blob([picture.data as unknown as BlobPart], { type: picture.format });
   }
 
+  const name = metadata.common.title || file.name.replace(/\.[^/.]+$/, "");
+  const artist = metadata.common.artist || 'Unknown Artist';
+
+  // If local audio file doesn't have an embedded artwork, fetch official HD cover in the background
+  let coverUrl: string | undefined = undefined;
+  if (!coverBlob) {
+    const fetchedCover = await resolveTrackCover(name, artist);
+    if (fetchedCover) {
+      coverUrl = fetchedCover;
+    }
+  }
+
   return {
     id: crypto.randomUUID(),
-    name: metadata.common.title || file.name.replace(/\.[^/.]+$/, ""),
-    artist: metadata.common.artist || 'Unknown Artist',
+    name,
+    artist,
     album: metadata.common.album || 'Unknown Album',
     genre: metadata.common.genre ? metadata.common.genre.join(', ') : 'Unknown',
     duration: metadata.format.duration || 0,
     coverBlob,
+    coverUrl,
     audioBlob: file,
     hash,
     addedAt: Date.now(),

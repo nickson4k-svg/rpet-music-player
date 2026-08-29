@@ -117,7 +117,7 @@ export const getAllTracks = async () => {
       if (track.coverUrl) {
         let needsFix = false;
         
-        // 1. Clear the broken non-existent /artwork endpoint URLs
+        // 1. Clear the broken non-existent /artwork endpoint URLs and resolve real cover
         if (track.coverUrl.includes('/artwork?app_name=')) {
           track.coverUrl = '';
           needsFix = true;
@@ -137,6 +137,18 @@ export const getAllTracks = async () => {
         if (needsFix) {
           await db.put('tracks', track);
         }
+      }
+
+      // 3. If track has no cover at all (no blob and no url), trigger background resolution
+      if (!track.coverUrl && !track.coverBlob && track.name) {
+        import('./coverResolver').then(({ resolveTrackCover }) => {
+          resolveTrackCover(track.name, track.artist).then((resolvedCover) => {
+            if (resolvedCover) {
+              track.coverUrl = resolvedCover;
+              db.put('tracks', track).catch(() => {});
+            }
+          });
+        });
       }
 
       fixedTracks.push(track);
