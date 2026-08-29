@@ -17,6 +17,7 @@ import { HomeDashboard } from '../HomeDashboard';
 const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
 
 import { FullScreenPlayer } from '../Player/FullScreenPlayer';
+import { FacesShaderLogo } from '../Common/FacesShaderLogo';
 
 const LazyHistoryModal = React.lazy(() => import('../HistoryModal').then(module => ({ default: module.HistoryModal })));
 
@@ -150,21 +151,27 @@ export const MainLayout: React.FC = () => {
         <main className="flex-1 p-3 sm:p-6 pb-32 sm:pb-40 overflow-hidden flex flex-col w-full">
           <div className="max-w-[1600px] mx-auto w-full flex flex-col h-full space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between gap-3 mb-2 flex-col sm:flex-row w-full">
-              {/* Left Logo Section - Pinned to the Left */}
+              {/* Left Logo Section - Pinned to the Left with 3D Shader Logo */}
               <div className="flex items-center gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => setIsSidebarOpen(true)}
                     className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors flex-shrink-0 md:hidden"
                   >
                     <Menu className="w-6 h-6" />
                   </button>
-                  <h1
+                  <div
                     onClick={() => setCurrentPlaylistId(null)}
-                    className="text-xl sm:text-2xl font-bold text-white tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.6)] cursor-pointer select-none hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2.5 cursor-pointer group select-none"
+                    title="50 Faces Home"
                   >
-                    50 Faces
-                  </h1>
+                    <FacesShaderLogo size={34} />
+                    <h1
+                      className="text-xl sm:text-2xl font-bold text-white tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.6)] group-hover:text-accent transition-colors"
+                    >
+                      50 Faces
+                    </h1>
+                  </div>
                 </div>
 
                 {/* Mobile History icon */}
