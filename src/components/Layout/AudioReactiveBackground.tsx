@@ -5,7 +5,7 @@ import { usePlayerStore } from '../../stores/playerStore';
 
 interface AudioReactiveBackgroundProps {
   dominantColor: string | null;
-  defaultBg: string;
+  defaultBg?: string;
 }
 
 // ── Fullscreen Quad Vertex Shader ────────────────────────────────────────────
@@ -18,7 +18,7 @@ const vertexShader = `
   }
 `;
 
-// ── Direct Multi-Band Audio-Reactive Bubbles/Dots Fragment Shader ────────────
+// ── Audio-Reactive Halftone Equalizer (Adaptive Track Color & Crystal Clear Text)
 const fragmentShader = `
   #define GLSLIFY 1
 
@@ -30,7 +30,7 @@ const fragmentShader = `
   varying vec2 vUv;
 
   /*
-   * Returns smooth circle intensity between 1.0 (center) and 0.0 (edge)
+   * Smooth circle with soft antialiasing
    */
   float circle(vec2 pixel, vec2 center, float radius) {
     if (radius <= 0.05) return 0.0;
@@ -43,7 +43,6 @@ const fragmentShader = `
 
     // Distance and angle from screen center
     float dist = length(st);
-    float angle = atan(st.y, st.x);
 
     // Map distance into 8 concentric frequency zones (SubBass in center -> Highs on edges)
     float band_idx = clamp(dist * 7.5, 0.0, 7.0);
@@ -58,32 +57,29 @@ const fragmentShader = `
       if (i == idx_high) freq_val += u_audio[i] * band_frac;
     }
 
-    // Grid spacing for the dots across the screen
+    // Grid spacing for the equalizer dots across the screen
     float grid_step = 18.0;
     vec2 grid_pos = mod(gl_FragCoord.xy, grid_step);
     vec2 grid_center = vec2(grid_step * 0.5);
 
-    // Base resting dot radius (very small and subtle when quiet)
+    // Subtle resting dot size when quiet
     float base_radius = 1.0;
     
-    // Each bubble directly expands in size proportionally to its local frequency energy
+    // Each bubble dynamically scales in size with the live audio frequency
     float max_bubble_radius = grid_step * 0.44;
     float dynamic_radius = base_radius + freq_val * (max_bubble_radius - base_radius);
 
     // Render the smooth round bubble
     float dot_val = circle(grid_pos, grid_center, dynamic_radius);
 
-    // Color gradient: Center warms with bass, edges sparkle with treble and track dominant color
-    vec3 sub_bass_color = mix(u_color, vec3(1.0, 0.35, 0.65), u_audio[0] * 0.7);
-    vec3 treble_color = mix(u_color, vec3(0.5, 0.85, 1.0), u_audio[6] * 0.6);
-    vec3 dot_color = mix(sub_bass_color, treble_color, clamp(dist * 1.2, 0.0, 1.0));
-    
-    // Extra brightness pulse on peak beats
-    dot_color += vec3(0.3) * (freq_val * freq_val);
+    // Color strictly derived and adapted from track's artwork (dominantColor)
+    vec3 base_color = u_color;
+    vec3 highlight_color = mix(u_color, vec3(1.0), 0.35 + u_audio[6] * 0.35);
+    vec3 dot_color = mix(base_color, highlight_color, freq_val * 0.7);
 
-    // Soft opacity that breathes with the music
-    float alpha = dot_val * (0.15 + freq_val * 0.65);
-    alpha = clamp(alpha, 0.0, 0.85);
+    // Balanced ambient opacity — never overpowers or blocks foreground text
+    float alpha = dot_val * (0.05 + freq_val * 0.28);
+    alpha = clamp(alpha, 0.0, 0.38);
 
     gl_FragColor = vec4(dot_color, alpha);
   }
@@ -126,7 +122,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // 3. Shader Uniforms (8 audio bands)
+    // 3. Shader Uniforms (8 live audio bands + adaptive track color)
     const audioBands = new Float32Array(8);
     const uniforms = {
       u_audio: { value: audioBands },
@@ -154,7 +150,6 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     let currentColor = parseColor(dominantColor);
     let lastTime = 0;
 
-    // Frequency bin boundaries for 8 perceptual audio bands (from 128/256 FFT size)
     const binRanges = [
       [0, 2],    // 0: Sub-bass (20-60 Hz)
       [2, 5],    // 1: Bass (60-150 Hz)
@@ -191,22 +186,22 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
           }
           const rawBandEnergy = count > 0 ? (sum / (count * 255.0)) : 0;
           
-          // Exponential sensitivity boost for crystal clear visual reactivity
+          // Sensitivity curve
           const boosted = Math.pow(rawBandEnergy, 1.4) * 1.35;
           
-          // Ultra-smooth attack / decay filter
+          // Smooth attack / decay filter
           const smoothing = boosted > smoothedBands[b] ? 0.35 : 0.12;
           smoothedBands[b] += (boosted - smoothedBands[b]) * smoothing;
           totalEnergy += smoothedBands[b];
         }
       } else {
-        // Smoothly fade to idle rest state
+        // Fade smoothly to idle
         for (let b = 0; b < 8; b++) {
           smoothedBands[b] += (0 - smoothedBands[b]) * 0.08;
         }
       }
 
-      // Smooth color transition based on current track
+      // Smooth color transition adapting to the track's cover
       targetColor = parseColor(dominantColorRef.current);
       currentColor.lerp(targetColor, 0.04);
       uniforms.u_color.value.copy(currentColor);
@@ -252,9 +247,10 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
   }, [isPlaying]);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict" 
-    />
+    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict">
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+      {/* Contrast Scrim Overlay to ensure 100% text readability */}
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-[0.5px] pointer-events-none" />
+    </div>
   );
 };
