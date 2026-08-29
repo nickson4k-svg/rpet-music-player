@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, Trash2, Heart, Wand2, Loader2 } from 'lucide-react';
 import type { Track } from '../../types';
 import { formatTime } from '../../utils/audioHelpers';
 import { usePlayerStore } from '../../stores/playerStore';
+import { TrackCover } from '../Common/TrackCover';
 
 interface TrackItemProps {
   track: Track;
@@ -29,7 +30,6 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
   dragHandleProps,
   isDragging,
 }) => {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const toggleFavorite = usePlayerStore(state => state.toggleFavorite);
   const autoTagTrack = usePlayerStore(state => state.autoTagTrack);
   const viewMode = usePlayerStore(state => state.viewMode);
@@ -43,18 +43,6 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
     setIsTagging(false);
   };
 
-  useEffect(() => {
-    if (track.coverUrl) {
-      setCoverUrl(track.coverUrl);
-    } else if (track.coverBlob) {
-      const url = URL.createObjectURL(track.coverBlob);
-      setCoverUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setCoverUrl(null);
-    }
-  }, [track.coverBlob, track.coverUrl]);
-
   if (viewMode === 'grid') {
     return (
       <div
@@ -67,22 +55,11 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
         onDoubleClick={() => onPlay(track.id)}
       >
         <div className="relative w-full aspect-square bg-bg-secondary rounded-xl overflow-hidden shadow-md">
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={track.name}
-              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-bg-secondary flex items-center justify-center text-xs text-gray-500 font-medium text-center">
-              No Cover
-            </div>
-          )}
+          <TrackCover
+            track={track}
+            className="transition-transform duration-500 group-hover:scale-105"
+            size="md"
+          />
           
           <button
             className={`absolute right-2 bottom-2 sm:right-3 sm:bottom-3 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.3)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white/30 hover:border-white/40 z-10 ${
@@ -155,22 +132,11 @@ export const TrackItem: React.FC<TrackItemProps> = React.memo(({
       onDoubleClick={() => onPlay(track.id)}
     >
       <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 bg-bg-secondary rounded-lg overflow-hidden shadow-sm">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={track.name}
-            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
-            }}
-          />
-        ) : (
-          <div className="w-full h-full bg-bg-secondary flex items-center justify-center text-[10px] text-gray-500 font-medium text-center">
-            No Cover
-          </div>
-        )}
+        <TrackCover
+          track={track}
+          className="transition-transform duration-500 group-hover:scale-105"
+          size="sm"
+        />
         
         <button
           className={`absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${

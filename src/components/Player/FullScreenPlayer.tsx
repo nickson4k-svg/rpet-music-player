@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { ChevronDown, Play, Disc3, Settings } from 'lucide-react';
+import { ChevronDown, Play, Settings } from 'lucide-react';
+import { TrackCover } from '../Common/TrackCover';
 import { fetchLyrics, type LyricsData } from '../../utils/lyricsApi';
 import { seekAudio } from '../../utils/audioHelpers';
 import { Controls } from './Controls';
@@ -21,39 +22,13 @@ const parseSyncedLyrics = (synced: string) => {
 };
 
 const QueueTrackItem = ({ track, index, isPlaying, onPlay }: { track: any, index: number, isPlaying: boolean, onPlay: () => void }) => {
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (track.coverUrl) {
-      setCoverUrl(track.coverUrl);
-    } else if (track.coverBlob) {
-      const url = URL.createObjectURL(track.coverBlob);
-      setCoverUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setCoverUrl(null);
-    }
-  }, [track]);
-
   return (
     <div 
       className={`flex items-center gap-4 p-2 rounded-lg group transition-colors cursor-pointer ${index === 0 ? 'bg-white/10' : 'hover:bg-white/5'}`}
       onClick={onPlay}
     >
       <div className="relative w-12 h-12 flex-shrink-0 rounded bg-secondary overflow-hidden">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={track.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
-            }}
-          />
-        ) : (
-          <Disc3 className="w-full h-full text-gray-500 p-2" />
-        )}
+        <TrackCover track={track} size="sm" />
         <div className={`absolute inset-0 bg-black/40 flex items-center justify-center ${index === 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           {index === 0 && isPlaying ? (
             <div className="w-4 h-4 flex justify-between items-end">
@@ -189,21 +164,11 @@ export const FullScreenPlayer: React.FC = () => {
         {/* Left Column: Cover Art */}
         <div className="flex-none md:flex-1 flex flex-col justify-center items-center md:h-full min-h-0 shrink-0">
           <div className="w-[280px] h-[280px] sm:w-[350px] sm:h-[350px] md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] relative shadow-2xl rounded-2xl overflow-hidden group shrink-0 mt-4 md:mt-0">
-            {coverUrl ? (
-              <img 
-                src={coverUrl} 
-                alt={currentTrack?.name}
-                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
-                }}
-              />
-            ) : (
-              <div className="w-full h-full bg-secondary flex items-center justify-center">
-                <Disc3 className="w-32 h-32 text-gray-600" />
-              </div>
-            )}
+            <TrackCover
+              track={{ name: currentTrack?.name || '', artist: currentTrack?.artist, coverUrl: coverUrl || undefined, coverBlob: currentTrack?.coverBlob }}
+              className="transition-transform duration-700 ease-out group-hover:scale-105"
+              size="lg"
+            />
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               {/* Optional overlay icons could go here */}
             </div>

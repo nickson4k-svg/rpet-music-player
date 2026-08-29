@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight, Play, Pause, Heart } from 'lucide-react';
 import type { Track } from '../../types';
 import { usePlayerStore } from '../../stores/playerStore';
+import { TrackCover } from '../Common/TrackCover';
 
 interface TrackCarouselProps {
   title: string;
@@ -53,7 +54,6 @@ export const TrackCarousel: React.FC<TrackCarouselProps> = ({ title, tracks, lar
       >
         {tracks.map(track => {
           const isCurrent = track.id === currentTrackId;
-          const coverUrl = track.coverUrl || (track.coverBlob ? URL.createObjectURL(track.coverBlob) : null);
           
           return (
             <div 
@@ -63,12 +63,12 @@ export const TrackCarousel: React.FC<TrackCarouselProps> = ({ title, tracks, lar
               }`}
               onClick={() => playQueue(tracks.map(t => t.id), tracks.findIndex(t => t.id === track.id))}
             >
-              <div className={`relative w-full aspect-square bg-bg-secondary rounded-2xl overflow-hidden shadow-lg border ${isCurrent ? 'border-accent' : 'border-border'}`}>
-                {coverUrl ? (
-                  <img src={coverUrl} alt={track.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">No Cover</div>
-                )}
+              <div className={`relative w-full aspect-square bg-zinc-900 rounded-2xl overflow-hidden shadow-lg border transition-all duration-300 ${isCurrent ? 'border-accent ring-2 ring-accent/30' : 'border-white/10 group-hover:border-white/20'}`}>
+                <TrackCover
+                  track={track}
+                  className="transition-transform duration-500 group-hover:scale-105"
+                  size={largeCards ? 'lg' : 'md'}
+                />
                 
                 <button
                   className={`absolute right-3 bottom-3 w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.3)] opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white/30 hover:border-white/40 z-10 ${
