@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
-import { Plus, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home, Library } from 'lucide-react';
+import { Plus, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home } from 'lucide-react';
 
 const SettingsModal = React.lazy(() => import('../SettingsModal').then(module => ({ default: module.SettingsModal })));
 const StatsModal = React.lazy(() => import('../StatsModal').then(module => ({ default: module.StatsModal })));
@@ -106,22 +106,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           >
             <Home className="w-5 h-5" />
             Головна
-          </button>
-
-          <button
-            onClick={() => { 
-              setCurrentPlaylistId('all'); 
-              usePlayerStore.getState().setSearchMode(false);
-              onClose?.(); 
-            }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${currentPlaylistId === 'all'
-                ? 'bg-accent/10 text-accent'
-                : 'text-gray-400 hover:text-white hover:bg-bg-hover'
-              }`}
-            style={currentPlaylistId === 'all' && dominantColor ? { backgroundColor: `${dominantColor}33` } : undefined}
-          >
-            <Library className="w-5 h-5" />
-            Моя бібліотека
           </button>
 
           <button
