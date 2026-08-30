@@ -38,13 +38,24 @@ async function fetchWithFallback(endpoint: string): Promise<any> {
   throw new Error('All JioSaavn instances failed');
 }
 
+const searchCache = new Map<string, { timestamp: number; tracks: Track[] }>();
+const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 mins
+
 export async function searchJioSaavnTracks(query: string): Promise<Track[]> {
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) return [];
+
+  const cached = searchCache.get(cleanQuery);
+  if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL) {
+    return cached.tracks;
+  }
+
   try {
     const results = await fetchWithFallback(`/search/songs?query=${encodeURIComponent(query)}`);
     
     if (!results || !Array.isArray(results)) return [];
     
-    return results.map((item: any) => {
+    const tracks: Track[] = results.map((item: any) => {
       // Find highest quality image
       let coverUrl = item.image || '';
       if (Array.isArray(item.image)) {
@@ -96,6 +107,11 @@ export async function searchJioSaavnTracks(query: string): Promise<Track[]> {
         playCount: 0
       };
     });
+
+    if (tracks.length > 0) {
+      searchCache.set(cleanQuery, { timestamp: Date.now(), tracks });
+    }
+    return tracks;
   } catch (error) {
     console.error('Failed to search JioSaavn:', error);
     return [];

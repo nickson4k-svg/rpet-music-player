@@ -49,6 +49,16 @@ export const addTrack = async (track: Track) => {
   await db.put('tracks', track);
 };
 
+export const addTracksBatch = async (tracks: Track[]) => {
+  if (tracks.length === 0) return;
+  const db = await initDB();
+  const tx = db.transaction('tracks', 'readwrite');
+  await Promise.all([
+    ...tracks.map(track => tx.store.put(track)),
+    tx.done,
+  ]);
+};
+
 export const getTrack = async (id: string) => {
   const db = await initDB();
   return await db.get('tracks', id);
@@ -58,8 +68,11 @@ export const getAllTracks = async () => {
   const db = await initDB();
   const tracks = await db.getAll('tracks');
   
+  const tracksToUpdate: Track[] = [];
+  const idsToDelete: (string | number)[] = [];
+  const fixedTracks: Track[] = [];
+
   // Migration: fix raw SCTrack objects stored by mistake
-  const fixedTracks = [];
   for (const track of tracks) {
     if (typeof track.id === 'number' && (track as any).title && !(track as any).name) {
       const raw = track as any;
@@ -83,44 +96,25 @@ export const getAllTracks = async () => {
         playCount: 0
       };
       
-      // Delete old numeric ID and put new string ID
-      await db.delete('tracks', raw.id);
-      await db.put('tracks', fixed);
-      fixedTracks.push(fixed);
+      idsToDelete.push(raw.id);
+      tracksToUpdate.push(fixed);
     } else if (typeof track.id === 'string' && track.id.startsWith('soundcloud-undefined')) {
-      await db.delete('tracks', track.id);
+      idsToDelete.push(track.id);
     } else {
+      let trackModified = false;
+
       // Fix missing genre for existing local tracks
-      if (track.audioBlob && (!track.genre || track.genre === 'Unknown')) {
-        try {
-          const mm = await import('music-metadata');
-          const metadata = await mm.parseBlob(track.audioBlob);
-          const newGenre = metadata.common.genre ? metadata.common.genre.join(', ') : 'Unknown';
-          
-          if (newGenre !== 'Unknown' || track.genre === undefined) {
-            track.genre = newGenre;
-            await db.put('tracks', track);
-          }
-        } catch (e) {
-          console.warn('Failed to parse missing genre for track', track.name, e);
-          if (track.genre === undefined) {
-             track.genre = 'Unknown';
-             await db.put('tracks', track);
-          }
-        }
-      } else if (track.genre === undefined) {
+      if (track.genre === undefined) {
         track.genre = 'Unknown';
-        await db.put('tracks', track);
+        trackModified = true;
       }
 
       // Auto-repair dead/broken Audius cover URLs stored in IndexedDB
       if (track.coverUrl) {
-        let needsFix = false;
-        
         // 1. Clear the broken non-existent /artwork endpoint URLs and resolve real cover
         if (track.coverUrl.includes('/artwork?app_name=')) {
           track.coverUrl = '';
-          needsFix = true;
+          trackModified = true;
         }
         // 2. Fix dead nodes (zeogrid etc.) by routing through main gateway
         else if (track.coverUrl.includes('zeogrid.com/content/') || 
@@ -131,12 +125,12 @@ export const getAllTracks = async () => {
           } else {
             track.coverUrl = track.coverUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
           }
-          needsFix = true;
+          trackModified = true;
         }
-        
-        if (needsFix) {
-          await db.put('tracks', track);
-        }
+      }
+
+      if (trackModified) {
+        tracksToUpdate.push(track);
       }
 
       // 3. If track has no cover at all (no blob and no url), trigger background resolution
@@ -153,6 +147,16 @@ export const getAllTracks = async () => {
 
       fixedTracks.push(track);
     }
+  }
+
+  // Execute batched DB migrations in a single transaction
+  if (idsToDelete.length > 0 || tracksToUpdate.length > 0) {
+    const tx = db.transaction('tracks', 'readwrite');
+    await Promise.all([
+      ...idsToDelete.map(id => tx.store.delete(id as any)),
+      ...tracksToUpdate.map(t => tx.store.put(t)),
+      tx.done,
+    ]);
   }
   
   return fixedTracks;

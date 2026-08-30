@@ -12,6 +12,7 @@ export const AudioEngine: React.FC = () => {
   const activeDeckRef = useRef<'A' | 'B'>('A');
   const fadeTimeoutRef = useRef<number | null>(null);
   const stateSyncIntervalRef = useRef<number | null>(null);
+  const createdBlobUrlsRef = useRef<Map<string, string>>(new Map());
 
   const getTrackById = usePlayerStore(state => state.getTrackById);
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
@@ -182,7 +183,23 @@ export const AudioEngine: React.FC = () => {
         return;
       }
 
-      let url = track.audioUrl || (track.audioBlob ? URL.createObjectURL(track.audioBlob) : '');
+      let url = track.audioUrl || '';
+      if (!url && track.audioBlob) {
+        if (!createdBlobUrlsRef.current.has(track.id)) {
+          // Revoke old URLs if cache grows beyond 10 items
+          if (createdBlobUrlsRef.current.size > 10) {
+            const firstKey = createdBlobUrlsRef.current.keys().next().value;
+            if (firstKey) {
+              const oldUrl = createdBlobUrlsRef.current.get(firstKey);
+              if (oldUrl) URL.revokeObjectURL(oldUrl);
+              createdBlobUrlsRef.current.delete(firstKey);
+            }
+          }
+          const blobUrl = URL.createObjectURL(track.audioBlob);
+          createdBlobUrlsRef.current.set(track.id, blobUrl);
+        }
+        url = createdBlobUrlsRef.current.get(track.id) || '';
+      }
 
       if (typeof track.url === 'string' && track.url.startsWith('audius:')) {
         const trackId = track.url.split(':')[1];
@@ -322,6 +339,7 @@ export const AudioEngine: React.FC = () => {
   useEffect(() => {
     let rafId: number;
     let lastSave = 0;
+    let lastTimeUpdate = 0;
 
     const updateTime = (timestamp: number) => {
       const state = usePlayerStore.getState();
@@ -335,8 +353,14 @@ export const AudioEngine: React.FC = () => {
       if (!activeAudio) return;
 
       if (activeAudio.duration > 0) {
-        setCurrentTime(activeAudio.currentTime);
-        setDuration(activeAudio.duration);
+        // Throttle Zustand state updates to 4 times per second (250ms) to eliminate main thread UI lockups
+        if (timestamp - lastTimeUpdate > 250) {
+          setCurrentTime(activeAudio.currentTime);
+          if (state.duration !== activeAudio.duration) {
+            setDuration(activeAudio.duration);
+          }
+          lastTimeUpdate = timestamp;
+        }
 
         if (state.isPlaying && !activeAudio.paused) {
           const timeLeft = activeAudio.duration - activeAudio.currentTime;
@@ -363,9 +387,6 @@ export const AudioEngine: React.FC = () => {
           }
 
           addTrack(updatedTrack);
-          usePlayerStore.getState().setTracks(
-            st.tracks.map(t => (t.id === currentTrack.id ? updatedTrack : t))
-          );
         }
         lastSave = timestamp;
       }

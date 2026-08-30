@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { UploadCloud } from 'lucide-react';
 import { processAudioFile } from '../../utils/fileHandlers';
-import { addTrack, getAllTracks } from '../../utils/idbStorage';
+import { getAllTracks } from '../../utils/idbStorage';
 import { usePlayerStore } from '../../stores/playerStore';
 
 export const TrackUploader: React.FC = () => {
@@ -21,20 +21,26 @@ export const TrackUploader: React.FC = () => {
 
   const handleFiles = useCallback(async (files: FileList) => {
     setIsProcessing(true);
-    const audioFiles = Array.from(files).filter(file => file.type.startsWith('audio/'));
+    const audioFiles = Array.from(files).filter(file => file.type.startsWith('audio/') || /\.(mp3|wav|flac|m4a|aac|ogg|opus)$/i.test(file.name));
     
-    for (const file of audioFiles) {
-      try {
-        const track = await processAudioFile(file);
-        await addTrack(track);
-      } catch (error) {
-        console.error('Failed to process file:', file.name, error);
-      }
+    const processedTracks: any[] = [];
+    await Promise.all(
+      audioFiles.map(async (file) => {
+        try {
+          const track = await processAudioFile(file);
+          processedTracks.push(track);
+        } catch (error) {
+          console.error('Failed to process file:', file.name, error);
+        }
+      })
+    );
+
+    if (processedTracks.length > 0) {
+      const { addTracksBatch } = await import('../../utils/idbStorage');
+      await addTracksBatch(processedTracks);
+      const allTracks = await getAllTracks();
+      setTracks(allTracks);
     }
-    
-    // Refresh tracks
-    const allTracks = await getAllTracks();
-    setTracks(allTracks);
     setIsProcessing(false);
   }, [setTracks]);
 

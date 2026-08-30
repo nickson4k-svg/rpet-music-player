@@ -9,12 +9,19 @@ export const Visualizer: React.FC = () => {
   const [theme, setTheme] = useState<'bars' | 'wave' | 'circle'>('bars');
   const isPlaying = usePlayerStore(state => state.isPlaying);
 
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    if (!isPlaying) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
 
     let animationFrameId: number;
     
@@ -28,8 +35,11 @@ export const Visualizer: React.FC = () => {
       }
 
       const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyser.getByteFrequencyData(dataArray);
+      if (!dataArrayRef.current || dataArrayRef.current.length !== bufferLength) {
+        dataArrayRef.current = new Uint8Array(bufferLength);
+      }
+      const dataArray = dataArrayRef.current;
+      analyser.getByteFrequencyData(dataArray as any);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
@@ -45,7 +55,6 @@ export const Visualizer: React.FC = () => {
           if (!isFullscreen) barHeight *= 0.8; // keep it slightly smaller than the box
           
           ctx.fillStyle = visualizerColor;
-          // Add a slightly rounded top if possible, or just a glassy alpha
           ctx.globalAlpha = 0.8;
           ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
           ctx.globalAlpha = 1.0;

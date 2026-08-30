@@ -56,25 +56,16 @@ export const FullScreenPlayer: React.FC = () => {
   const toggleFullScreen = usePlayerStore(state => state.toggleFullScreenPlayer);
   const currentTrackId = usePlayerStore(state => state.currentTrackId);
   const tracks = usePlayerStore(state => state.tracks);
-  const recommendedTracks = usePlayerStore(state => state.recommendedTracks);
-  const moodTracks = usePlayerStore(state => state.moodTracks);
-  const searchResults = usePlayerStore(state => state.searchResults);
   
   const queue = usePlayerStore(state => state.queue);
-  const {
-    queueIndex,
-    togglePlayPause,
-    jumpToQueueIndex
-  } = usePlayerStore();
+  const queueIndex = usePlayerStore(state => state.queueIndex);
+  const togglePlayPause = usePlayerStore(state => state.togglePlayPause);
+  const jumpToQueueIndex = usePlayerStore(state => state.jumpToQueueIndex);
   const isPlaying = usePlayerStore(state => state.isPlaying);
   const currentTime = usePlayerStore(state => state.currentTime);
+  const getTrackById = usePlayerStore(state => state.getTrackById);
 
-  const getTrack = (id: string) => tracks.find(t => t.id === id) || 
-                                   recommendedTracks.find(t => t.id === id) || 
-                                   moodTracks.find(t => t.id === id) ||
-                                   searchResults.find(t => t.id === id);
-
-  const currentTrack = currentTrackId ? getTrack(currentTrackId) : null;
+  const currentTrack = currentTrackId ? getTrackById(currentTrackId) : null;
 
   const [activeTab, setActiveTab] = useState<'queue' | 'lyrics' | 'related'>('queue');
   
@@ -141,7 +132,7 @@ export const FullScreenPlayer: React.FC = () => {
   }, [activeIndex]);
 
   const upcomingQueue = queue.slice(queueIndex);
-  const queueTracks = upcomingQueue.map(id => getTrack(id)).filter(Boolean) as typeof tracks;
+  const queueTracks = upcomingQueue.map(id => getTrackById(id)).filter(Boolean) as typeof tracks;
 
   return (
     <div 

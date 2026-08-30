@@ -57,7 +57,7 @@ export const TrackList: React.FC = () => {
     return (currentPlaylist.trackIds || []).map(id => tracks.find(t => t.id === id)).filter(t => t !== undefined) as typeof tracks;
   }, [tracks, currentPlaylist, currentPlaylistId, moodTracks, recommendedTracks]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = React.useCallback(async (id: string) => {
     if (currentPlaylistId && currentPlaylistId !== 'favorites' && currentPlaylistId !== 'all' && currentPlaylistId !== 'recommendations' && currentPlaylistId !== 'mood') {
       if (window.confirm('Видалити трек з плейлиста?')) {
         removeTrackFromPlaylist(currentPlaylistId, id);
@@ -68,13 +68,13 @@ export const TrackList: React.FC = () => {
         removeTrack(id);
       }
     }
-  };
+  }, [currentPlaylistId, removeTrackFromPlaylist, removeTrack]);
 
-  const handlePlay = (id: string) => {
+  const handlePlay = React.useCallback((id: string) => {
     const queue = displayedTracks.map(t => t.id);
     const index = queue.indexOf(id);
     playQueue(queue, Math.max(0, index));
-  };
+  }, [displayedTracks, playQueue]);
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination || !currentPlaylistId || currentPlaylistId === 'favorites' || currentPlaylistId === 'all' || currentPlaylistId === 'recommendations' || currentPlaylistId === 'mood') return;
@@ -243,7 +243,7 @@ export const TrackList: React.FC = () => {
                           <TrackItem
                             track={track}
                             isCurrentTrack={track.id === currentTrackId}
-                            isPlaying={isPlaying}
+                            isPlaying={isPlaying && track.id === currentTrackId}
                             onPlay={handlePlay}
                             onTogglePlayPause={togglePlayPause}
                             onDelete={handleDelete}
@@ -271,7 +271,7 @@ export const TrackList: React.FC = () => {
                     key={track.id}
                     track={track}
                     isCurrentTrack={track.id === currentTrackId}
-                    isPlaying={isPlaying}
+                    isPlaying={isPlaying && track.id === currentTrackId}
                     onPlay={handlePlay}
                     onTogglePlayPause={togglePlayPause}
                     onDelete={handleDelete}
@@ -289,7 +289,7 @@ export const TrackList: React.FC = () => {
                     key={track.id}
                     track={track}
                     isCurrentTrack={track.id === currentTrackId}
-                    isPlaying={isPlaying}
+                    isPlaying={isPlaying && track.id === currentTrackId}
                     onPlay={handlePlay}
                     onTogglePlayPause={togglePlayPause}
                     onDelete={handleDelete}

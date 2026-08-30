@@ -180,6 +180,8 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     let currentColor = parseColor(dominantColorRef.current);
     let lastTime = 0;
 
+    let dataArray: Uint8Array | null = null;
+
     const animate = (time: number) => {
       animationFrameId = requestAnimationFrame(animate);
 
@@ -197,6 +199,11 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       currentFade += (targetFade - currentFade) * (currentlyPlaying ? 0.05 : 0.012);
       uniforms.u_fade.value = currentFade;
 
+      // If fully faded and not playing, skip rendering to conserve GPU/CPU
+      if (!currentlyPlaying && currentFade <= 0.001) {
+        return;
+      }
+
       // Ensure audio context is running when music plays
       if (currentlyPlaying && context && context.state === 'suspended') {
         context.resume();
@@ -204,8 +211,10 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
 
       if (analyser && currentlyPlaying) {
         const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyser.getByteFrequencyData(dataArray);
+        if (!dataArray || dataArray.length !== bufferLength) {
+          dataArray = new Uint8Array(bufferLength);
+        }
+        analyser.getByteFrequencyData(dataArray as any);
 
         // 1. Sub-bass (Bins 0-5)
         let bassSum = 0;

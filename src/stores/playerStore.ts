@@ -786,7 +786,6 @@ export const usePlayerStore = create<PlayerState>()(
     crossfadeEnabled: state.crossfadeEnabled,
     crossfadeDuration: state.crossfadeDuration,
     normalizationEnabled: state.normalizationEnabled,
-    currentTime: state.currentTime,
     duration: state.duration,
     viewMode: state.viewMode,
     playbackRate: state.playbackRate,

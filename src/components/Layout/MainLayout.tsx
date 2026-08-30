@@ -16,7 +16,7 @@ import { HomeDashboard } from '../HomeDashboard';
 
 const MOODS = ["Сон", "Заряд енергії", "Тренування", "Релакс", "В дорозі", "Весела", "Сум", "Романтика", "Вечірка", "Концентрація"];
 
-import { FullScreenPlayer } from '../Player/FullScreenPlayer';
+const LazyFullScreenPlayer = React.lazy(() => import('../Player/FullScreenPlayer').then(module => ({ default: module.FullScreenPlayer })));
 import { FacesShaderLogo } from '../Common/FacesShaderLogo';
 
 const LazyHistoryModal = React.lazy(() => import('../HistoryModal').then(module => ({ default: module.HistoryModal })));
@@ -35,6 +35,7 @@ export const MainLayout: React.FC = () => {
   const isSearchMode = usePlayerStore(state => state.isSearchMode);
   const isLibraryLoaded = usePlayerStore(state => state.isLibraryLoaded);
   const setIsLibraryLoaded = usePlayerStore(state => state.setIsLibraryLoaded);
+  const isFullScreenPlayerOpen = usePlayerStore(state => state.isFullScreenPlayerOpen);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -303,7 +304,11 @@ export const MainLayout: React.FC = () => {
             </div>
           </div>
         </main>
-        <FullScreenPlayer />
+        {isFullScreenPlayerOpen && (
+          <React.Suspense fallback={null}>
+            <LazyFullScreenPlayer />
+          </React.Suspense>
+        )}
       </div>
       <PlayerBar />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />

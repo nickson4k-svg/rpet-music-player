@@ -5,6 +5,8 @@ import { formatTime } from '../../utils/audioHelpers';
 import { usePlayerStore } from '../../stores/playerStore';
 import { TrackCover } from '../Common/TrackCover';
 
+import type { DraggableProvidedDraggableProps, DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
+
 interface TrackItemProps {
   track: Track;
   isPlaying: boolean;
@@ -13,8 +15,8 @@ interface TrackItemProps {
   onTogglePlayPause: () => void;
   onDelete: (id: string) => void;
   innerRef?: (element: HTMLElement | null) => void;
-  draggableProps?: any;
-  dragHandleProps?: any;
+  draggableProps?: DraggableProvidedDraggableProps;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
   isDragging?: boolean;
 }
 
