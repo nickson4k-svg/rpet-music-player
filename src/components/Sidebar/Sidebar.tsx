@@ -7,6 +7,7 @@ const StatsModal = React.lazy(() => import('../StatsModal').then(module => ({ de
 const PartyModeModal = React.lazy(() => import('../PartyModeModal').then(module => ({ default: module.PartyModeModal })));
 const TakeoutImportModal = React.lazy(() => import('../TakeoutImportModal').then(module => ({ default: module.TakeoutImportModal })));
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import { SidebarPixelBackground } from './SidebarPixelBackground';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -48,8 +49,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   };
 
   return (
-    <aside className="w-64 border-r border-border bg-bg-secondary/80 md:bg-bg-secondary/60 backdrop-blur-xl flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
-      <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between">
+    <aside className="relative w-64 border-r border-border bg-bg-secondary/80 md:bg-bg-secondary/60 backdrop-blur-xl flex flex-col h-full overflow-hidden shadow-2xl md:shadow-none transition-colors duration-500">
+      <SidebarPixelBackground dominantColor={dominantColor} />
+      <div className="relative z-10 p-3 sm:p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-1 w-full justify-between">
           <div className="flex items-center gap-1">
             <button
@@ -89,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 pb-32 sm:pb-36 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="relative z-10 flex-1 overflow-y-auto p-5 pb-32 sm:pb-36 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Navigation buttons */}
         <div className="space-y-2">
           <button
