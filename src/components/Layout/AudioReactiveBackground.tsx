@@ -18,7 +18,7 @@ const vertexShader = `
   }
 `;
 
-// ── Smooth Sound-Reactive Circle with Soft-Blurred Halftone Dots Shader ───────
+// ── Smooth Sound-Reactive Circle with Soft-Blurred Halftone Dots & Fade Shader ─
 const fragmentShader = `
   #define GLSLIFY 1
 
@@ -28,6 +28,7 @@ const fragmentShader = `
   uniform float u_bass;          // Smooth sub-bass
   uniform float u_mid;           // Smooth melodic mids
   uniform float u_high;          // Smooth highs
+  uniform float u_fade;          // Fade factor: 1.0 when playing, smoothly goes to 0.0 on pause
   uniform vec3 u_color;          // Track cover artwork dominant color
 
   varying vec2 vUv;
@@ -44,6 +45,12 @@ const fragmentShader = `
   }
 
   void main() {
+    // If fully faded out, discard calculation
+    if (u_fade <= 0.001) {
+      gl_FragColor = vec4(0.0);
+      return;
+    }
+
     float min_res = min(u_resolution.x, u_resolution.y);
     vec2 st = (gl_FragCoord.xy - 0.5 * u_resolution) / min_res;
 
@@ -51,7 +58,6 @@ const fragmentShader = `
     float angle = atan(st.y, st.x);
 
     // 1. Central Sound-Reactive Circle boundary (breathing fluidly with music)
-    // Base radius: 0.38 of screen, smoothly expanding up to ~0.55 with sound
     float harmonic_wave = sin(angle * 6.0 + u_time * 0.8) * (0.015 + u_mid * 0.035);
     float sound_circle_radius = 0.35 + (u_audio_energy * 0.22 + u_bass * 0.12) + harmonic_wave;
 
@@ -87,9 +93,9 @@ const fragmentShader = `
     // Blend dots color smoothly
     vec3 dot_color = mix(base_color * 0.85, highlight_color, clamp(inside_circle * 0.6 + circle_rim * 0.6 + u_high * 0.3, 0.0, 1.0));
 
-    // 5. Calm, silky opacity with soft feathered glow
+    // 5. Calm, silky opacity with soft feathered glow multiplied by fade factor
     float dot_alpha = dot_val * (0.16 + local_audio_scale * 0.55);
-    float total_alpha = clamp(dot_alpha + center_ambient_glow, 0.0, 0.75);
+    float total_alpha = clamp(dot_alpha + center_ambient_glow, 0.0, 0.75) * u_fade;
 
     gl_FragColor = vec4(dot_color, total_alpha);
   }
@@ -140,6 +146,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       u_bass: { value: 0.0 },
       u_mid: { value: 0.0 },
       u_high: { value: 0.0 },
+      u_fade: { value: isPlaying ? 1.0 : 0.0 },
       u_color: { value: parseColor(dominantColor) },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
     };
@@ -157,11 +164,12 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     const quad = new THREE.Mesh(geometry, material);
     scene.add(quad);
 
-    // 5. Silky-Smooth Continuous Audio Interpolation (No frantic pulsation)
+    // 5. Smooth Audio & Fade Interpolation
     let smoothedEnergy = 0;
     let smoothedBass = 0;
     let smoothedMid = 0;
     let smoothedHigh = 0;
+    let currentFade = isPlaying ? 1.0 : 0.0;
 
     let targetColor = parseColor(dominantColor);
     let currentColor = parseColor(dominantColor);
@@ -176,6 +184,11 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
 
       const elapsed = clock.getElapsedTime();
       const { analyser, context } = audioContextState;
+
+      // Smoothly transition fade factor (0.0 to 1.0)
+      const targetFade = isPlaying ? 1.0 : 0.0;
+      currentFade += (targetFade - currentFade) * (isPlaying ? 0.08 : 0.04);
+      uniforms.u_fade.value = currentFade;
 
       // Ensure audio context is running when music plays
       if (isPlaying && context && context.state === 'suspended') {
@@ -205,14 +218,14 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         // Overall smoothed energy
         const rawEnergy = rawBass * 0.5 + rawMid * 0.35 + rawHigh * 0.15;
 
-        // Smooth fluid damping (silky slow transitions without harsh pulses)
+        // Smooth fluid damping
         const lerpFactor = 0.08;
         smoothedEnergy += (rawEnergy - smoothedEnergy) * lerpFactor;
         smoothedBass += (rawBass - smoothedBass) * (lerpFactor * 1.1);
         smoothedMid += (rawMid - smoothedMid) * lerpFactor;
         smoothedHigh += (rawHigh - smoothedHigh) * lerpFactor;
       } else {
-        // Smoothly settle into calm resting state
+        // Settle into calm resting state when stopped
         smoothedEnergy += (0 - smoothedEnergy) * 0.05;
         smoothedBass += (0 - smoothedBass) * 0.05;
         smoothedMid += (0 - smoothedMid) * 0.05;
@@ -266,7 +279,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
   }, [isPlaying]);
 
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict">
+    <div className={`fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict transition-opacity duration-1000 ease-out ${isPlaying ? 'opacity-100' : 'opacity-0'}`}>
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/40 pointer-events-none" />
     </div>
