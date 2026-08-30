@@ -185,9 +185,9 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       const elapsed = clock.getElapsedTime();
       const { analyser, context } = audioContextState;
 
-      // Smoothly transition fade factor (0.0 to 1.0)
+      // Smoothly transition fade factor (0.0 to 1.0) with very slow graceful fade-out
       const targetFade = isPlaying ? 1.0 : 0.0;
-      currentFade += (targetFade - currentFade) * (isPlaying ? 0.08 : 0.04);
+      currentFade += (targetFade - currentFade) * (isPlaying ? 0.06 : 0.015);
       uniforms.u_fade.value = currentFade;
 
       // Ensure audio context is running when music plays
@@ -225,11 +225,11 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         smoothedMid += (rawMid - smoothedMid) * lerpFactor;
         smoothedHigh += (rawHigh - smoothedHigh) * lerpFactor;
       } else {
-        // Settle into calm resting state when stopped
-        smoothedEnergy += (0 - smoothedEnergy) * 0.05;
-        smoothedBass += (0 - smoothedBass) * 0.05;
-        smoothedMid += (0 - smoothedMid) * 0.05;
-        smoothedHigh += (0 - smoothedHigh) * 0.05;
+        // Slow, graceful decay into calm resting state when stopped
+        smoothedEnergy += (0 - smoothedEnergy) * 0.015;
+        smoothedBass += (0 - smoothedBass) * 0.015;
+        smoothedMid += (0 - smoothedMid) * 0.015;
+        smoothedHigh += (0 - smoothedHigh) * 0.015;
       }
 
       // Smooth color transition adapting to the track's cover
@@ -279,7 +279,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
   }, [isPlaying]);
 
   return (
-    <div className={`fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict transition-opacity duration-1000 ease-out ${isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict transition-opacity duration-[2500ms] ease-out ${isPlaying ? 'opacity-100' : 'opacity-0'}`}>
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/40 pointer-events-none" />
     </div>
