@@ -27,7 +27,7 @@ function createReverbBuffer(ctx: AudioContext, duration: number, decay: number) 
   return buffer;
 }
 
-export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElement) => {
+export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElement, initialVolume = 1.0) => {
   if (!audioContextState.context) {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     const ctx = new AudioContextClass();
@@ -80,10 +80,6 @@ export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElem
     compressor.attack.value = 0.003;
     compressor.release.value = 0.25;
     
-    // By default compressor acts as passthrough until normalization is enabled, 
-    // but actually we can just leave it connected and toggle it dynamically later.
-    // For now, let's connect it in the chain but we'll bypass it if normalization is off.
-    
     // Connect nodes in sequence
     gainA.connect(bass);
     gainB.connect(bass);
@@ -104,9 +100,9 @@ export const initAudioContext = (audioA: HTMLAudioElement, audioB: HTMLAudioElem
     compressor.connect(analyser);
     analyser.connect(streamDest);
 
-    // Local Master Gain Node (only controls the host's speakers)
+    // Local Master Gain Node (controls host speakers with initial volume)
     const localMasterGain = ctx.createGain();
-    localMasterGain.gain.value = 1.0;
+    localMasterGain.gain.value = initialVolume;
     analyser.connect(localMasterGain);
     localMasterGain.connect(ctx.destination);
 

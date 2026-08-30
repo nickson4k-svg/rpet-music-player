@@ -94,7 +94,7 @@ export const AudioEngine: React.FC = () => {
   useEffect(() => {
     const isHost = useLiveKitStore.getState().isHost;
     if ((isPlaying || isHost) && !initialized && audioARef.current && audioBRef.current) {
-      initAudioContext(audioARef.current, audioBRef.current);
+      initAudioContext(audioARef.current, audioBRef.current, volume);
       setInitialized(true);
 
       if (isHost) {
@@ -104,18 +104,18 @@ export const AudioEngine: React.FC = () => {
     if (isPlaying && audioContextState.context?.state === 'suspended') {
       audioContextState.context.resume();
     }
-  }, [isPlaying, initialized]);
+  }, [isPlaying, initialized, volume]);
 
   // Subscribe to isHost changes to initialize audio context
   useEffect(() => {
     return useLiveKitStore.subscribe((state) => {
       if (state.isHost && !initialized && audioARef.current && audioBRef.current) {
-        initAudioContext(audioARef.current, audioBRef.current);
+        initAudioContext(audioARef.current, audioBRef.current, volume);
         setInitialized(true);
         streamAudioToGuests();
       }
     });
-  }, [initialized]);
+  }, [initialized, volume]);
 
   // ── Periodic STATE_SYNC for drift correction (HOST only, every 5s) ────────
   useEffect(() => {
@@ -310,7 +310,7 @@ export const AudioEngine: React.FC = () => {
     if (remoteAudioRef.current) {
       remoteAudioRef.current.volume = volume;
     }
-  }, [volume]);
+  }, [volume, initialized]);
 
   // ── Playback Rate ─────────────────────────────────────────────────────────
   useEffect(() => {

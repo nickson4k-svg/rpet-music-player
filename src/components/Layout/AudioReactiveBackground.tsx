@@ -28,7 +28,7 @@ const fragmentShader = `
   uniform float u_bass;          // Smooth sub-bass
   uniform float u_mid;           // Smooth melodic mids
   uniform float u_high;          // Smooth highs
-  uniform float u_fade;          // Fade factor: 1.0 when playing, smoothly goes to 0.0 on pause
+  uniform float u_fade;          // Fade factor: 1.0 when playing, smoothly decays to 0.0 on pause
   uniform vec3 u_color;          // Track cover artwork dominant color
 
   varying vec2 vUv;
@@ -104,7 +104,12 @@ const fragmentShader = `
 export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = ({ dominantColor }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isPlaying = usePlayerStore(state => state.isPlaying);
+  const isPlayingRef = useRef(isPlaying);
   const dominantColorRef = useRef(dominantColor);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   useEffect(() => {
     dominantColorRef.current = dominantColor;
@@ -127,7 +132,7 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-    // 2. WebGL Renderer
+    // 2. WebGL Renderer (Persistent across play/pause)
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -146,8 +151,8 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       u_bass: { value: 0.0 },
       u_mid: { value: 0.0 },
       u_high: { value: 0.0 },
-      u_fade: { value: isPlaying ? 1.0 : 0.0 },
-      u_color: { value: parseColor(dominantColor) },
+      u_fade: { value: 0.0 },
+      u_color: { value: parseColor(dominantColorRef.current) },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio) },
     };
 
@@ -164,15 +169,15 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
     const quad = new THREE.Mesh(geometry, material);
     scene.add(quad);
 
-    // 5. Smooth Audio & Fade Interpolation
+    // 5. Continuous Smooth Loop with Slow Fade Out
     let smoothedEnergy = 0;
     let smoothedBass = 0;
     let smoothedMid = 0;
     let smoothedHigh = 0;
-    let currentFade = isPlaying ? 1.0 : 0.0;
+    let currentFade = isPlayingRef.current ? 1.0 : 0.0;
 
-    let targetColor = parseColor(dominantColor);
-    let currentColor = parseColor(dominantColor);
+    let targetColor = parseColor(dominantColorRef.current);
+    let currentColor = parseColor(dominantColorRef.current);
     let lastTime = 0;
 
     const animate = (time: number) => {
@@ -183,19 +188,21 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       lastTime = time;
 
       const elapsed = clock.getElapsedTime();
+      const currentlyPlaying = isPlayingRef.current;
       const { analyser, context } = audioContextState;
 
-      // Smoothly transition fade factor (0.0 to 1.0) with very slow graceful fade-out
-      const targetFade = isPlaying ? 1.0 : 0.0;
-      currentFade += (targetFade - currentFade) * (isPlaying ? 0.06 : 0.015);
+      // Smoothly transition fade factor: 
+      // Fade in at 0.05 speed, Fade out slowly at 0.012 speed (~3 seconds of graceful decay)
+      const targetFade = currentlyPlaying ? 1.0 : 0.0;
+      currentFade += (targetFade - currentFade) * (currentlyPlaying ? 0.05 : 0.012);
       uniforms.u_fade.value = currentFade;
 
       // Ensure audio context is running when music plays
-      if (isPlaying && context && context.state === 'suspended') {
+      if (currentlyPlaying && context && context.state === 'suspended') {
         context.resume();
       }
 
-      if (analyser && isPlaying) {
+      if (analyser && currentlyPlaying) {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         analyser.getByteFrequencyData(dataArray);
@@ -276,10 +283,10 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         container.removeChild(renderer.domElement);
       }
     };
-  }, [isPlaying]);
+  }, []); // Run setup once on mount; keep renderer persistent so fade-out animates smoothly!
 
   return (
-    <div className={`fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict transition-opacity duration-[2500ms] ease-out ${isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none contain-strict">
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/40 pointer-events-none" />
     </div>

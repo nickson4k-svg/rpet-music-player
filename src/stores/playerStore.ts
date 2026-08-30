@@ -85,6 +85,17 @@ interface PlayerState {
   getTrackById: (id: string | null) => Track | undefined;
 }
 
+const getInitialVolume = (): number => {
+  try {
+    const saved = localStorage.getItem('rpet-volume');
+    if (saved !== null) {
+      const parsed = parseFloat(saved);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed;
+    }
+  } catch {}
+  return 1;
+};
+
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
@@ -95,7 +106,7 @@ export const usePlayerStore = create<PlayerState>()(
   queue: [],
   queueIndex: 0,
   isPlaying: false,
-  volume: 1,
+  volume: getInitialVolume(),
   duration: 0,
   currentTime: 0,
   repeatMode: 'off',
@@ -318,7 +329,12 @@ export const usePlayerStore = create<PlayerState>()(
     });
   },
 
-  setVolume: (volume) => set({ volume }),
+  setVolume: (volume) => {
+    try {
+      localStorage.setItem('rpet-volume', volume.toString());
+    } catch {}
+    set({ volume });
+  },
   setPlaybackRate: (rate) => set({ playbackRate: rate }),
   setCurrentTime: (currentTime) => {
     const state = get();
