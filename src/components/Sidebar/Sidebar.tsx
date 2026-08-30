@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { Plus, Trash2, Heart, X, Settings, BarChart2, Download, Radio, Home } from 'lucide-react';
 
@@ -28,6 +28,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const [isTakeoutModalOpen, setIsTakeoutModalOpen] = useState(false);
 
   const { handleInstall } = useInstallPrompt();
+
+  // Auto-open Party Mode if visiting with an invite link (?join=...)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('join')) {
+        setIsPartyModeOpen(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleCreatePlaylist = () => {
     const name = window.prompt('Введіть назву плейлиста:');

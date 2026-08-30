@@ -4,7 +4,8 @@ import {
   X, Users, Headphones, Copy, Check, Radio, Music2,
   Send, Wifi, WifiOff, PlusCircle, MessageCircle, SmilePlus,
   LogOut, Crown, Loader2, UserPlus, Link2, Trash2, Search,
-  Play, Sparkles, ShieldCheck, Disc3,
+  Play, Sparkles, ShieldCheck, Disc3, Edit2, Share2,
+  User as UserIcon,
 } from 'lucide-react';
 import { useLiveKitStore } from '../stores/livekitStore';
 import { useAuthStore } from '../stores/authStore';
@@ -40,18 +41,18 @@ interface PartyModeModalProps {
 
 export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const {
-    isHost, status, ping, error,
+    isHost, status, ping, error, roomName,
     sharedQueue, members, chatMessages,
     hostRoom, joinRoom, leaveRoom, addToSharedQueue, removeFromSharedQueue,
     sendChat, sendReaction,
     autoplayBlocked, awaitingUserGesture, confirmUserGestureAndJoin,
   } = useLiveKitStore();
 
-  const { user } = useAuthStore();
+  const { user, setUsername: setStoreUsername } = useAuthStore();
   const { searchGlobal, searchResults, isSearchLoading, currentTrackId, getTrackById } = usePlayerStore();
   const {
     friends, recentPeers, addFriend, removeFriend,
-    getInviteLink,
+    getInviteLink, getDirectRoomInviteLink,
   } = useFriendsStore();
 
   const currentPlayingTrack = currentTrackId ? getTrackById(currentTrackId) : null;
@@ -64,7 +65,13 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'queue' | 'chat' | 'search'>('queue');
   const [mobileSection, setMobileSection] = useState<'room' | 'content'>('room');
   const [searchQuery, setSearchQuery] = useState('');
-  const [friendInput, setFriendInput] = useState('');
+  
+  // User profile & friend search states
+  const [isEditingNick, setIsEditingNick] = useState(false);
+  const [nickInput, setNickInput] = useState('');
+  const [nickError, setNickError] = useState<string | null>(null);
+  
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
   const [friendFeedback, setFriendFeedback] = useState<string | null>(null);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
 
@@ -117,6 +124,19 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     return user?.username || 'DJ-Host';
   };
 
+  const handleSaveNickname = (e: React.FormEvent) => {
+    e.preventDefault();
+    setNickError(null);
+    try {
+      setStoreUsername(nickInput.trim());
+      setIsEditingNick(false);
+      setFriendFeedback('Нікнейм успішно оновлено!');
+      setTimeout(() => setFriendFeedback(null), 2500);
+    } catch (err: any) {
+      setNickError(err.message || 'Некоректний нікнейм');
+    }
+  };
+
   const handleHost = async () => {
     await hostRoom();
   };
@@ -142,6 +162,37 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleInviteFriend = async (friendUsername?: string) => {
+    const currentCode = roomName ? roomName.replace(/^room-/, '') : getMyCode();
+    const link = getDirectRoomInviteLink(currentCode, friendUsername);
+    const inviteText = `Приєднуйся до моєї кімнати спільного прослуховування (${currentCode}) в Rpet!`;
+
+    // Try native sharing if available
+    if (typeof navigator !== 'undefined' && navigator.share && /mobile|android|iphone/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: 'Rpet Party Mode',
+          text: inviteText,
+          url: link,
+        });
+        setFriendFeedback('Запрошення надіслано!');
+        setTimeout(() => setFriendFeedback(null), 2500);
+        return;
+      } catch {
+        // fallback to clipboard
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setFriendFeedback(friendUsername ? `Запрошення для ${friendUsername} скопійовано!` : 'Запрошення скопійовано!');
+      setTimeout(() => setFriendFeedback(null), 2500);
+    } catch {
+      setFriendFeedback('Не вдалося скопіювати лінк');
+      setTimeout(() => setFriendFeedback(null), 2500);
+    }
   };
 
   const handleSendChat = (e: React.FormEvent) => {
@@ -179,13 +230,11 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     setActiveTab('queue');
   };
 
-  const handleAddFriendSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!friendInput.trim()) return;
-    const res = addFriend(friendInput.trim());
+  const handleAddFriendAction = (usernameToAdd: string) => {
+    const res = addFriend(usernameToAdd);
     if (res.success) {
-      setFriendInput('');
-      setFriendFeedback('Друга додано!');
+      setFriendSearchQuery('');
+      setFriendFeedback(`Користувача ${usernameToAdd} додано в друзі!`);
       setTimeout(() => setFriendFeedback(null), 2500);
     } else {
       setFriendFeedback(res.message || 'Помилка');
@@ -197,6 +246,15 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const isConnecting = status === 'connecting';
   const isReconnecting = status === 'reconnecting';
   const isDisconnected = status === 'disconnected' && !awaitingUserGesture;
+
+  // Filter friends based on search query
+  const trimmedSearch = friendSearchQuery.trim().toLowerCase();
+  const filteredFriends = friends.filter(
+    (f) =>
+      f.username.toLowerCase().includes(trimmedSearch) ||
+      (f.nickname && f.nickname.toLowerCase().includes(trimmedSearch))
+  );
+  const isDirectSearchExactMatch = friends.some((f) => f.username.toLowerCase() === trimmedSearch);
 
   return createPortal(
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200">
@@ -313,9 +371,86 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
           {/* ═══════════════════════════════════════════════════════════════════
               LEFT COLUMN: Кімната, Підключення, Учасники & Друзі
              ═══════════════════════════════════════════════════════════════════ */}
-          <div className={`md:col-span-5 flex flex-col overflow-y-auto p-5 space-y-5 bg-zinc-950/60 ${
+          <div className={`md:col-span-5 flex flex-col overflow-y-auto p-5 space-y-4 bg-zinc-950/60 ${
             mobileSection === 'room' ? 'flex' : 'hidden md:flex'
           } [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-800`}>
+
+            {/* ── User Profile / Nickname Editor Card ───────────────────────── */}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 shadow-xs">
+              {!isEditingNick ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-xs font-bold text-white shadow-md shadow-violet-600/20">
+                      {getInitials(user?.username || 'DJ')}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-semibold text-zinc-100 truncate">
+                          {user?.username || 'Анонімний DJ'}
+                        </p>
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-medium bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                          {user?.username ? 'Профіль' : 'Гість'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-mono truncate">
+                        Код для друзів: <span className="text-violet-300 font-semibold">{getMyCode()}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setNickInput(user?.username || '');
+                      setIsEditingNick(true);
+                    }}
+                    title="Змінити нікнейм"
+                    className="h-8 px-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0"
+                  >
+                    <Edit2 className="h-3 w-3 text-violet-400" />
+                    {user?.username ? 'Змінити' : 'Створити нік'}
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveNickname} className="space-y-2.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                      Створити / Змінити нікнейм
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingNick(false)}
+                      className="text-[11px] text-zinc-400 hover:text-zinc-200"
+                    >
+                      Скасувати
+                    </button>
+                  </div>
+                  
+                  {nickError && (
+                    <p className="text-[11px] text-red-400">{nickError}</p>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={nickInput}
+                      onChange={(e) => setNickInput(e.target.value)}
+                      placeholder="Введіть ваш нікнейм..."
+                      className="flex h-9 flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={!nickInput.trim()}
+                      className="h-9 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs transition-colors disabled:opacity-40"
+                    >
+                      Зберегти
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
 
             {/* State: Awaiting User Gesture Overlay */}
             {awaitingUserGesture && (
@@ -346,7 +481,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
             {/* State: Connecting */}
             {isConnecting && (
-              <div className="py-12 flex flex-col items-center justify-center gap-2.5 text-center rounded-xl border border-zinc-800 bg-zinc-900/30">
+              <div className="py-10 flex flex-col items-center justify-center gap-2.5 text-center rounded-xl border border-zinc-800 bg-zinc-900/30">
                 <Loader2 className="h-6 w-6 text-violet-400 animate-spin" />
                 <p className="text-xs font-medium text-zinc-200">Підключення до LiveKit SFU...</p>
                 <p className="text-[11px] text-zinc-500">Автоматичний вибір найближчого медіа-сервера</p>
@@ -452,12 +587,13 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                   </div>
                 </div>
 
+                {/* Direct Invite Friends Button */}
                 <button
-                  onClick={handleCopyLink}
-                  className="w-full h-8 rounded-lg border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
+                  onClick={() => handleInviteFriend()}
+                  className="w-full h-9 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium transition-all flex items-center justify-center gap-2 shadow-xs active:scale-[0.98]"
                 >
-                  <Link2 className="h-3.5 w-3.5" />
-                  {copiedLink ? 'Скопійовано!' : 'Скопіювати пряме посилання'}
+                  <Share2 className="h-3.5 w-3.5" />
+                  Запросити друзів до кімнати
                 </button>
               </div>
             )}
@@ -495,13 +631,9 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
                       {m.username !== user?.username && !friends.some((f) => f.username.toLowerCase() === m.username.toLowerCase()) && (
                         <button
-                          onClick={() => {
-                            addFriend(m.username);
-                            setFriendFeedback(`Додано ${m.username}!`);
-                            setTimeout(() => setFriendFeedback(null), 2500);
-                          }}
+                          onClick={() => handleAddFriendAction(m.username)}
                           title="Додати в друзі"
-                          className="p-1.5 text-zinc-400 hover:text-violet-300 hover:bg-zinc-800 rounded-md transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-violet-300 hover:bg-zinc-800 rounded-md transition-colors flex items-center gap-1 text-[11px]"
                         >
                           <UserPlus className="h-3.5 w-3.5" />
                         </button>
@@ -512,46 +644,82 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               </div>
             )}
 
-            {/* ── Friends Section ────────────────────────────────────────────── */}
+            {/* ── Friends & Friend Search Section ───────────────────────────── */}
             <div className="space-y-3 pt-3 border-t border-zinc-800/80">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-violet-400" />
-                  Мої Друзі ({friends.length})
+                  Пошук та Друзі ({friends.length})
                 </span>
                 {friendFeedback && (
-                  <span className="text-xs text-emerald-400 font-medium animate-in fade-in">
+                  <span className="text-[11px] text-emerald-400 font-medium animate-in fade-in truncate max-w-[200px]">
                     {friendFeedback}
                   </span>
                 )}
               </div>
 
-              {/* Add Friend Input */}
-              <form onSubmit={handleAddFriendSubmit} className="flex gap-2">
+              {/* Friend Search Bar */}
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-3 top-3" />
                 <input
                   type="text"
-                  placeholder="Введіть нікнейм друга..."
-                  value={friendInput}
-                  onChange={(e) => setFriendInput(e.target.value)}
-                  className="flex h-9 flex-1 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  placeholder="Пошук або додати друга за ніком..."
+                  value={friendSearchQuery}
+                  onChange={(e) => setFriendSearchQuery(e.target.value)}
+                  className="flex h-9 w-full rounded-xl border border-zinc-800 bg-zinc-900/60 pl-9 pr-8 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
-                <button
-                  type="submit"
-                  disabled={!friendInput.trim()}
-                  className="h-9 px-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs transition-colors disabled:opacity-40"
-                >
-                  + Додати
-                </button>
-              </form>
+                {friendSearchQuery && (
+                  <button
+                    onClick={() => setFriendSearchQuery('')}
+                    className="absolute right-2.5 top-2.5 p-0.5 text-zinc-500 hover:text-zinc-300"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* If search query entered and user is NOT yet in friends list */}
+              {friendSearchQuery.trim().length >= 2 && !isDirectSearchExactMatch && (
+                <div className="rounded-xl border border-violet-500/30 bg-violet-950/20 p-3 space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-violet-300 flex items-center gap-1.5">
+                      <UserIcon className="h-3.5 w-3.5" />
+                      {friendSearchQuery.trim()}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Новий користувач</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => handleAddFriendAction(friendSearchQuery.trim())}
+                      className="h-8 px-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-[11px] font-medium transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      + Додати в друзі
+                    </button>
+                    <button
+                      onClick={() => handleInviteFriend(friendSearchQuery.trim())}
+                      className="h-8 px-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-[11px] font-medium transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Share2 className="h-3 w-3 text-violet-400" />
+                      Запросити
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Friends list */}
-              {friends.length === 0 ? (
+              {friends.length === 0 && !friendSearchQuery.trim() ? (
                 <p className="text-xs text-zinc-500 italic py-1">
-                  Список друзів порожній.
+                  У вас поки немає друзів. Введіть нікнейм вище, щоб знайти або додати друга.
+                </p>
+              ) : filteredFriends.length === 0 && friendSearchQuery.trim() ? (
+                <p className="text-xs text-zinc-500 italic py-1">
+                  Серед збережених друзів нічого не знайдено.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-44 overflow-y-auto [&::-webkit-scrollbar]:hidden">
-                  {friends.map((f) => (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+                  {filteredFriends.map((f) => (
                     <div
                       key={f.peerId}
                       className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 hover:bg-zinc-900 transition-colors"
@@ -567,25 +735,27 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       </div>
 
                       <div className="flex items-center gap-1">
+                        {/* Invite button */}
+                        <button
+                          onClick={() => handleInviteFriend(f.username)}
+                          title={`Запросити ${f.username} в кімнату`}
+                          className="h-7 px-2 bg-violet-600/10 hover:bg-violet-600/20 text-violet-300 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1"
+                        >
+                          <Share2 className="h-3 w-3" />
+                          Запросити
+                        </button>
+
+                        {/* Join their room */}
                         <button
                           onClick={() => handleJoin(f.username)}
                           title={`Зайти в кімнату ${f.username}`}
-                          className="h-7 px-2.5 bg-violet-600/10 hover:bg-violet-600/20 text-violet-300 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1"
+                          className="h-7 px-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1"
                         >
                           <Headphones className="h-3 w-3" />
                           Зайти
                         </button>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(getInviteLink(getMyCode()));
-                            setFriendFeedback('Посилання скопійовано!');
-                            setTimeout(() => setFriendFeedback(null), 2500);
-                          }}
-                          title="Скопіювати запрошення"
-                          className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
-                        >
-                          <Link2 className="h-3.5 w-3.5" />
-                        </button>
+
+                        {/* Remove friend */}
                         <button
                           onClick={() => removeFriend(f.username)}
                           title="Видалити з друзів"
@@ -600,18 +770,14 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               )}
 
               {/* Recent Peers */}
-              {recentPeers.length > 0 && (
+              {recentPeers.length > 0 && !friendSearchQuery && (
                 <div className="pt-2 border-t border-zinc-800/60">
-                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Нещодавні:</span>
+                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Нещодавні слухачі:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {recentPeers.slice(0, 4).map((rp) => (
                       <button
                         key={rp.peerId}
-                        onClick={() => {
-                          addFriend(rp.username);
-                          setFriendFeedback(`Додано ${rp.username}!`);
-                          setTimeout(() => setFriendFeedback(null), 2500);
-                        }}
+                        onClick={() => handleAddFriendAction(rp.username)}
                         className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-zinc-100 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5"
                       >
                         <UserPlus className="h-3 w-3 text-zinc-500" />
