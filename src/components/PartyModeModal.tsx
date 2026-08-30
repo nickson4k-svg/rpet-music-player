@@ -4,7 +4,7 @@ import {
   X, Users, Headphones, Copy, Check, Radio, Music2,
   Send, Wifi, WifiOff, PlusCircle, MessageCircle, SmilePlus,
   LogOut, Crown, Loader2, UserPlus, Link2, Trash2, Search,
-  Play, Sparkles, Activity, ShieldCheck,
+  Play, Sparkles, ShieldCheck, Disc3,
 } from 'lucide-react';
 import { useLiveKitStore } from '../stores/livekitStore';
 import { useAuthStore } from '../stores/authStore';
@@ -12,7 +12,7 @@ import { usePlayerStore } from '../stores/playerStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import type { SharedQueueItem } from '../types';
 
-// ─── Emoji Reactions ──────────────────────────────────────────────────────────
+// ─── Constants & Types ────────────────────────────────────────────────────────
 
 const EMOJI_LIST = ['🔥', '❤️', '🎵', '😂', '👏', '💯', '🎉', '😍'];
 const FALLBACK_COVER = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=480&q=80';
@@ -40,7 +40,7 @@ interface PartyModeModalProps {
 
 export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const {
-    roomName, isHost, status, ping, error,
+    isHost, status, ping, error,
     sharedQueue, members, chatMessages,
     hostRoom, joinRoom, leaveRoom, addToSharedQueue, removeFromSharedQueue,
     sendChat, sendReaction,
@@ -99,70 +99,49 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
           id: crypto.randomUUID(),
           emoji: payload.emoji,
           username: payload.username,
-          x: 20 + Math.random() * 60,
+          x: 15 + Math.random() * 70,
         };
-        setFloatingEmojis((prev) => [...prev.slice(-6), newEmoji]);
+        setFloatingEmojis((prev) => [...prev, newEmoji]);
         setTimeout(() => {
           setFloatingEmojis((prev) => prev.filter((e) => e.id !== newEmoji.id));
-        }, 2500);
+        }, 3000);
       },
     });
+
     return () => {
       useLiveKitStore.setState({ onReactionReceived: null });
     };
   }, []);
 
-  // ── Actions ─────────────────────────────────────────────────────────────────
-
   const getMyCode = () => {
-    if (user?.username) return user.username;
-    if (roomName) return roomName.replace(/^room-/, '');
-    return 'Room';
-  };
-
-  const handleCopyCode = () => {
-    const code = getMyCode();
-    if (code) {
-      navigator.clipboard.writeText(code);
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
-    }
-  };
-
-  const handleCopyLink = () => {
-    const code = getMyCode();
-    if (code) {
-      const link = getInviteLink(code);
-      navigator.clipboard.writeText(link);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    }
+    return user?.username || 'DJ-Host';
   };
 
   const handleHost = async () => {
-    try {
-      await hostRoom();
-    } catch (err) {
-      console.error('Failed to host LiveKit room', err);
-    }
+    await hostRoom();
   };
 
-  const handleJoin = async (targetCode?: string) => {
-    const codeToUse = targetCode || joinCode;
-    if (!codeToUse.trim()) return;
-    try {
-      await joinRoom(codeToUse.trim());
-    } catch (err) {
-      console.error('Failed to join LiveKit room', err);
-    }
+  const handleJoin = async (overrideCode?: string) => {
+    const code = overrideCode || joinCode.trim();
+    if (!code) return;
+    await joinRoom(code);
   };
 
   const handleUserGesture = async () => {
-    try {
-      await confirmUserGestureAndJoin();
-    } catch (err) {
-      console.error('Failed to connect after gesture', err);
-    }
+    await confirmUserGestureAndJoin();
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(getMyCode());
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyLink = () => {
+    const link = getInviteLink(getMyCode());
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   const handleSendChat = (e: React.FormEvent) => {
@@ -176,22 +155,23 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
     sendReaction(emoji);
   };
 
-  const handleSearchTrack = (query: string) => {
-    setSearchQuery(query);
+  const handleSearchTrack = (q: string) => {
+    setSearchQuery(q);
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    if (query.trim().length < 2) return;
     searchTimeout.current = window.setTimeout(() => {
-      searchGlobal(query.trim(), 'soundcloud');
-    }, 400);
+      if (q.trim().length > 1) {
+        searchGlobal(q.trim(), 'soundcloud');
+      }
+    }, 350);
   };
 
   const handleAddTrack = (track: any) => {
     const item: SharedQueueItem = {
       trackId: track.id,
-      title: track.name,
-      artist: track.artist,
+      title: track.name || track.title || 'Unknown Track',
+      artist: track.artist || 'Unknown Artist',
       coverUrl: track.coverUrl,
-      addedBy: user?.username ?? 'Анонім',
+      addedBy: user?.username || 'Anonymous',
       url: track.url,
       audioUrl: track.audioUrl,
     };
@@ -219,13 +199,13 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
   const isDisconnected = status === 'disconnected' && !awaitingUserGesture;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fade-in">
-      {/* Floating Emoji Bubbles */}
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200">
+      {/* Floating Reaction Emojis */}
       <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
         {floatingEmojis.map((fe) => (
           <div
             key={fe.id}
-            className="absolute bottom-24 animate-bounce text-4xl select-none"
+            className="absolute bottom-28 animate-bounce text-4xl select-none filter drop-shadow-md"
             style={{ left: `${fe.x}%`, animationDuration: '0.6s', transition: 'all 2.5s ease-out' }}
           >
             {fe.emoji}
@@ -233,59 +213,65 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
         ))}
       </div>
 
-      <div className="bg-zinc-950/95 border border-white/15 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden relative flex flex-col min-h-[620px] max-h-[92vh]">
-        {/* ── Top Header ────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02] flex-shrink-0">
+      {/* shadcn Dialog Component */}
+      <div className="w-full max-w-5xl rounded-2xl border border-zinc-800 bg-zinc-950 text-zinc-50 shadow-2xl overflow-hidden relative flex flex-col min-h-[640px] max-h-[90vh]">
+        
+        {/* ── Dialog Header ─────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/40 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Radio className="w-5 h-5 text-white animate-pulse" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400">
+              <Radio className="h-5 w-5 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                Спільне прослуховування
-                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-normal border border-violet-500/30 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-violet-400" />
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold tracking-tight text-zinc-100">
+                  Спільне прослуховування
+                </h2>
+                <span className="inline-flex items-center rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-300 gap-1">
+                  <ShieldCheck className="h-3 w-3 text-violet-400" />
                   LiveKit SFU
                 </span>
-              </h2>
-              <p className="text-xs text-zinc-400">Високошвидкісна WebRTC трансляція без затримок та обмежень NAT</p>
+              </div>
+              <p className="text-xs text-zinc-400">Пряма WebRTC трансляція високої якості без затримок</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
             {isConnected && (
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs font-mono">
-                <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-300">{ping > 0 ? `${ping}ms` : 'HQ'}</span>
-                <span className="text-zinc-500">•</span>
-                <span className="text-zinc-300 font-sans">{isHost ? '👑 Хост' : '🎧 Гість'}</span>
+              <div className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 text-xs font-mono text-zinc-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-emerald-400 font-semibold">{ping > 0 ? `${ping}ms` : 'HQ'}</span>
+                <span className="text-zinc-600">•</span>
+                <span className="text-zinc-300 font-sans font-medium flex items-center gap-1">
+                  {isHost ? <Crown className="h-3.5 w-3.5 text-amber-400" /> : <Headphones className="h-3.5 w-3.5 text-violet-400" />}
+                  {isHost ? 'Хост' : 'Гість'}
+                </span>
               </div>
             )}
             <button
               onClick={onClose}
-              className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+              className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-700"
               title="Закрити"
             >
-              <X className="w-5 h-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* ── Error Banner ──────────────────────────────────────────────────── */}
+        {/* ── Alerts & Warnings (shadcn Alert variant) ───────────────────────── */}
         {error && (
-          <div className="mx-6 mt-3 p-3 bg-red-500/15 border border-red-500/40 rounded-xl text-red-300 text-sm flex-shrink-0 flex items-center justify-between">
-            <span>⚠️ {error}</span>
-            <button onClick={() => useLiveKitStore.setState({ error: null })} className="text-xs underline hover:text-white">
+          <div className="mx-6 mt-3 flex items-center justify-between rounded-xl border border-red-900/50 bg-red-950/40 p-3 text-xs text-red-300 flex-shrink-0">
+            <span className="flex items-center gap-2 font-medium">⚠️ {error}</span>
+            <button onClick={() => useLiveKitStore.setState({ error: null })} className="underline hover:text-white">
               Приховати
             </button>
           </div>
         )}
 
-        {/* ── Autoplay Blocked Banner ────────────────────────────────────────── */}
         {autoplayBlocked && isConnected && !isHost && (
-          <div className="mx-6 mt-3 p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-sm flex-shrink-0 flex items-center justify-between gap-3">
+          <div className="mx-6 mt-3 flex items-center justify-between gap-3 rounded-xl border border-amber-900/50 bg-amber-950/40 p-3 text-xs text-amber-300 flex-shrink-0">
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
               Браузер призупинив звук через політику автовідтворення
             </span>
             <button
@@ -294,7 +280,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                 if (audio) audio.play().catch(console.error);
                 useLiveKitStore.setState({ autoplayBlocked: false });
               }}
-              className="text-xs font-semibold bg-amber-500/30 hover:bg-amber-500/50 text-amber-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+              className="rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 px-3 py-1 font-semibold text-xs transition-colors whitespace-nowrap shadow-xs"
             >
               🎧 Увімкнути звук
             </button>
@@ -302,10 +288,10 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
         )}
 
         {/* ── Mobile Navigation Tabs ─────────────────────────────────────────── */}
-        <div className="md:hidden flex items-center border-b border-white/10 px-4 bg-white/[0.01]">
+        <div className="md:hidden flex items-center border-b border-zinc-800 px-4 bg-zinc-900/40">
           <button
             onClick={() => setMobileSection('room')}
-            className={`flex-1 py-3 text-sm font-semibold border-b-2 text-center transition-colors ${
+            className={`flex-1 py-2.5 text-xs font-medium border-b-2 text-center transition-colors ${
               mobileSection === 'room' ? 'border-violet-500 text-violet-400' : 'border-transparent text-zinc-400'
             }`}
           >
@@ -313,7 +299,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
           </button>
           <button
             onClick={() => setMobileSection('content')}
-            className={`flex-1 py-3 text-sm font-semibold border-b-2 text-center transition-colors ${
+            className={`flex-1 py-2.5 text-xs font-medium border-b-2 text-center transition-colors ${
               mobileSection === 'content' ? 'border-violet-500 text-violet-400' : 'border-transparent text-zinc-400'
             }`}
           >
@@ -322,30 +308,30 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
         </div>
 
         {/* ── Main Two-Column Body ───────────────────────────────────────────── */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 md:divide-x md:divide-white/10 overflow-hidden min-h-0">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 md:divide-x md:divide-zinc-800 overflow-hidden min-h-0">
 
           {/* ═══════════════════════════════════════════════════════════════════
-              LEFT COLUMN: Кімната, Підключення, Учасники & Система друзів
+              LEFT COLUMN: Кімната, Підключення, Учасники & Друзі
              ═══════════════════════════════════════════════════════════════════ */}
-          <div className={`md:col-span-5 flex flex-col overflow-y-auto p-5 sm:p-6 space-y-6 ${
+          <div className={`md:col-span-5 flex flex-col overflow-y-auto p-5 space-y-5 bg-zinc-950/60 ${
             mobileSection === 'room' ? 'flex' : 'hidden md:flex'
-          } [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10`}>
+          } [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-800`}>
 
             {/* State: Awaiting User Gesture Overlay */}
             {awaitingUserGesture && (
-              <div className="p-6 bg-violet-600/10 border border-violet-500/30 rounded-2xl flex flex-col items-center justify-center text-center gap-4 animate-fade-in">
-                <div className="w-16 h-16 rounded-2xl bg-violet-600/20 flex items-center justify-center">
-                  <Headphones className="w-8 h-8 text-violet-400 animate-bounce" />
+              <div className="rounded-xl border border-violet-500/20 bg-violet-950/20 p-5 flex flex-col items-center justify-center text-center gap-3.5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600/20 text-violet-400">
+                  <Headphones className="h-6 w-6 animate-bounce" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white mb-1">Дозвіл на відтворення звуку</h3>
-                  <p className="text-xs text-zinc-400">
+                  <h3 className="text-sm font-semibold text-zinc-100 mb-1">Дозвіл на відтворення звуку</h3>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
                     Браузер вимагає одного кліку перед початком прямої WebRTC аудіотрансляції.
                   </p>
                 </div>
                 <button
                   onClick={handleUserGesture}
-                  className="w-full py-3 px-6 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-600/30 active:scale-95 transition-all"
+                  className="w-full h-10 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs transition-colors shadow-xs active:scale-[0.98]"
                 >
                   🎧 Приєднатися та слухати
                 </button>
@@ -360,50 +346,54 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
             {/* State: Connecting */}
             {isConnecting && (
-              <div className="py-12 flex flex-col items-center justify-center gap-3 text-center bg-white/[0.02] rounded-2xl border border-white/5">
-                <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-                <p className="text-sm font-semibold text-white">Підключення до LiveKit SFU...</p>
-                <p className="text-xs text-zinc-500">Автоматичний вибір найближчого медіа-сервера</p>
+              <div className="py-12 flex flex-col items-center justify-center gap-2.5 text-center rounded-xl border border-zinc-800 bg-zinc-900/30">
+                <Loader2 className="h-6 w-6 text-violet-400 animate-spin" />
+                <p className="text-xs font-medium text-zinc-200">Підключення до LiveKit SFU...</p>
+                <p className="text-[11px] text-zinc-500">Автоматичний вибір найближчого медіа-сервера</p>
               </div>
             )}
 
             {/* State: Reconnecting */}
             {isReconnecting && (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center gap-3 text-amber-300">
-                <Wifi className="w-6 h-6 animate-pulse flex-shrink-0" />
+              <div className="flex items-center gap-3 rounded-xl border border-amber-900/50 bg-amber-950/30 p-3 text-amber-300">
+                <Wifi className="h-5 w-5 flex-shrink-0 animate-pulse" />
                 <div className="text-xs">
                   <p className="font-semibold">Перепідключення до кімнати...</p>
-                  <p className="text-zinc-400">З'єднання було перервано. LiveKit відновлює аудіопотік.</p>
+                  <p className="text-zinc-400 text-[11px]">LiveKit відновлює аудіопотік.</p>
                 </div>
               </div>
             )}
 
-            {/* State: Disconnected (Host or Join inputs) */}
+            {/* State: Disconnected (shadcn Card style Host / Join) */}
             {isDisconnected && (
               <div className="space-y-4">
-                <div className="bg-gradient-to-br from-violet-900/20 to-fuchsia-900/20 border border-violet-500/20 rounded-2xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-violet-300 font-semibold text-sm">
-                    <Sparkles className="w-4 h-4" />
+                {/* Host Hero Card */}
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-3 shadow-xs">
+                  <div className="flex items-center gap-2 text-zinc-100 font-semibold text-xs">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-600/20 text-violet-400">
+                      <Sparkles className="h-3.5 w-3.5" />
+                    </span>
                     Створити власну кімнату
                   </div>
-                  <p className="text-xs text-zinc-400">
-                    Станьте діджеєм: транслюйте свій мікс через SFU сервер, керуйте чергою та запрошуйте слухачів.
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Станьте хостом: транслюйте свій мікс через SFU сервер, керуйте чергою та запрошуйте слухачів.
                   </p>
                   <button
                     onClick={handleHost}
-                    className="w-full py-3 px-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-900/40 active:scale-98"
+                    className="w-full h-10 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs transition-colors flex items-center justify-center gap-2 shadow-xs active:scale-[0.98]"
                   >
-                    <Headphones className="w-4 h-4" />
+                    <Headphones className="h-4 w-4" />
                     Створити кімнату (Host)
                   </button>
                 </div>
 
                 <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t border-white/10" />
-                  <span className="flex-shrink-0 mx-3 text-zinc-600 text-xs uppercase tracking-wider font-semibold">або підключитися</span>
-                  <div className="flex-grow border-t border-white/10" />
+                  <div className="flex-grow border-t border-zinc-800" />
+                  <span className="flex-shrink-0 mx-3 text-zinc-500 text-[10px] uppercase tracking-wider font-semibold">або підключитися</span>
+                  <div className="flex-grow border-t border-zinc-800" />
                 </div>
 
+                {/* Join Form */}
                 <form onSubmit={(e) => { e.preventDefault(); handleJoin(); }} className="space-y-2">
                   <div className="relative">
                     <input
@@ -411,92 +401,91 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       placeholder="Нікнейм друга або назва кімнати..."
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value)}
-                      className="w-full pl-4 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors"
+                      className="flex h-10 w-full rounded-xl border border-zinc-800 bg-zinc-900/60 pl-3.5 pr-10 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                     />
-                    <Search className="w-4 h-4 text-zinc-500 absolute right-3.5 top-3.5" />
+                    <Search className="h-4 w-4 text-zinc-500 absolute right-3.5 top-3" />
                   </div>
                   <button
                     type="submit"
                     disabled={!joinCode.trim()}
-                    className="w-full py-3 px-4 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
+                    className="w-full h-10 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800/80 text-zinc-200 font-medium text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs active:scale-[0.98]"
                   >
-                    <Users className="w-4 h-4" />
+                    <Users className="h-4 w-4" />
                     Приєднатися як Гість
                   </button>
                 </form>
               </div>
             )}
 
-            {/* State: Connected Room Info */}
+            {/* State: Connected Room Info Card */}
             {isConnected && (
-              <div className="space-y-3 bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3.5 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                     {isHost ? 'Код кімнати' : 'Кімната хоста'}
                   </span>
-                  <span className="text-xs text-emerald-400 flex items-center gap-1 font-mono">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    LiveKit SFU Connected
+                  <span className="text-xs text-emerald-400 flex items-center gap-1.5 font-mono font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    SFU Live
                   </span>
                 </div>
 
-                {/* Code display */}
-                <div className="flex items-center justify-between gap-2 p-2.5 bg-black/40 border border-white/10 rounded-xl">
-                  <code className="text-sm font-mono text-violet-300 font-bold truncate select-all">
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-zinc-950 rounded-lg border border-zinc-800">
+                  <code className="text-xs font-mono text-violet-300 font-semibold truncate select-all">
                     {getMyCode()}
                   </code>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={handleCopyCode}
                       title="Скопіювати код"
-                      className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                      className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
                     >
-                      {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={handleCopyLink}
                       title="Скопіювати лінк для запрошення"
-                      className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-violet-400 transition-colors"
+                      className="p-1.5 text-zinc-400 hover:text-violet-400 hover:bg-zinc-800 rounded-md transition-colors"
                     >
-                      {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4" />}
+                      {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Link2 className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
 
                 <button
                   onClick={handleCopyLink}
-                  className="w-full py-2 px-3 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full h-8 rounded-lg border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <Link2 className="w-3.5 h-3.5" />
+                  <Link2 className="h-3.5 w-3.5" />
                   {copiedLink ? 'Скопійовано!' : 'Скопіювати пряме посилання'}
                 </button>
               </div>
             )}
 
-            {/* Members Section */}
+            {/* Room Members Section */}
             {isConnected && (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-violet-400" />
                     Учасники кімнати ({members.length})
                   </span>
                 </div>
 
-                <div className="space-y-1.5 max-h-40 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+                <div className="space-y-1.5 max-h-36 overflow-y-auto [&::-webkit-scrollbar]:hidden">
                   {members.map((m) => (
                     <div
                       key={m.peerId}
-                      className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-700 transition-colors"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[11px] font-semibold text-zinc-200 border border-zinc-700">
                           {getInitials(m.username)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-white truncate flex items-center gap-1.5">
+                          <p className="text-xs font-medium text-zinc-100 truncate flex items-center gap-1.5">
                             {m.username}
-                            {m.isHost && <Crown className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />}
+                            {m.isHost && <Crown className="h-3 w-3 text-amber-400 flex-shrink-0" />}
                           </p>
                           <span className="text-[10px] text-zinc-500 font-mono">
                             {m.isHost ? 'Хост' : 'Слухач'}
@@ -504,7 +493,6 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                         </div>
                       </div>
 
-                      {/* Add as friend button if not self and not already friend */}
                       {m.username !== user?.username && !friends.some((f) => f.username.toLowerCase() === m.username.toLowerCase()) && (
                         <button
                           onClick={() => {
@@ -513,9 +501,9 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                             setTimeout(() => setFriendFeedback(null), 2500);
                           }}
                           title="Додати в друзі"
-                          className="p-1.5 hover:bg-violet-600/20 text-zinc-400 hover:text-violet-300 rounded-lg transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-violet-300 hover:bg-zinc-800 rounded-md transition-colors"
                         >
-                          <UserPlus className="w-4 h-4" />
+                          <UserPlus className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </div>
@@ -525,32 +513,32 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
             )}
 
             {/* ── Friends Section ────────────────────────────────────────────── */}
-            <div className="space-y-3 pt-2 border-t border-white/10">
+            <div className="space-y-3 pt-3 border-t border-zinc-800/80">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-violet-400" />
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-violet-400" />
                   Мої Друзі ({friends.length})
                 </span>
                 {friendFeedback && (
-                  <span className="text-xs text-emerald-400 font-medium animate-fade-in">
+                  <span className="text-xs text-emerald-400 font-medium animate-in fade-in">
                     {friendFeedback}
                   </span>
                 )}
               </div>
 
-              {/* Add friend form */}
+              {/* Add Friend Input */}
               <form onSubmit={handleAddFriendSubmit} className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Введіть нікнейм друга..."
                   value={friendInput}
                   onChange={(e) => setFriendInput(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60"
+                  className="flex h-9 flex-1 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
                 <button
                   type="submit"
                   disabled={!friendInput.trim()}
-                  className="px-3 py-2 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 text-violet-200 rounded-xl text-xs font-semibold transition-colors disabled:opacity-40"
+                  className="h-9 px-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs transition-colors disabled:opacity-40"
                 >
                   + Додати
                 </button>
@@ -558,37 +546,35 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
               {/* Friends list */}
               {friends.length === 0 ? (
-                <p className="text-xs text-zinc-600 italic py-2">
-                  Список друзів порожній. Додайте нікнейм або запросіть когось за посиланням!
+                <p className="text-xs text-zinc-500 italic py-1">
+                  Список друзів порожній.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-48 overflow-y-auto [&::-webkit-scrollbar]:hidden">
+                <div className="space-y-1.5 max-h-44 overflow-y-auto [&::-webkit-scrollbar]:hidden">
                   {friends.map((f) => (
                     <div
                       key={f.peerId}
-                      className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 border border-zinc-800/60 hover:bg-zinc-900 transition-colors"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-bold text-zinc-300 flex-shrink-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[11px] font-semibold text-zinc-300 border border-zinc-700">
                           {getInitials(f.username)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-white truncate">{f.username}</p>
+                          <p className="text-xs font-medium text-zinc-100 truncate">{f.username}</p>
                           {f.nickname && <p className="text-[10px] text-zinc-500 truncate">{f.nickname}</p>}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1">
-                        {/* Quick join friend room */}
                         <button
                           onClick={() => handleJoin(f.username)}
                           title={`Зайти в кімнату ${f.username}`}
-                          className="px-2 py-1 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 rounded-lg text-[11px] font-medium transition-colors flex items-center gap-1"
+                          className="h-7 px-2.5 bg-violet-600/10 hover:bg-violet-600/20 text-violet-300 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1"
                         >
-                          <Headphones className="w-3 h-3" />
+                          <Headphones className="h-3 w-3" />
                           Зайти
                         </button>
-                        {/* Copy invite link */}
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(getInviteLink(getMyCode()));
@@ -596,17 +582,16 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                             setTimeout(() => setFriendFeedback(null), 2500);
                           }}
                           title="Скопіювати запрошення"
-                          className="p-1 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                          className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
                         >
-                          <Link2 className="w-3.5 h-3.5" />
+                          <Link2 className="h-3.5 w-3.5" />
                         </button>
-                        {/* Remove friend */}
                         <button
                           onClick={() => removeFriend(f.username)}
                           title="Видалити з друзів"
-                          className="p-1 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 rounded-lg transition-colors"
+                          className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -614,10 +599,10 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                 </div>
               )}
 
-              {/* Recent peers list */}
+              {/* Recent Peers */}
               {recentPeers.length > 0 && (
-                <div className="pt-2 border-t border-white/5">
-                  <span className="text-[11px] font-semibold text-zinc-500 block mb-1.5">Нещодавні співрозмовники:</span>
+                <div className="pt-2 border-t border-zinc-800/60">
+                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Нещодавні:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {recentPeers.slice(0, 4).map((rp) => (
                       <button
@@ -627,9 +612,9 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                           setFriendFeedback(`Додано ${rp.username}!`);
                           setTimeout(() => setFriendFeedback(null), 2500);
                         }}
-                        className="text-[11px] bg-white/5 hover:bg-violet-600/20 border border-white/10 text-zinc-300 hover:text-violet-200 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                        className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-zinc-100 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5"
                       >
-                        <UserPlus className="w-3 h-3 text-zinc-500" />
+                        <UserPlus className="h-3 w-3 text-zinc-500" />
                         {rp.username}
                       </button>
                     ))}
@@ -638,14 +623,14 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               )}
             </div>
 
-            {/* Disconnect button at bottom of left column */}
+            {/* Disconnect Button */}
             {(isConnected || isReconnecting) && (
-              <div className="pt-4 mt-auto border-t border-white/10">
+              <div className="pt-3 mt-auto border-t border-zinc-800">
                 <button
                   onClick={leaveRoom}
-                  className="w-full py-2.5 px-4 text-red-400 hover:text-white hover:bg-red-600/20 border border-red-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2"
+                  className="w-full h-9 rounded-xl border border-red-900/50 bg-red-950/20 hover:bg-red-950/40 text-red-400 text-xs font-medium transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
-                  {isHost ? <WifiOff className="w-4 h-4" /> : <LogOut className="w-4 h-4" />}
+                  {isHost ? <WifiOff className="h-3.5 w-3.5" /> : <LogOut className="h-3.5 w-3.5" />}
                   {isHost ? 'Закрити кімнату для всіх' : 'Відключитися від кімнати'}
                 </button>
               </div>
@@ -653,38 +638,42 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════════
-              RIGHT COLUMN: Вкладки (Спільна черга, Чат, Пошук) & Реакції
+              RIGHT COLUMN: Tabs (Queue, Chat, Search) & Reaction Dock
              ═══════════════════════════════════════════════════════════════════ */}
-          <div className={`md:col-span-7 flex flex-col overflow-hidden bg-white/[0.01] ${
+          <div className={`md:col-span-7 flex flex-col overflow-hidden bg-zinc-950 ${
             mobileSection === 'content' ? 'flex' : 'hidden md:flex'
           }`}>
 
-            {/* Tab Bar */}
-            <div className="flex items-center justify-between px-6 border-b border-white/10 bg-black/20 flex-shrink-0">
-              <div className="flex items-center gap-6">
+            {/* shadcn TabsList */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800/80 bg-zinc-900/20 flex-shrink-0">
+              <div className="inline-flex h-9 items-center justify-center rounded-lg bg-zinc-900 p-1 text-zinc-400 border border-zinc-800/80">
                 <button
                   onClick={() => setActiveTab('queue')}
-                  className={`py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'queue' ? 'border-violet-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    activeTab === 'queue'
+                      ? 'bg-zinc-950 text-zinc-100 shadow-xs'
+                      : 'hover:text-zinc-100'
                   }`}
                 >
-                  <Music2 className="w-4 h-4" />
+                  <Music2 className="h-3.5 w-3.5 mr-1.5" />
                   Спільна черга
-                  <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] text-zinc-300">
+                  <span className="ml-1.5 rounded-full bg-zinc-800 px-1.5 py-0.2 text-[10px] font-mono text-zinc-400">
                     {sharedQueue.length}
                   </span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className={`py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'chat' ? 'border-violet-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    activeTab === 'chat'
+                      ? 'bg-zinc-950 text-zinc-100 shadow-xs'
+                      : 'hover:text-zinc-100'
                   }`}
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
                   Чат
                   {chatMessages.length > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-violet-600 text-[10px] text-white">
+                    <span className="ml-1.5 rounded-full bg-violet-600 px-1.5 py-0.2 text-[10px] font-mono text-white">
                       {chatMessages.length > 99 ? '99+' : chatMessages.length}
                     </span>
                   )}
@@ -692,11 +681,13 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
                 <button
                   onClick={() => setActiveTab('search')}
-                  className={`py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'search' ? 'border-violet-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    activeTab === 'search'
+                      ? 'bg-zinc-950 text-zinc-100 shadow-xs'
+                      : 'hover:text-zinc-100'
                   }`}
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="h-3.5 w-3.5 mr-1.5" />
                   Пошук треку
                 </button>
               </div>
@@ -704,72 +695,74 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
               {activeTab === 'queue' && (
                 <button
                   onClick={() => setActiveTab('search')}
-                  className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 bg-violet-600/10 hover:bg-violet-600/20 px-2.5 py-1.5 rounded-lg border border-violet-500/20 transition-colors"
+                  className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors shadow-xs"
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
+                  <PlusCircle className="h-3.5 w-3.5 text-violet-400" />
                   Додати трек
                 </button>
               )}
             </div>
 
-            {/* Currently Playing Banner */}
+            {/* Currently Playing Card */}
             {currentPlayingTrack && (
-              <div className="mx-6 mt-4 p-3 bg-gradient-to-r from-violet-950/40 via-zinc-900/60 to-black/40 border border-violet-500/20 rounded-2xl flex items-center justify-between gap-3 flex-shrink-0 shadow-lg">
+              <div className="mx-6 mt-4 p-3 rounded-xl border border-zinc-800 bg-zinc-900/50 flex items-center justify-between gap-3 flex-shrink-0 shadow-xs">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-zinc-800 overflow-hidden flex-shrink-0 border border-white/10 relative">
+                  <div className="h-11 w-11 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0 border border-zinc-700/60 relative">
                     {currentPlayingTrack.coverUrl ? (
                       <img
                         src={currentPlayingTrack.coverUrl}
                         alt={currentPlayingTrack.name}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = FALLBACK_COVER;
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Music2 className="w-5 h-5 text-zinc-500" />
+                      <div className="h-full w-full flex items-center justify-center">
+                        <Music2 className="h-5 w-5 text-zinc-500" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <Play className="w-4 h-4 text-white fill-white" />
+                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                      <Play className="h-3.5 w-3.5 text-white fill-white" />
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-violet-400 block">Зараз грає</span>
-                    <p className="text-sm font-bold text-white truncate">{currentPlayingTrack.name}</p>
-                    <p className="text-xs text-zinc-400 truncate">{currentPlayingTrack.artist}</p>
+                    <span className="text-[10px] uppercase font-semibold tracking-wider text-violet-400 block">Зараз грає</span>
+                    <p className="text-xs font-semibold text-zinc-100 truncate">{currentPlayingTrack.name}</p>
+                    <p className="text-[11px] text-zinc-400 truncate">{currentPlayingTrack.artist}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-mono flex-shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-ping" />
+                <div className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] text-zinc-400 font-mono flex-shrink-0">
+                  <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
                   Live Stream
                 </div>
               </div>
             )}
 
             {/* ── Tab Contents ──────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto p-6 min-h-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
+            <div className="flex-1 overflow-y-auto p-6 min-h-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-800">
 
               {/* ── TAB 1: Shared Queue ── */}
               {activeTab === 'queue' && (
                 <div className="space-y-3">
                   {sharedQueue.length === 0 ? (
                     <div className="py-16 text-center space-y-3">
-                      <div className="w-16 h-16 rounded-3xl bg-white/[0.02] border border-white/10 flex items-center justify-center mx-auto text-zinc-600">
-                        <Music2 className="w-8 h-8" />
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/60 mx-auto text-zinc-500">
+                        <Disc3 className="h-8 w-8 animate-spin" style={{ animationDuration: '12s' }} />
                       </div>
-                      <p className="text-sm font-semibold text-zinc-300">Спільна черга порожня</p>
-                      <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                        Ви або ваші друзі можете знайти будь-яку пісню та додати її сюди через SFU Data Channel.
-                      </p>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-200">Спільна черга порожня</p>
+                        <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 leading-relaxed">
+                          Ви або ваші друзі можете знайти треки та додати їх сюди через SFU Data Channel.
+                        </p>
+                      </div>
                       <button
                         onClick={() => setActiveTab('search')}
-                        className="py-2.5 px-5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold transition-all inline-flex items-center gap-2 shadow-lg shadow-violet-900/30"
+                        className="inline-flex items-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 text-xs font-medium transition-colors shadow-xs active:scale-[0.98]"
                       >
-                        <Search className="w-3.5 h-3.5" />
+                        <Search className="h-3.5 w-3.5" />
                         Знайти трек для вечірки
                       </button>
                     </div>
@@ -778,30 +771,30 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       {sharedQueue.map((item, i) => (
                         <div
                           key={`${item.trackId}-${i}`}
-                          className="flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.04] transition-all group"
+                          className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-800/80 bg-zinc-900/30 hover:bg-zinc-900/60 transition-colors group"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-xs font-bold text-zinc-500 w-5 text-center">{i + 1}</span>
-                            <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/10 overflow-hidden flex-shrink-0">
+                            <span className="text-xs font-semibold text-zinc-500 w-5 text-center">{i + 1}</span>
+                            <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700/60 overflow-hidden flex-shrink-0">
                               {item.coverUrl ? (
                                 <img
                                   src={item.coverUrl}
                                   alt={item.title}
-                                  className="w-full h-full object-cover"
+                                  className="h-full w-full object-cover"
                                   onError={(e) => {
                                     e.currentTarget.onerror = null;
                                     e.currentTarget.src = FALLBACK_COVER;
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Music2 className="w-4 h-4 text-zinc-500" />
+                                <div className="h-full w-full flex items-center justify-center">
+                                  <Music2 className="h-4 w-4 text-zinc-500" />
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-white truncate">{item.title}</p>
-                              <p className="text-xs text-zinc-400 truncate">
+                              <p className="text-xs font-semibold text-zinc-100 truncate">{item.title}</p>
+                              <p className="text-[11px] text-zinc-400 truncate">
                                 {item.artist} · <span className="text-violet-400">додав {item.addedBy}</span>
                               </p>
                             </div>
@@ -810,9 +803,9 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                           <button
                             onClick={() => removeFromSharedQueue(item.trackId)}
                             title="Видалити з черги"
-                            className="p-2 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 rounded-xl transition-colors opacity-80 group-hover:opacity-100"
+                            className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-80 group-hover:opacity-100"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       ))}
@@ -823,13 +816,13 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
               {/* ── TAB 2: Chat ── */}
               {activeTab === 'chat' && (
-                <div className="flex flex-col h-full space-y-4">
+                <div className="flex flex-col h-full space-y-3.5">
                   <div className="flex-1 space-y-3 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden">
                     {chatMessages.length === 0 ? (
-                      <div className="py-16 text-center text-zinc-500 space-y-2">
-                        <MessageCircle className="w-10 h-10 mx-auto opacity-30" />
-                        <p className="text-sm">Тут поки що немає повідомлень.</p>
-                        <p className="text-xs">Напишіть щось у кімнату!</p>
+                      <div className="py-16 text-center text-zinc-500 space-y-1.5">
+                        <MessageCircle className="h-8 w-8 mx-auto opacity-40 text-zinc-400" />
+                        <p className="text-xs font-medium text-zinc-400">Тут поки що немає повідомлень.</p>
+                        <p className="text-[11px] text-zinc-600">Напишіть щось першим у кімнату!</p>
                       </div>
                     ) : (
                       chatMessages.map((msg) => {
@@ -839,7 +832,7 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                             key={msg.id}
                             className={`flex gap-2.5 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
                           >
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5 shadow-sm">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-semibold text-zinc-300 border border-zinc-700 mt-0.5">
                               {getInitials(msg.username)}
                             </div>
                             <div className={`max-w-[78%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
@@ -847,10 +840,10 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                                 {msg.username} · {formatTime(msg.timestamp)}
                               </span>
                               <div
-                                className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
+                                className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed ${
                                   isMe
-                                    ? 'bg-violet-600 text-white rounded-tr-xs shadow-md shadow-violet-900/20'
-                                    : 'bg-white/10 text-zinc-100 rounded-tl-xs border border-white/5'
+                                    ? 'bg-violet-600 text-white rounded-tr-xs shadow-xs'
+                                    : 'bg-zinc-800/80 text-zinc-100 rounded-tl-xs border border-zinc-700/60'
                                 }`}
                               >
                                 {msg.text}
@@ -863,20 +856,20 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                     <div ref={chatEndRef} />
                   </div>
 
-                  <form onSubmit={handleSendChat} className="flex gap-2 pt-2 border-t border-white/10 flex-shrink-0">
+                  <form onSubmit={handleSendChat} className="flex gap-2 pt-2.5 border-t border-zinc-800 flex-shrink-0">
                     <input
                       type="text"
                       placeholder="Напишіть повідомлення в кімнату..."
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors"
+                      className="flex h-10 flex-1 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
                     />
                     <button
                       type="submit"
                       disabled={!chatInput.trim()}
-                      className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all text-white font-medium flex items-center gap-1.5 shadow-lg shadow-violet-900/30"
+                      className="h-10 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-xs"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="h-3.5 w-3.5" />
                     </button>
                   </form>
                 </div>
@@ -892,20 +885,20 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       placeholder="Пошук треку через SoundCloud & Audius..."
                       value={searchQuery}
                       onChange={(e) => handleSearchTrack(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 transition-colors"
+                      className="flex h-10 w-full rounded-xl border border-zinc-800 bg-zinc-900/60 pl-10 pr-4 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
                     />
-                    <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
+                    <Search className="h-4 w-4 text-zinc-500 absolute left-3.5 top-3" />
                   </div>
 
                   {isSearchLoading && (
-                    <div className="py-12 flex justify-center items-center gap-2 text-violet-400 text-sm">
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                    <div className="py-12 flex justify-center items-center gap-2 text-zinc-400 text-xs">
+                      <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
                       Пошук найкращих треків...
                     </div>
                   )}
 
                   {!isSearchLoading && searchQuery.trim().length > 1 && searchResults.length === 0 && (
-                    <div className="py-12 text-center text-zinc-500 text-sm">
+                    <div className="py-12 text-center text-zinc-500 text-xs">
                       Нічого не знайдено за запитом "{searchQuery}"
                     </div>
                   )}
@@ -915,37 +908,37 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
                       {searchResults.slice(0, 10).map((track) => (
                         <div
                           key={track.id}
-                          className="flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 hover:bg-white/[0.04] transition-all"
+                          className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-800/80 bg-zinc-900/30 hover:bg-zinc-900/60 transition-colors"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/10 overflow-hidden flex-shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700/60 overflow-hidden flex-shrink-0">
                               {track.coverUrl ? (
                                 <img
                                   src={track.coverUrl}
                                   alt={track.name}
-                                  className="w-full h-full object-cover"
+                                  className="h-full w-full object-cover"
                                   onError={(e) => {
                                     e.currentTarget.onerror = null;
                                     e.currentTarget.src = FALLBACK_COVER;
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Music2 className="w-4 h-4 text-zinc-500" />
+                                <div className="h-full w-full flex items-center justify-center">
+                                  <Music2 className="h-4 w-4 text-zinc-500" />
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-white truncate">{track.name}</p>
-                              <p className="text-xs text-zinc-400 truncate">{track.artist}</p>
+                              <p className="text-xs font-semibold text-zinc-100 truncate">{track.name}</p>
+                              <p className="text-[11px] text-zinc-400 truncate">{track.artist}</p>
                             </div>
                           </div>
 
                           <button
                             onClick={() => handleAddTrack(track)}
-                            className="px-3 py-1.5 bg-violet-600/30 hover:bg-violet-600 text-violet-200 hover:text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 whitespace-nowrap ml-2"
+                            className="h-8 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs transition-colors flex items-center gap-1.5 ml-2"
                           >
-                            <PlusCircle className="w-3.5 h-3.5" />
+                            <PlusCircle className="h-3.5 w-3.5 text-violet-400" />
                             + Додати
                           </button>
                         </div>
@@ -957,18 +950,18 @@ export const PartyModeModal: React.FC<PartyModeModalProps> = ({ onClose }) => {
 
             </div>
 
-            {/* ── Footer: Fast Reactions ────────────────────────────────────── */}
-            <div className="px-6 py-3.5 border-t border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5 whitespace-nowrap">
-                <SmilePlus className="w-3.5 h-3.5 text-fuchsia-400" />
+            {/* ── Footer: Fast Reactions Dock ───────────────────────────────── */}
+            <div className="px-6 py-3 border-t border-zinc-800/80 bg-zinc-900/30 flex-shrink-0 flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-zinc-400 flex items-center gap-1.5 whitespace-nowrap">
+                <SmilePlus className="h-3.5 w-3.5 text-fuchsia-400" />
                 Швидкі реакції:
               </span>
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <div className="flex items-center gap-1 flex-wrap justify-end">
                 {EMOJI_LIST.map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => handleSendReaction(emoji)}
-                    className="text-lg sm:text-xl p-1.5 hover:bg-white/10 rounded-xl transition-transform hover:scale-130 active:scale-90"
+                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-lg transition-transform hover:scale-125 active:scale-95"
                     title={emoji}
                   >
                     {emoji}
