@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { usePlayerStore } from '../playerStore';
 import type { Track } from '../../types';
 
@@ -11,6 +11,9 @@ const mockTrack1: Track = {
   url: 'blob:http://localhost/track1',
   coverUrl: 'http://localhost/cover1.jpg',
   genre: 'Electronic',
+  hash: 'hash-1',
+  addedAt: 1000,
+  playCount: 10,
 };
 
 const mockTrack2: Track = {
@@ -22,6 +25,9 @@ const mockTrack2: Track = {
   url: 'blob:http://localhost/track2',
   coverUrl: 'http://localhost/cover2.jpg',
   genre: 'Hip-Hop',
+  hash: 'hash-2',
+  addedAt: 2000,
+  playCount: 5,
 };
 
 const mockTrack3: Track = {
@@ -33,6 +39,9 @@ const mockTrack3: Track = {
   url: 'blob:http://localhost/track3',
   coverUrl: 'http://localhost/cover3.jpg',
   genre: 'Synthwave',
+  hash: 'hash-3',
+  addedAt: 3000,
+  playCount: 20,
 };
 
 describe('usePlayerStore (State & Playback Transitions)', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { addTrack, addTracksBatch, getTrack, getAllTracks, deleteTrack, addPlaylist, getAllPlaylists, deletePlaylist } from '../idbStorage';
 import type { Track, Playlist } from '../../types';
 
@@ -11,6 +11,9 @@ const testTrack: Track = {
   url: 'blob:http://localhost/test',
   coverUrl: 'http://localhost/cover.jpg',
   genre: 'Synthwave',
+  hash: 'hash-res',
+  addedAt: 1000,
+  playCount: 1,
 };
 
 describe('idbStorage (IndexedDB Offline Storage & Batch Operations)', () => {
