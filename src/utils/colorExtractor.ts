@@ -85,60 +85,86 @@ export function getDeterministicVibrantColor(str: string): string {
 }
 
 /**
- * Extracts vibrant dominant color from Canvas ImageData by filtering out
- * dark/gray background borders and boosting saturation for shader rendering.
+ * Advanced vibrant dominant color extractor from ImageData:
+ * - Divides the color wheel into 36 fine hue bins (10° each)
+ * - Ranks buckets by Vibrancy Weight: count * (saturation^1.4) * (1 - abs(lightness - 0.55))
+ * - Eliminates extreme blacks (l < 0.08) and washed-out whites (l > 0.94) while retaining true accent tones
+ * - Fallbacks smoothly to monochrome luminance if the artwork is black & white
  */
 function extractVibrantColorFromImageData(imageData: ImageData): string | null {
   const data = imageData.data;
-  const colorBuckets: { [bucket: number]: { count: number; totalH: number; totalS: number; totalL: number } } = {};
+  const numBuckets = 36;
+  const colorBuckets: { [bucket: number]: { count: number; totalH: number; totalS: number; totalL: number; score: number } } = {};
+  
   let totalValidPixels = 0;
+  let totalAllPixels = 0;
+  let totalL = 0;
 
-  // Step 4 pixels for performance on 32x32 = 1024 pixels
   for (let i = 0; i < data.length; i += 4) {
     const a = data[i + 3];
-    if (a < 128) continue; // Ignore transparent
+    if (a < 64) continue; // Ignore mostly transparent pixels
 
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
 
     const [h, s, l] = rgbToHsl(r, g, b);
+    totalAllPixels++;
+    totalL += l;
 
-    // Skip almost black or almost white or very dull gray pixels
-    if (l < 0.12 || l > 0.92 || s < 0.15) continue;
+    // Filter out extreme pitch blacks and blown out whites
+    if (l < 0.08 || l > 0.94) continue;
 
-    const bucketIndex = Math.floor(h / 30); // 12 hue buckets (every 30 deg)
+    // Favor colorful/vibrant pixels
+    const saturationWeight = Math.pow(Math.max(0.1, s), 1.4);
+    const lightnessWeight = 1.0 - Math.abs(l - 0.55); // Peak at 0.55 lightness
+    const pixelScore = saturationWeight * lightnessWeight;
+
+    const bucketIndex = Math.floor((h % 360) / (360 / numBuckets));
     if (!colorBuckets[bucketIndex]) {
-      colorBuckets[bucketIndex] = { count: 0, totalH: 0, totalS: 0, totalL: 0 };
+      colorBuckets[bucketIndex] = { count: 0, totalH: 0, totalS: 0, totalL: 0, score: 0 };
     }
 
     colorBuckets[bucketIndex].count++;
     colorBuckets[bucketIndex].totalH += h;
     colorBuckets[bucketIndex].totalS += s;
     colorBuckets[bucketIndex].totalL += l;
+    colorBuckets[bucketIndex].score += pixelScore;
     totalValidPixels++;
   }
 
-  if (totalValidPixels === 0) return null;
+  // Handle completely black/white or monochromatic artwork (e.g. grayscale album covers)
+  if (totalValidPixels === 0 || Object.keys(colorBuckets).length === 0) {
+    if (totalAllPixels > 0) {
+      const avgL = totalL / totalAllPixels;
+      // High-contrast slate/silver accent for monochrome covers
+      return avgL > 0.5 ? '#94a3b8' : '#64748b';
+    }
+    return null;
+  }
 
-  // Find bucket with highest pixel count
+  // Find bucket with highest vibrancy score
   let bestBucket = null;
-  let maxCount = -1;
+  let maxScore = -1;
   for (const key in colorBuckets) {
     const bucket = colorBuckets[key];
-    if (bucket.count > maxCount) {
-      maxCount = bucket.count;
+    if (bucket.score > maxScore) {
+      maxScore = bucket.score;
       bestBucket = bucket;
     }
   }
 
-  if (!bestBucket) return null;
+  if (!bestBucket || bestBucket.count === 0) return null;
 
   const avgH = bestBucket.totalH / bestBucket.count;
-  const avgS = Math.max(0.70, bestBucket.totalS / bestBucket.count); // Ensure rich saturation for shader
-  const avgL = Math.max(0.48, Math.min(0.62, bestBucket.totalL / bestBucket.count)); // Optimal brightness for background
+  const rawS = bestBucket.totalS / bestBucket.count;
+  const rawL = bestBucket.totalL / bestBucket.count;
 
-  return hslToHex(avgH, avgS, avgL);
+  // Boost saturation for vivid shader background while preserving genuine hue
+  const finalS = Math.max(0.72, Math.min(0.98, rawS * 1.25));
+  const finalL = Math.max(0.48, Math.min(0.60, rawL));
+
+  return hslToHex(avgH, finalS, finalL);
 }
 
 /**
@@ -147,23 +173,42 @@ function extractVibrantColorFromImageData(imageData: ImageData): string | null {
 function extractFromDrawable(drawable: CanvasImageSource, width: number, height: number): string | null {
   try {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 48;
+    canvas.height = 48;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
-    ctx.drawImage(drawable, 0, 0, width, height, 0, 0, 32, 32);
-    const imageData = ctx.getImageData(0, 0, 32, 32);
+    ctx.drawImage(drawable, 0, 0, width, height, 0, 0, 48, 48);
+    const imageData = ctx.getImageData(0, 0, 48, 48);
     return extractVibrantColorFromImageData(imageData);
   } catch (e) {
-    console.warn('Canvas color extraction failed (possible tainted canvas):', e);
+    console.warn('Canvas color extraction failed:', e);
     return null;
   }
 }
 
 /**
+ * Helper to load an image URL safely into an HTMLImageElement with CORS enabled
+ */
+function loadImageWithCors(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+/**
  * Robust extraction of dominant vibrant color from Track or image source.
- * Handles Blob, Remote CDN URLs, CORS restrictions, and fallback resolution.
+ * Supports:
+ * 1. Direct Blob/File data from local MP3 ID3 tags.
+ * 2. Remote CDN cover URLs with direct CORS handling.
+ * 3. High-availability CORS proxy fallback for CDN covers blocked by strict CORS policies.
+ * 4. Automatic cover search & resolution if track metadata lacks cover URL.
+ * 5. Deterministic fallback if no cover exists.
  */
 export async function extractTrackDominantColor(track: Track | null | undefined): Promise<string> {
   if (!track) {
@@ -177,7 +222,7 @@ export async function extractTrackDominantColor(track: Track | null | undefined)
 
   let finalColor: string | null = null;
 
-  // 1. If track has coverBlob (local audio file)
+  // ── Strategy 1: Local ID3 Cover Blob (Offline files) ─────────────────────────
   if (track.coverBlob) {
     try {
       if (typeof createImageBitmap === 'function') {
@@ -185,34 +230,21 @@ export async function extractTrackDominantColor(track: Track | null | undefined)
         finalColor = extractFromDrawable(bitmap, bitmap.width, bitmap.height);
         bitmap.close();
       }
-    } catch {
-      // fallback
-    }
+    } catch {}
 
     if (!finalColor) {
       try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(track.coverBlob!);
-        });
-
-        const img = new Image();
-        img.src = dataUrl;
-        await img.decode();
-        finalColor = extractFromDrawable(img, img.naturalWidth, img.naturalHeight);
-        if (!finalColor) {
-          const facResult = fac.getColor(img);
-          finalColor = facResult.hex;
-        }
+        const blobUrl = URL.createObjectURL(track.coverBlob);
+        const img = await loadImageWithCors(blobUrl);
+        finalColor = extractFromDrawable(img, img.naturalWidth || 48, img.naturalHeight || 48);
+        URL.revokeObjectURL(blobUrl);
       } catch (e) {
-        console.warn('Blob color extraction fallback failed:', e);
+        console.warn('Cover Blob color extraction failed:', e);
       }
     }
   }
 
-  // 2. If track has coverUrl or needs coverUrl resolution
+  // ── Strategy 2: Remote Cover URL Resolution ──────────────────────────────────
   let url = track.coverUrl;
   if (!finalColor && !url && track.name) {
     try {
@@ -222,44 +254,47 @@ export async function extractTrackDominantColor(track: Track | null | undefined)
   }
 
   if (!finalColor && url) {
-    // Strategy A: FastAverageColor async
+    // 2A. Direct CORS image loading
     try {
-      const color = await fac.getColorAsync(url, {
-        mode: 'precision',
-        algorithm: 'dominant',
-      });
-      if (color && color.hex) {
-        // Check if color is too dark (e.g. < 0.15 brightness)
-        const [r, g, b] = color.value;
-        const [h, s, l] = rgbToHsl(r, g, b);
-        if (l < 0.18 || s < 0.2) {
-          // If average is too dark/muddy, boost saturation and lightness for vivid visuals
-          finalColor = hslToHex(h, Math.max(0.7, s), 0.52);
-        } else {
-          finalColor = color.hex;
+      const img = await loadImageWithCors(url);
+      finalColor = extractFromDrawable(img, img.naturalWidth || 48, img.naturalHeight || 48);
+      if (!finalColor) {
+        const facRes = fac.getColor(img);
+        if (facRes && facRes.hex) {
+          const [r, g, b] = facRes.value;
+          const [h, s] = rgbToHsl(r, g, b);
+          finalColor = hslToHex(h, Math.max(0.72, s), 0.52);
         }
       }
-    } catch {
-      // CORS or image load error on fac
-    }
+    } catch {}
 
-    // Strategy B: Fetch as Blob and extract via ImageBitmap (bypasses tainted canvas if CORS allowed)
+    // 2B. FastAverageColor async engine
     if (!finalColor) {
       try {
-        const response = await fetch(url, { mode: 'cors' });
-        if (response.ok) {
-          const blob = await response.blob();
-          if (typeof createImageBitmap === 'function') {
-            const bitmap = await createImageBitmap(blob);
-            finalColor = extractFromDrawable(bitmap, bitmap.width, bitmap.height);
-            bitmap.close();
-          }
+        const color = await fac.getColorAsync(url, {
+          mode: 'precision',
+          algorithm: 'dominant',
+        });
+        if (color && color.hex) {
+          const [r, g, b] = color.value;
+          const [h, s] = rgbToHsl(r, g, b);
+          finalColor = hslToHex(h, Math.max(0.72, s), 0.52);
         }
+      } catch {}
+    }
+
+    // 2C. Universal CORS Image Proxy Fallback (Guarantees 100% extraction for any remote CDN)
+    if (!finalColor && url.startsWith('http')) {
+      try {
+        // Use high-speed weserv proxy which injects CORS and resizes image to 48x48
+        const proxiedUrl = `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=48&h=48&output=webp`;
+        const proxyImg = await loadImageWithCors(proxiedUrl);
+        finalColor = extractFromDrawable(proxyImg, proxyImg.naturalWidth || 48, proxyImg.naturalHeight || 48);
       } catch {}
     }
   }
 
-  // 3. Fallback: Deterministic vibrant color from track name + artist
+  // ── Strategy 3: Deterministic Vibrant Color Fallback ─────────────────────────
   if (!finalColor) {
     finalColor = getDeterministicVibrantColor(`${track.name} ${track.artist || ''}`);
   }

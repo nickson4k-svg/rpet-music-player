@@ -3,13 +3,7 @@ import type { Track } from '../types';
 import { extractTrackDominantColor } from '../utils/colorExtractor';
 
 export const useDominantColor = (trackOrUrl: Track | string | null | undefined) => {
-  const [color, setColor] = useState<string | null>(() => {
-    if (!trackOrUrl) return null;
-    if (typeof trackOrUrl === 'object') {
-      return null;
-    }
-    return null;
-  });
+  const [color, setColor] = useState<string | null>(null);
 
   useEffect(() => {
     if (!trackOrUrl) {
@@ -39,7 +33,7 @@ export const useDominantColor = (trackOrUrl: Track | string | null | undefined) 
 
       try {
         const extracted = await extractTrackDominantColor(trackObj);
-        if (isMounted) {
+        if (isMounted && extracted) {
           setColor(extracted);
         }
       } catch (err) {
@@ -55,7 +49,9 @@ export const useDominantColor = (trackOrUrl: Track | string | null | undefined) 
   }, [
     typeof trackOrUrl === 'object' ? trackOrUrl?.id : trackOrUrl,
     typeof trackOrUrl === 'object' ? trackOrUrl?.coverUrl : undefined,
+    typeof trackOrUrl === 'object' ? trackOrUrl?.coverBlob : undefined,
     typeof trackOrUrl === 'object' ? trackOrUrl?.name : undefined,
+    typeof trackOrUrl === 'object' ? trackOrUrl?.artist : undefined,
   ]);
 
   return color;

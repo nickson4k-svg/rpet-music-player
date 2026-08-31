@@ -72,10 +72,11 @@ export const getAllTracks = async () => {
   const idsToDelete: (string | number)[] = [];
   const fixedTracks: Track[] = [];
 
-  // Migration: fix raw SCTrack objects stored by mistake
   for (const track of tracks) {
-    if (typeof track.id === 'number' && (track as any).title && !(track as any).name) {
-      const raw = track as any;
+    let currentTrack = track;
+    // Migration: fix raw legacy SCTrack objects stored by mistake
+    if (typeof (currentTrack as any).id === 'number' && (currentTrack as any).title && !(currentTrack as any).name) {
+      const raw = currentTrack as any;
       
       let transcoding = raw.media?.transcodings?.find((tr: any) => tr.format?.protocol === 'progressive');
       if (!transcoding && raw.media?.transcodings?.length) transcoding = raw.media.transcodings[0];
@@ -98,55 +99,57 @@ export const getAllTracks = async () => {
       
       idsToDelete.push(raw.id);
       tracksToUpdate.push(fixed);
-    } else if (typeof track.id === 'string' && track.id.startsWith('soundcloud-undefined')) {
-      idsToDelete.push(track.id);
+      currentTrack = fixed;
+    } else if (typeof currentTrack.id === 'string' && currentTrack.id.startsWith('soundcloud-undefined')) {
+      idsToDelete.push(currentTrack.id);
+      continue;
     } else {
       let trackModified = false;
 
       // Fix missing genre for existing local tracks
-      if (track.genre === undefined) {
-        track.genre = 'Unknown';
+      if (currentTrack.genre === undefined) {
+        currentTrack.genre = 'Unknown';
         trackModified = true;
       }
 
       // Auto-repair dead/broken Audius cover URLs stored in IndexedDB
-      if (track.coverUrl) {
+      if (currentTrack.coverUrl) {
         // 1. Clear the broken non-existent /artwork endpoint URLs and resolve real cover
-        if (track.coverUrl.includes('/artwork?app_name=')) {
-          track.coverUrl = '';
+        if (currentTrack.coverUrl.includes('/artwork?app_name=')) {
+          currentTrack.coverUrl = '';
           trackModified = true;
         }
         // 2. Fix dead nodes (zeogrid etc.) by routing through main gateway
-        else if (track.coverUrl.includes('zeogrid.com/content/') || 
-                 (track.coverUrl.includes('/content/') && !track.coverUrl.includes('creatornode.audius.co'))) {
-          const match = track.coverUrl.match(/\/content\/([a-zA-Z0-9_-]+)\/(480x480|150x150|1000x1000)\.jpg/);
+        else if (currentTrack.coverUrl.includes('zeogrid.com/content/') || 
+                 (currentTrack.coverUrl.includes('/content/') && !currentTrack.coverUrl.includes('creatornode.audius.co'))) {
+          const match = currentTrack.coverUrl.match(/\/content\/([a-zA-Z0-9_-]+)\/(480x480|150x150|1000x1000)\.jpg/);
           if (match) {
-            track.coverUrl = `https://creatornode.audius.co/content/${match[1]}/${match[2]}.jpg`;
+            currentTrack.coverUrl = `https://creatornode.audius.co/content/${match[1]}/${match[2]}.jpg`;
           } else {
-            track.coverUrl = track.coverUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
+            currentTrack.coverUrl = currentTrack.coverUrl.replace(/https:\/\/[^/]+\/content\//, 'https://creatornode.audius.co/content/');
           }
           trackModified = true;
         }
       }
 
       if (trackModified) {
-        tracksToUpdate.push(track);
+        tracksToUpdate.push(currentTrack);
       }
 
       // 3. If track has no cover at all (no blob and no url), trigger background resolution
-      if (!track.coverUrl && !track.coverBlob && track.name) {
+      if (!currentTrack.coverUrl && !currentTrack.coverBlob && currentTrack.name) {
         import('./coverResolver').then(({ resolveTrackCover }) => {
-          resolveTrackCover(track.name, track.artist).then((resolvedCover) => {
+          resolveTrackCover(currentTrack.name, currentTrack.artist).then((resolvedCover) => {
             if (resolvedCover) {
-              track.coverUrl = resolvedCover;
-              db.put('tracks', track).catch(() => {});
+              currentTrack.coverUrl = resolvedCover;
+              db.put('tracks', currentTrack).catch(() => {});
             }
           });
         });
       }
-
-      fixedTracks.push(track);
     }
+
+    fixedTracks.push(currentTrack);
   }
 
   // Execute batched DB migrations in a single transaction
