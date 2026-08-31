@@ -111,28 +111,13 @@ export const MainLayout: React.FC = () => {
   const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
   const currentMood = usePlayerStore(state => state.currentMood);
 
-
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (currentTrack?.coverUrl) {
-      setCoverUrl(currentTrack.coverUrl);
-    } else if (currentTrack?.coverBlob) {
-      const url = URL.createObjectURL(currentTrack.coverBlob);
-      setCoverUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setCoverUrl(null);
-    }
-  }, [currentTrack]);
-
   useEffect(() => {
     if (currentTrack) {
       usePlayerStore.getState().addToHistory(currentTrack);
     }
   }, [currentTrack]);
 
-  const dominantColor = useDominantColor(coverUrl);
+  const dominantColor = useDominantColor(currentTrack);
   const defaultBg = `rgb(var(--theme-color-rgb))`;
 
   useEffect(() => {

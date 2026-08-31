@@ -1,48 +1,62 @@
 import { useState, useEffect } from 'react';
-import { FastAverageColor } from 'fast-average-color';
+import type { Track } from '../types';
+import { extractTrackDominantColor } from '../utils/colorExtractor';
 
-const fac = new FastAverageColor();
-const colorCache = new Map<string, string>();
-
-export const useDominantColor = (imageUrl: string | null) => {
+export const useDominantColor = (trackOrUrl: Track | string | null | undefined) => {
   const [color, setColor] = useState<string | null>(() => {
-    return imageUrl ? colorCache.get(imageUrl) || null : null;
+    if (!trackOrUrl) return null;
+    if (typeof trackOrUrl === 'object') {
+      return null;
+    }
+    return null;
   });
 
   useEffect(() => {
-    if (!imageUrl) {
+    if (!trackOrUrl) {
       setColor(null);
       return;
     }
 
-    if (colorCache.has(imageUrl)) {
-      setColor(colorCache.get(imageUrl) || null);
-      return;
-    }
-
     let isMounted = true;
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.src = imageUrl;
 
-    img.onload = () => {
+    const extract = async () => {
+      let trackObj: Track;
+      if (typeof trackOrUrl === 'string') {
+        trackObj = {
+          id: trackOrUrl,
+          name: '',
+          artist: '',
+          album: '',
+          duration: 0,
+          coverUrl: trackOrUrl,
+          hash: trackOrUrl,
+          addedAt: 0,
+          playCount: 0,
+        };
+      } else {
+        trackObj = trackOrUrl;
+      }
+
       try {
-        const extracted = fac.getColor(img);
-        colorCache.set(imageUrl, extracted.hex);
+        const extracted = await extractTrackDominantColor(trackObj);
         if (isMounted) {
-          setColor(extracted.hex);
+          setColor(extracted);
         }
-      } catch (e) {
-        console.error('Failed to get average color', e);
-        if (isMounted) setColor(null);
+      } catch (err) {
+        console.error('Failed to extract dominant color:', err);
       }
     };
 
+    extract();
+
     return () => {
       isMounted = false;
-      img.onload = null;
     };
-  }, [imageUrl]);
+  }, [
+    typeof trackOrUrl === 'object' ? trackOrUrl?.id : trackOrUrl,
+    typeof trackOrUrl === 'object' ? trackOrUrl?.coverUrl : undefined,
+    typeof trackOrUrl === 'object' ? trackOrUrl?.name : undefined,
+  ]);
 
   return color;
 };

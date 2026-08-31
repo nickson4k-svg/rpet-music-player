@@ -1,9 +1,18 @@
 import React, { useEffect } from 'react';
-import { FastAverageColor } from 'fast-average-color';
 import { usePlayerStore } from '../stores/playerStore';
 
+function hexToRgb(hex: string | null): string {
+  if (!hex) return '99, 102, 241';
+  const c = hex.replace('#', '');
+  if (c.length !== 6) return '99, 102, 241';
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
 export const ThemeManager: React.FC = () => {
-  const currentTrack = usePlayerStore(state => state.currentTrackId ? state.getTrackById(state.currentTrackId) : undefined);
+  const dominantColor = usePlayerStore(state => state.dominantColor);
 
   useEffect(() => {
     const savedColor = localStorage.getItem('rpet-theme-color');
@@ -13,38 +22,22 @@ export const ThemeManager: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let url: string | null = null;
-    if (currentTrack?.coverUrl) {
-      url = currentTrack.coverUrl;
-    } else if (currentTrack?.coverBlob) {
-      url = URL.createObjectURL(currentTrack.coverBlob);
-    }
-
     const root = document.documentElement;
-
-    if (url) {
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.src = url;
-      img.onload = async () => {
-        try {
-          const fac = new FastAverageColor();
-          const color = await fac.getColorAsync(img);
-          root.style.setProperty('--theme-color', color.hex);
-          root.style.setProperty('--theme-color-rgb', color.value.slice(0, 3).join(', '));
-        } catch (e) {
-          console.error('Failed to extract theme color', e);
-        }
-      };
-      if (currentTrack?.coverBlob) {
-        return () => URL.revokeObjectURL(url as string);
-      }
+    if (dominantColor) {
+      const rgb = hexToRgb(dominantColor);
+      root.style.setProperty('--theme-color', dominantColor);
+      root.style.setProperty('--theme-color-rgb', rgb);
+      root.style.setProperty('--dominant-color', dominantColor);
+      root.style.setProperty('--dominant-color-rgb', rgb);
+      root.style.setProperty('--dominant-color-transparent', `rgba(${rgb}, 0.25)`);
     } else {
-      root.style.setProperty('--theme-color-rgb', '15, 23, 42');
-      root.style.setProperty('--color-accent', '#ffffff');
-      root.style.setProperty('--color-accent-hover', '#e5e5e5');
+      root.style.setProperty('--theme-color', '#6366f1');
+      root.style.setProperty('--theme-color-rgb', '99, 102, 241');
+      root.style.setProperty('--dominant-color', '#6366f1');
+      root.style.setProperty('--dominant-color-rgb', '99, 102, 241');
+      root.style.setProperty('--dominant-color-transparent', 'rgba(99, 102, 241, 0.25)');
     }
-  }, [currentTrack]);
+  }, [dominantColor]);
 
   return null;
 };

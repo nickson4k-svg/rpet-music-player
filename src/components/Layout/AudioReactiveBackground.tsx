@@ -194,15 +194,10 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
       const { analyser, context } = audioContextState;
 
       // Smoothly transition fade factor: 
-      // Fade in at 0.05 speed, Fade out slowly at 0.012 speed (~3 seconds of graceful decay)
-      const targetFade = currentlyPlaying ? 1.0 : 0.0;
-      currentFade += (targetFade - currentFade) * (currentlyPlaying ? 0.05 : 0.012);
+      // Fade in at 0.08 speed when playing, settle to 0.35 ambient resting glow on pause
+      const targetFade = currentlyPlaying ? 1.0 : 0.35;
+      currentFade += (targetFade - currentFade) * (currentlyPlaying ? 0.08 : 0.03);
       uniforms.u_fade.value = currentFade;
-
-      // If fully faded and not playing, skip rendering to conserve GPU/CPU
-      if (!currentlyPlaying && currentFade <= 0.001) {
-        return;
-      }
 
       // Ensure audio context is running when music plays
       if (currentlyPlaying && context && context.state === 'suspended') {
@@ -224,33 +219,33 @@ export const AudioReactiveBackground: React.FC<AudioReactiveBackgroundProps> = (
         // 2. Mids (Bins 6-25)
         let midSum = 0;
         for (let i = 6; i < 26; i++) midSum += dataArray[i] || 0;
-        const rawMid = Math.min(midSum / (20 * 210.0), 1.2);
+        const rawMid = Math.min(midSum / (20 * 180.0), 1.0);
 
-        // 3. Highs (Bins 26-60)
+        // 3. Highs (Bins 26-64)
         let highSum = 0;
-        for (let i = 26; i < 60; i++) highSum += dataArray[i] || 0;
-        const rawHigh = Math.min(highSum / (34 * 210.0), 1.2);
+        for (let i = 26; i < 65; i++) highSum += dataArray[i] || 0;
+        const rawHigh = Math.min(highSum / (39 * 150.0), 1.0);
 
-        // Overall smoothed energy
+        // Combined audio energy
         const rawEnergy = rawBass * 0.5 + rawMid * 0.35 + rawHigh * 0.15;
 
-        // Smooth fluid damping
-        const lerpFactor = 0.08;
+        // Snappy audio response when beat drops
+        const lerpFactor = rawEnergy > smoothedEnergy ? 0.22 : 0.06;
         smoothedEnergy += (rawEnergy - smoothedEnergy) * lerpFactor;
         smoothedBass += (rawBass - smoothedBass) * (lerpFactor * 1.1);
         smoothedMid += (rawMid - smoothedMid) * lerpFactor;
         smoothedHigh += (rawHigh - smoothedHigh) * lerpFactor;
       } else {
         // Slow, graceful decay into calm resting state when stopped
-        smoothedEnergy += (0 - smoothedEnergy) * 0.015;
-        smoothedBass += (0 - smoothedBass) * 0.015;
-        smoothedMid += (0 - smoothedMid) * 0.015;
-        smoothedHigh += (0 - smoothedHigh) * 0.015;
+        smoothedEnergy += (0 - smoothedEnergy) * 0.02;
+        smoothedBass += (0 - smoothedBass) * 0.02;
+        smoothedMid += (0 - smoothedMid) * 0.02;
+        smoothedHigh += (0 - smoothedHigh) * 0.02;
       }
 
       // Smooth color transition adapting to the track's cover
       targetColor = parseColor(dominantColorRef.current);
-      currentColor.lerp(targetColor, 0.04);
+      currentColor.lerp(targetColor, 0.06);
       uniforms.u_color.value.copy(currentColor);
 
       // Update shader uniforms
